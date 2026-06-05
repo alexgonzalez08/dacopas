@@ -1,13 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Users, ChevronRight } from 'lucide-react'
-import TeamFlag from '@/components/team-flag'
+import DashboardMatches from './dashboard-matches'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: memberships }, { data: nextMatches }] = await Promise.all([
+  const [{ data: memberships }, { data: matches }, { data: predictions }] = await Promise.all([
     supabase
       .from('league_members')
       .select('leagues(id, name, code)')
@@ -15,13 +15,16 @@ export default async function DashboardPage() {
     supabase
       .from('matches')
       .select('*')
-      .eq('status', 'scheduled')
-      .gte('match_date', new Date().toISOString())
-      .order('match_date', { ascending: true })
-      .limit(3),
+      .order('match_date', { ascending: true }),
+    supabase
+      .from('predictions')
+      .select('*')
+      .eq('user_id', user!.id),
   ])
 
   const leagues = memberships?.map(m => m.leagues).filter(Boolean) ?? []
+  const predMap = new Map((predictions ?? []).map(p => [p.match_id, p]))
+  const matchesWithPreds = (matches ?? []).map(m => ({ ...m, prediction: predMap.get(m.id) ?? null }))
 
   return (
     <div className="space-y-6">
@@ -66,37 +69,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Próximos partidos */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-lg">Próximos partidos</h2>
-          <Link href="/predictions" className="text-sm text-yellow-400 hover:underline">
-            Ver todos →
-          </Link>
-        </div>
-        {!nextMatches?.length ? (
-          <p className="text-slate-400 text-sm">No hay partidos programados próximamente.</p>
-        ) : (
-          <div className="space-y-3">
-            {nextMatches.map(match => (
-              <Link
-                key={match.id}
-                href="/predictions"
-                className="flex items-center justify-between bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition"
-              >
-                <div className="flex items-center gap-3 font-medium text-sm">
-                  <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} />
-                  <span className="text-slate-500">vs</span>
-                  <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} />
-                </div>
-                <span className="text-xs text-slate-400 whitespace-nowrap">
-                  {new Date(match.match_date).toLocaleDateString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Partidos con predicciones */}
+      <DashboardMatches userId={user!.id} matches={matchesWithPreds} />
     </div>
   )
 }
