@@ -1,9 +1,12 @@
+'use client'
+
 import Link from 'next/link'
-import { formatDistanceToNow, differenceInHours, differenceInMinutes, format } from 'date-fns'
+import { formatDistance, differenceInHours, differenceInMinutes, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight } from 'lucide-react'
 import PostInteractions from './post-interactions'
 import UserPostCard from './user-post-card'
+import UserAvatar from './user-avatar'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -62,8 +65,8 @@ export type FeedItem = MatchPost | ActivityPost | UserPostItem
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function timeAgo(date: string) {
-  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: es })
+function timeAgo(date: string, now: string) {
+  return formatDistance(new Date(date), new Date(now), { addSuffix: true, locale: es })
 }
 
 function TeamCrest({ name, flagUrl }: { name: string; flagUrl: string | null }) {
@@ -78,23 +81,23 @@ const STAGE_LABELS: Record<string, string> = {
   quarter: 'Cuartos', semi: 'Semifinal', third_place: '3er Puesto', final: 'Final',
 }
 
-function getUrgencyLabel(matchDate: Date): { label: string; accent: string } {
-  const mins = differenceInMinutes(matchDate, new Date())
-  const hours = differenceInHours(matchDate, new Date())
+function getUrgencyLabel(matchDate: Date, now: string): { label: string; accent: string } {
+  const mins = differenceInMinutes(matchDate, new Date(now))
+  const hours = differenceInHours(matchDate, new Date(now))
   if (mins <= 60) return { label: '⚠️ ¡Cierra en menos de 1 hora!', accent: 'text-red-400' }
   if (hours <= 24) return { label: '🔔 El partido es hoy', accent: 'text-orange-400' }
   if (hours <= 48) return { label: '📅 El partido es mañana', accent: 'text-yellow-400' }
   return {
-    label: `📅 En ${formatDistanceToNow(matchDate, { locale: es })}`,
+    label: `📅 En ${formatDistance(matchDate, new Date(now), { locale: es })}`,
     accent: 'text-slate-400',
   }
 }
 
 // ─── Match Post ───────────────────────────────────────────────────────────────
 
-function MatchPost({ item }: { item: MatchPost }) {
+function MatchPost({ item, now }: { item: MatchPost; now: string }) {
   const matchDate = new Date(item.match_date)
-  const { label, accent } = getUrgencyLabel(matchDate)
+  const { label, accent } = getUrgencyLabel(matchDate, now)
   const hasPrediction = item.prediction !== null
   const stage = item.group_name ? `Grupo ${item.group_name}` : (STAGE_LABELS[item.stage] ?? item.stage)
 
@@ -124,7 +127,7 @@ function MatchPost({ item }: { item: MatchPost }) {
         <div className="bg-slate-700/50 rounded-xl p-4 mb-3">
           <div className="flex items-center justify-between gap-2 mb-3">
             <span className="text-xs text-slate-400">{stage}</span>
-            <span className="text-xs text-slate-400">
+            <span suppressHydrationWarning className="text-xs text-slate-400">
               {format(matchDate, "d MMM · HH:mm", { locale: es })}
             </span>
           </div>
@@ -161,10 +164,11 @@ function MatchPost({ item }: { item: MatchPost }) {
 
 // ─── Activity Posts ───────────────────────────────────────────────────────────
 
-function PredictionPost({ item, userId }: { item: ActivityPost; userId: string }) {
+function PredictionPost({ item, userId, now }: { item: ActivityPost; userId: string; now: string }) {
   const match = item.matches
+  const nowDate = new Date(now)
   const isLocked = match
-    ? new Date() >= new Date(new Date(match.match_date).getTime() - 15 * 60 * 1000)
+    ? nowDate >= new Date(new Date(match.match_date).getTime() - 15 * 60 * 1000)
     : true
   const score = item.metadata?.home_score !== undefined && isLocked
     ? `${item.metadata.home_score} - ${item.metadata.away_score}`
@@ -177,17 +181,17 @@ function PredictionPost({ item, userId }: { item: ActivityPost; userId: string }
           <Star className="w-4 h-4 text-blue-400" />
         </div>
         <div className="flex-1">
-          <p className="text-sm">
-            <span className="font-semibold text-white">{item.profiles?.username}</span>
-            <span className="text-slate-400"> envió su predicción para </span>
+          <p className="text-sm flex flex-wrap items-center gap-1">
+            <UserAvatar username={item.profiles?.username ?? ''} size="sm" showName />
+            <span className="text-slate-400">envió su predicción para</span>
             {match
               ? <Link href={`/matches/${match.id}`} className="text-yellow-400 hover:underline font-medium">{match.home_team} vs {match.away_team}</Link>
               : <span className="text-slate-300">un partido</span>
             }
-            {score && <span className="text-slate-400"> · <span className="text-white font-bold">{score}</span></span>}
-            {!score && isLocked === false && <span className="text-xs text-slate-500 ml-1">(oculto hasta el inicio)</span>}
+            {score && <span className="text-slate-400">· <span className="text-white font-bold">{score}</span></span>}
+            {!score && isLocked === false && <span className="text-xs text-slate-500">(oculto hasta el inicio)</span>}
           </p>
-          <p className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at)}</p>
+          <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
         </div>
       </div>
       <PostInteractions
@@ -200,7 +204,7 @@ function PredictionPost({ item, userId }: { item: ActivityPost; userId: string }
   )
 }
 
-function ResultPost({ item, userId }: { item: ActivityPost; userId: string }) {
+function ResultPost({ item, userId, now }: { item: ActivityPost; userId: string; now: string }) {
   const m = item.metadata
   const match = item.matches
   return (
@@ -218,7 +222,7 @@ function ResultPost({ item, userId }: { item: ActivityPost; userId: string }) {
             <span className="text-sm font-medium">{m.away_team}</span>
             {match && <img src={match.away_team_flag ?? ''} alt="" className="w-6 h-6 object-contain" />}
           </div>
-          <p className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at)}</p>
+          <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
         </div>
       </div>
       <PostInteractions
@@ -231,7 +235,7 @@ function ResultPost({ item, userId }: { item: ActivityPost; userId: string }) {
   )
 }
 
-function LeagueJoinPost({ item, userId }: { item: ActivityPost; userId: string }) {
+function LeagueJoinPost({ item, userId, now }: { item: ActivityPost; userId: string; now: string }) {
   return (
     <div className="bg-slate-800 rounded-2xl p-4">
       <div className="flex gap-3">
@@ -239,15 +243,15 @@ function LeagueJoinPost({ item, userId }: { item: ActivityPost; userId: string }
           <UserPlus className="w-4 h-4 text-purple-400" />
         </div>
         <div className="flex-1">
-          <p className="text-sm">
-            <span className="font-semibold text-white">{item.profiles?.username}</span>
-            <span className="text-slate-400"> se unió a la liga </span>
+          <p className="text-sm flex flex-wrap items-center gap-1">
+            <UserAvatar username={item.profiles?.username ?? ''} size="sm" showName />
+            <span className="text-slate-400">se unió a la liga</span>
             {item.leagues
               ? <Link href={`/leagues/${item.league_id}`} className="text-yellow-400 hover:underline font-medium">{item.leagues.name}</Link>
               : <span className="text-slate-300">una liga</span>
             }
           </p>
-          <p className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at)}</p>
+          <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
         </div>
       </div>
       <PostInteractions
@@ -266,10 +270,12 @@ export default function Feed({
   items,
   userId,
   onDeletePost,
+  serverNow,
 }: {
   items: FeedItem[]
   userId: string
   onDeletePost?: (id: string) => void
+  serverNow: string
 }) {
   if (items.length === 0) {
     return (
@@ -283,7 +289,7 @@ export default function Feed({
   return (
     <div className="space-y-3">
       {items.map(item => {
-        if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} />
+        if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} now={serverNow} />
         if (item.kind === 'user_post') return (
           <UserPostCard
             key={item.id}
@@ -294,9 +300,9 @@ export default function Feed({
         )
         if (item.kind === 'activity') {
           const a = item as ActivityPost
-          if (a.type === 'prediction') return <PredictionPost key={a.id} item={a} userId={userId} />
-          if (a.type === 'result') return <ResultPost key={a.id} item={a} userId={userId} />
-          if (a.type === 'league_join') return <LeagueJoinPost key={a.id} item={a} userId={userId} />
+          if (a.type === 'prediction') return <PredictionPost key={a.id} item={a} userId={userId} now={serverNow} />
+          if (a.type === 'result') return <ResultPost key={a.id} item={a} userId={userId} now={serverNow} />
+          if (a.type === 'league_join') return <LeagueJoinPost key={a.id} item={a} userId={userId} now={serverNow} />
         }
         return null
       })}

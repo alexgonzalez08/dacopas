@@ -6,11 +6,15 @@ import CreatePost from '@/components/create-post'
 export default function DashboardClient({
   userId,
   username,
+  avatarUrl,
   initialFeed,
+  serverNow,
 }: {
   userId: string
   username: string
+  avatarUrl?: string | null
   initialFeed: FeedItem[]
+  serverNow: string
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(initialFeed)
 
@@ -35,8 +39,8 @@ export default function DashboardClient({
   return (
     <div className="space-y-4">
       <h2 className="font-semibold text-lg">Actividad reciente</h2>
-      <CreatePost userId={userId} username={username} onPost={handleNewPost} />
-      <Feed items={feed} userId={userId} onDeletePost={handleDeletePost} />
+      <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} onPost={handleNewPost} />
+      <Feed items={feed} userId={userId} onDeletePost={handleDeletePost} serverNow={serverNow} />
     </div>
   )
 }

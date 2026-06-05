@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale'
 import { Trash2, MoreHorizontal } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import PostInteractionsGeneric from './post-interactions-generic'
+import UserAvatar from './user-avatar'
 
 type UserPost = {
   id: string
@@ -12,7 +13,7 @@ type UserPost = {
   content: string | null
   image_url: string | null
   created_at: string
-  profiles?: { username: string } | null
+  profiles?: { username: string; full_name: string | null; avatar_url: string | null } | null
   post_reactions?: { id: string; emoji: string; user_id: string }[]
   post_comments?: { id: string; content: string; user_id: string; created_at: string; profiles?: { username: string } }[]
 }
@@ -24,11 +25,12 @@ export default function UserPostCard({
 }: {
   post: UserPost
   userId: string
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
 }) {
   const [showMenu, setShowMenu] = useState(false)
 
   async function handleDelete() {
+    if (!onDelete) return
     const supabase = createClient()
     await supabase.from('user_posts').delete().eq('id', post.id)
     onDelete(post.id)
@@ -41,17 +43,19 @@ export default function UserPostCard({
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-300 uppercase">
-            {post.profiles?.username?.[0] ?? '?'}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white">{post.profiles?.username}</p>
-            <p className="text-xs text-slate-500">
-              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}
-            </p>
-          </div>
+          <UserAvatar
+            username={post.profiles?.username ?? ''}
+            fullName={post.profiles?.full_name}
+            avatarUrl={post.profiles?.avatar_url}
+            size="md"
+            showName
+            showAlias
+          />
+          <p suppressHydrationWarning className="text-xs text-slate-500">
+            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}
+          </p>
         </div>
-        {isOwner && (
+        {isOwner && onDelete && (
           <div className="relative">
             <button
               onClick={() => setShowMenu(v => !v)}
@@ -80,11 +84,7 @@ export default function UserPostCard({
 
       {/* Imagen */}
       {post.image_url && (
-        <img
-          src={post.image_url}
-          alt="post"
-          className="w-full max-h-96 object-cover"
-        />
+        <img src={post.image_url} alt="post" className="w-full max-h-96 object-cover" />
       )}
 
       {/* Interacciones */}

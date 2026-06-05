@@ -135,7 +135,7 @@ export default function PostInteractionsGeneric({
                 <span className="text-xs font-semibold text-slate-300">{c.profiles?.username} </span>
                 <span className="text-sm text-slate-200">{c.content}</span>
                 <div className="flex items-center justify-between mt-0.5">
-                  <span className="text-xs text-slate-500">
+                  <span suppressHydrationWarning className="text-xs text-slate-500">
                     {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: es })}
                   </span>
                   {c.user_id === userId && (

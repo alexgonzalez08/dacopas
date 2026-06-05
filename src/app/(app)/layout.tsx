@@ -9,13 +9,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username')
+    .select('username, avatar_url')
     .eq('id', user.id)
     .single()
 
   return (
     <div className="flex flex-col min-h-screen">
-      <AppHeader username={profile?.username ?? ''} />
+      <AppHeader username={profile?.username ?? ''} avatarUrl={profile?.avatar_url} />
       <main className="flex-1 px-4 py-6 max-w-3xl mx-auto w-full">{children}</main>
     </div>
   )

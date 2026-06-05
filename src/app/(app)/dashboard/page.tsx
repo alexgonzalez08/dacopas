@@ -9,7 +9,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username')
+    .select('username, avatar_url')
     .eq('id', user!.id)
     .single()
 
@@ -64,13 +64,13 @@ export default async function DashboardPage() {
     friendIds.length > 0
       ? supabase
           .from('user_posts')
-          .select('*, profiles(username), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username))')
+          .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
           .in('user_id', friendIds)
           .order('created_at', { ascending: false })
           .limit(20)
       : supabase
           .from('user_posts')
-          .select('*, profiles(username), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username))')
+          .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
           .eq('user_id', user!.id)
           .order('created_at', { ascending: false })
           .limit(20),
@@ -119,11 +119,15 @@ export default async function DashboardPage() {
     return b.sortDate.getTime() - a.sortDate.getTime()
   })
 
+  const serverNow = new Date().toISOString()
+
   return (
     <DashboardClient
       userId={user!.id}
       username={profile?.username ?? ''}
+      avatarUrl={profile?.avatar_url ?? null}
       initialFeed={feed}
+      serverNow={serverNow}
     />
   )
 }

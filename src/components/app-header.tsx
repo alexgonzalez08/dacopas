@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Trophy, LogOut, LayoutDashboard, Star, Users, Menu, X } from 'lucide-react'
+import { Trophy, LogOut, LayoutDashboard, Star, Users, Menu, X, UserCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -9,9 +9,10 @@ const NAV_LINKS = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Ligas', icon: Users },
+  { href: '/profile', label: 'Mi Perfil', icon: UserCircle },
 ]
 
-export default function AppHeader({ username }: { username: string }) {
+export default function AppHeader({ username, avatarUrl }: { username: string; avatarUrl?: string | null }) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
@@ -41,7 +42,15 @@ export default function AppHeader({ username }: { username: string }) {
               </Link>
             ))}
           </nav>
-          <span className="text-sm text-slate-400 hidden md:block">{username}</span>
+          <Link href="/profile" className="hidden md:flex items-center gap-2 hover:opacity-80 transition">
+            <div style={{ width: 32, height: 32 }} className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
+              {avatarUrl
+                ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+                : username[0]
+              }
+            </div>
+            <span className="text-sm text-slate-400">{username}</span>
+          </Link>
           <button onClick={signOut} className="text-slate-400 hover:text-white hidden md:block">
             <LogOut className="w-4 h-4" />
           </button>

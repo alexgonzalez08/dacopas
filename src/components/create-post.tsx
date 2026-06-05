@@ -6,10 +6,12 @@ import { Image as ImageIcon, X, Send, Loader2 } from 'lucide-react'
 export default function CreatePost({
   userId,
   username,
+  avatarUrl,
   onPost,
 }: {
   userId: string
   username: string
+  avatarUrl?: string | null
   onPost: (post: any) => void
 }) {
   const [content, setContent] = useState('')
@@ -80,8 +82,11 @@ export default function CreatePost({
   return (
     <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl p-4 space-y-3">
       <div className="flex gap-3">
-        <div className="w-9 h-9 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0 text-sm font-bold text-yellow-400 uppercase">
-          {username[0]}
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-700 shrink-0 flex items-center justify-center text-sm font-bold text-slate-300 uppercase">
+          {avatarUrl
+            ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+            : username[0]
+          }
         </div>
         <textarea
           value={content}
