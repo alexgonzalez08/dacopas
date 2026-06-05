@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mundial 2026 — Pronósticos
 
-## Getting Started
+App para crear ligas privadas y predecir resultados del Mundial 2026.
 
-First, run the development server:
+## Setup
+
+### 1. Supabase
+
+1. Crear proyecto en [supabase.com](https://supabase.com)
+2. Ir a **SQL Editor** y ejecutar el contenido de `supabase/schema.sql`
+3. Copiar las credenciales:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (Settings → API → service_role)
+
+### 2. Football-data.org (resultados automáticos)
+
+1. Registrarse en [football-data.org](https://www.football-data.org/client/register)
+2. Copiar el API key en `FOOTBALL_API_KEY`
+
+### 3. Variables de entorno
+
+Editar `.env.local` con tus credenciales reales.
+
+### 4. Correr en desarrollo
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 5. Sincronizar partidos
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Una vez configurado, llamar al endpoint para traer los partidos desde la API:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+curl -X POST http://localhost:3000/api/matches/sync \
+  -H "Authorization: Bearer <CRON_SECRET>"
+```
 
-## Learn More
+Podés llamar este endpoint desde un cron (ej. cada 5 minutos durante el Mundial) para actualizar resultados automáticamente.
 
-To learn more about Next.js, take a look at the following resources:
+## Sistema de puntos
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Resultado | Puntos |
+|-----------|--------|
+| Resultado exacto (ej: 2-1) | 3 pts |
+| Ganador o empate correcto | 1 pt |
+| Incorrecto | 0 pts |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Flujo
 
-## Deploy on Vercel
+1. Usuario se registra → entra al dashboard
+2. Crea una liga → obtiene un código de 6 caracteres
+3. Comparte el código con amigos → ellos se unen
+4. Todos ingresan sus pronósticos (editables hasta 1 hora antes de cada partido)
+5. Los resultados se sincronizan automáticamente vía API
+6. La tabla de posiciones se actualiza en tiempo real
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Migración de datos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Al usar Supabase (PostgreSQL), migrar datos es sencillo: `pg_dump` + `pg_restore` o exportar desde el panel de Supabase.

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -183,3 +184,60 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 >>>>>>> 37f36c3 (Initial commit from Create Next App)
+=======
+>>>>>>> 4ae2c60 (Prepare repo for GitHub)
+.DS_Store
+node_modules/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+/coverage
+
+# Build outputs
+.next/
+out/
+/build
+
+# Env files
+.env
+.env.local
+!.env.example
+
+# OS
+.DS_Store
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Public assets (if you build them locally)
+public/
+
+# Yarn v3 / pnpm
+.pnp
+.pnp.js
+.pnp.*
+.yarn/*
+
