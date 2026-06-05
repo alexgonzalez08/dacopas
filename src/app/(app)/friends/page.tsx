@@ -5,13 +5,19 @@ export default async function FriendsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [{ data: friends }, { data: pending }, { data: requests }] = await Promise.all([
-    // Seguidores aceptados
+  const [{ data: following }, { data: followers }, { data: pending }, { data: requests }] = await Promise.all([
+    // Usuarios que yo sigo (yo envié la solicitud, fue aceptada)
     supabase
       .from('friendships')
-      .select('*, requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url)')
-      .eq('status', 'accepted')
-      .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`),
+      .select('*, addressee:addressee_id(id, username, full_name, avatar_url)')
+      .eq('requester_id', user!.id)
+      .eq('status', 'accepted'),
+    // Usuarios que me siguen (ellos enviaron la solicitud, fue aceptada)
+    supabase
+      .from('friendships')
+      .select('*, requester:requester_id(id, username, full_name, avatar_url)')
+      .eq('addressee_id', user!.id)
+      .eq('status', 'accepted'),
     // Solicitudes enviadas pendientes
     supabase
       .from('friendships')
@@ -29,7 +35,8 @@ export default async function FriendsPage() {
   return (
     <FriendsClient
       userId={user!.id}
-      initialFriends={friends ?? []}
+      initialFollowing={following ?? []}
+      initialFollowers={followers ?? []}
       initialPending={pending ?? []}
       initialRequests={requests ?? []}
     />

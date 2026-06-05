@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import UserAvatar from '@/components/user-avatar'
 import { UserPlus, UserCheck, UserX, Search, Clock, Users, Check, X, Loader2 } from 'lucide-react'
@@ -10,37 +10,66 @@ type Friendship = { id: string; requester?: Profile; addressee?: Profile; status
 
 export default function FriendsClient({
   userId,
-  initialFriends,
+  initialFollowing,
+  initialFollowers,
   initialPending,
   initialRequests,
 }: {
   userId: string
-  initialFriends: Friendship[]
+  initialFollowing: Friendship[]
+  initialFollowers: Friendship[]
   initialPending: Friendship[]
   initialRequests: Friendship[]
 }) {
-  const [friends, setFriends] = useState(initialFriends)
+  const [following, setFollowing] = useState(initialFollowing)
+  const [followers, setFollowers] = useState(initialFollowers)
   const [pending, setPending] = useState(initialPending)
   const [requests, setRequests] = useState(initialRequests)
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<Profile[]>([])
   const [searching, setSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
   const [loadingId, setLoadingId] = useState<string | null>(null)
-  const [tab, setTab] = useState<'friends' | 'requests'>('friends')
+  const [tab, setTab] = useState<'following' | 'followers' | 'requests'>('following')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const q = search.trim()
+    if (q.length < 2) {
+      setSearchResults([])
+      setShowDropdown(false)
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
+        .neq('id', userId)
+        .limit(8)
+      setSearchResults(data ?? [])
+      setShowDropdown(true)
+      setSearching(false)
+    }, 300)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [search, userId])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
-    if (!search.trim()) return
-    setSearching(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, username, full_name, avatar_url')
-      .ilike('username', `%${search.trim()}%`)
-      .neq('id', userId)
-      .limit(10)
-    setSearchResults(data ?? [])
-    setSearching(false)
   }
 
   async function sendRequest(addresseeId: string) {
@@ -54,6 +83,7 @@ export default function FriendsClient({
     if (data) {
       setPending(p => [...p, data])
       setSearchResults(r => r.filter(u => u.id !== addresseeId))
+      setShowDropdown(false)
     }
     setLoadingId(null)
   }
@@ -65,11 +95,11 @@ export default function FriendsClient({
       .from('friendships')
       .update({ status: 'accepted' })
       .eq('id', friendshipId)
-      .select('*, requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url)')
+      .select('*, requester:requester_id(id, username, full_name, avatar_url)')
       .single()
     if (data) {
       setRequests(r => r.filter(f => f.id !== friendshipId))
-      setFriends(f => [...f, data])
+      setFollowers(f => [...f, data])
     }
     setLoadingId(null)
   }
@@ -82,26 +112,35 @@ export default function FriendsClient({
     setLoadingId(null)
   }
 
-  async function removeFriend(friendshipId: string) {
+  async function unfollow(friendshipId: string) {
     setLoadingId(friendshipId)
     const supabase = createClient()
     await supabase.from('friendships').delete().eq('id', friendshipId)
-    setFriends(f => f.filter(fr => fr.id !== friendshipId))
+    setFollowing(f => f.filter(fr => fr.id !== friendshipId))
     setLoadingId(null)
   }
 
-  function getFriendProfile(f: Friendship): Profile | null {
-    if (f.requester?.id === userId) return f.addressee ?? null
-    return f.requester ?? null
+  async function removeFollower(friendshipId: string) {
+    setLoadingId(friendshipId)
+    const supabase = createClient()
+    await supabase.from('friendships').delete().eq('id', friendshipId)
+    setFollowers(f => f.filter(fr => fr.id !== friendshipId))
+    setLoadingId(null)
   }
 
-  function isAlreadyFriend(profileId: string) {
-    return friends.some(f => f.requester?.id === profileId || f.addressee?.id === profileId)
+  function isAlreadyFollowing(profileId: string) {
+    return following.some(f => f.addressee?.id === profileId)
   }
 
   function isPendingSent(profileId: string) {
     return pending.some(f => f.addressee?.id === profileId)
   }
+
+  const tabs = [
+    { key: 'following' as const, label: 'Siguiendo', count: following.length },
+    { key: 'followers' as const, label: 'Seguidores', count: followers.length },
+    { key: 'requests' as const, label: 'Solicitudes', count: requests.length },
+  ]
 
   return (
     <div className="space-y-6 max-w-xl mx-auto">
@@ -112,28 +151,34 @@ export default function FriendsClient({
         <h2 className="font-semibold text-slate-300 flex items-center gap-2">
           <UserPlus className="w-4 h-4 text-yellow-400" /> Agregar seguidor
         </h2>
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por alias..."
-            className="flex-1 bg-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500 text-slate-200 placeholder-slate-500"
-          />
-          <button
-            type="submit"
-            disabled={searching}
-            className="px-3 py-2 bg-yellow-500 text-slate-900 font-semibold rounded-xl hover:bg-yellow-400 disabled:opacity-50 transition"
-          >
-            {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          </button>
-        </form>
+        <form onSubmit={handleSearch} className="relative" ref={wrapperRef}>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                placeholder="Buscar por alias o nombre..."
+                className="w-full bg-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500 text-slate-200 placeholder-slate-500"
+              />
+              {searching && (
+                <Loader2 className="w-4 h-4 animate-spin text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={searching}
+              className="px-3 py-2 bg-yellow-500 text-slate-900 font-semibold rounded-xl hover:bg-yellow-400 disabled:opacity-50 transition"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
 
-        {searchResults.length > 0 && (
-          <div className="space-y-2">
-            {searchResults.map(profile => (
-              <div key={profile.id} className="flex items-center justify-between bg-slate-700/50 rounded-xl px-3 py-2.5">
-                <Link href={`/profile/${profile.username}`}>
+          {showDropdown && searchResults.length > 0 && (
+            <div className="absolute z-10 left-0 right-0 mt-1 bg-slate-700 rounded-xl shadow-lg overflow-hidden border border-slate-600">
+              {searchResults.map(profile => (
+                <div key={profile.id} className="flex items-center justify-between px-3 py-2.5 hover:bg-slate-600/60 transition">
                   <UserAvatar
                     username={profile.username}
                     fullName={profile.full_name}
@@ -142,61 +187,68 @@ export default function FriendsClient({
                     showName
                     showAlias
                   />
-                </Link>
-                {isAlreadyFriend(profile.id) ? (
-                  <span className="flex items-center gap-1 text-xs text-green-400">
-                    <UserCheck className="w-3.5 h-3.5" /> Siguiendo
-                  </span>
-                ) : isPendingSent(profile.id) ? (
-                  <span className="flex items-center gap-1 text-xs text-slate-400">
-                    <Clock className="w-3.5 h-3.5" /> Pendiente
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => sendRequest(profile.id)}
-                    disabled={loadingId === profile.id}
-                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
-                  >
-                    {loadingId === profile.id
-                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      : <UserPlus className="w-3.5 h-3.5" />
-                    }
-                    Agregar
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                  {isAlreadyFollowing(profile.id) ? (
+                    <span className="flex items-center gap-1 text-xs text-green-400">
+                      <UserCheck className="w-3.5 h-3.5" /> Siguiendo
+                    </span>
+                  ) : isPendingSent(profile.id) ? (
+                    <span className="flex items-center gap-1 text-xs text-slate-400">
+                      <Clock className="w-3.5 h-3.5" /> Pendiente
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => sendRequest(profile.id)}
+                      disabled={loadingId === profile.id}
+                      className="flex items-center gap-1 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                    >
+                      {loadingId === profile.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <UserPlus className="w-3.5 h-3.5" />
+                      }
+                      Seguir
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {showDropdown && search.trim().length >= 2 && !searching && searchResults.length === 0 && (
+            <div className="absolute z-10 left-0 right-0 mt-1 bg-slate-700 rounded-xl shadow-lg border border-slate-600 px-4 py-3 text-sm text-slate-400 text-center">
+              No se encontraron usuarios
+            </div>
+          )}
+        </form>
       </div>
 
       {/* Tabs */}
       <div className="flex rounded-xl overflow-hidden border border-slate-700">
-        {(['friends', 'requests'] as const).map(t => (
+        {tabs.map(t => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 py-2.5 text-sm font-semibold transition flex items-center justify-center gap-2 ${tab === t ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`flex-1 py-2.5 text-sm font-semibold transition flex items-center justify-center gap-2 ${tab === t.key ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
-            {t === 'friends'
-              ? <><Users className="w-4 h-4" /> Mis seguidores ({friends.length})</>
-              : <><Clock className="w-4 h-4" /> Solicitudes {requests.length > 0 && <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{requests.length}</span>}</>
+            {t.label}
+            {t.key === 'requests' && t.count > 0
+              ? <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{t.count}</span>
+              : <span className="text-xs opacity-70">({t.count})</span>
             }
           </button>
         ))}
       </div>
 
-      {/* Lista de seguidores */}
-      {tab === 'friends' && (
+      {/* Siguiendo */}
+      {tab === 'following' && (
         <div className="space-y-2">
-          {friends.length === 0 ? (
+          {following.length === 0 ? (
             <div className="text-center py-10 text-slate-500">
-              <p className="text-3xl mb-2">👥</p>
-              <p className="text-sm">Todavía no tenés seguidores. ¡Buscá por alias arriba!</p>
+              <p className="text-3xl mb-2">🔭</p>
+              <p className="text-sm">No estás siguiendo a nadie todavía.</p>
             </div>
           ) : (
-            friends.map(f => {
-              const profile = getFriendProfile(f)
+            following.map(f => {
+              const profile = f.addressee
               if (!profile) return null
               return (
                 <div key={f.id} className="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3">
@@ -212,7 +264,7 @@ export default function FriendsClient({
                     />
                   </Link>
                   <button
-                    onClick={() => removeFriend(f.id)}
+                    onClick={() => unfollow(f.id)}
                     disabled={loadingId === f.id}
                     className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-slate-700"
                     title="Dejar de seguir"
@@ -226,14 +278,86 @@ export default function FriendsClient({
         </div>
       )}
 
-      {/* Solicitudes recibidas */}
+      {/* Seguidores */}
+      {tab === 'followers' && (
+        <div className="space-y-2">
+          {followers.length === 0 ? (
+            <div className="text-center py-10 text-slate-500">
+              <p className="text-3xl mb-2">👥</p>
+              <p className="text-sm">Todavía nadie te sigue.</p>
+            </div>
+          ) : (
+            followers.map(f => {
+              const profile = f.requester
+              if (!profile) return null
+              const alreadyFollowing = isAlreadyFollowing(profile.id)
+              const pendingSent = isPendingSent(profile.id)
+              return (
+                <div key={f.id} className="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3">
+                  <Link href={`/profile/${profile.username}`}>
+                    <UserAvatar
+                      username={profile.username}
+                      fullName={profile.full_name}
+                      avatarUrl={profile.avatar_url}
+                      size="md"
+                      showName
+                      showAlias
+                      linkable={false}
+                    />
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    {alreadyFollowing ? (
+                      <span className="flex items-center gap-1 text-xs text-green-400">
+                        <UserCheck className="w-3.5 h-3.5" /> Siguiendo
+                      </span>
+                    ) : pendingSent ? (
+                      <span className="flex items-center gap-1 text-xs text-slate-400">
+                        <Clock className="w-3.5 h-3.5" /> Pendiente
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => sendRequest(profile.id)}
+                        disabled={loadingId === profile.id}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                      >
+                        {loadingId === profile.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <UserPlus className="w-3.5 h-3.5" />
+                        }
+                        Seguir
+                      </button>
+                    )}
+                    <button
+                      onClick={() => removeFollower(f.id)}
+                      disabled={loadingId === f.id}
+                      className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-slate-700"
+                      title="Eliminar seguidor"
+                    >
+                      {loadingId === f.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {/* Solicitudes */}
       {tab === 'requests' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Recibidas */}
-          {requests.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold">Recibidas</p>
-              {requests.map(f => (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold flex items-center gap-2">
+              <Users className="w-3.5 h-3.5" /> Recibidas
+              {requests.length > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{requests.length}</span>
+              )}
+            </p>
+            {requests.length === 0 ? (
+              <p className="text-sm text-slate-500 py-3 text-center">No tenés solicitudes recibidas.</p>
+            ) : (
+              requests.map(f => (
                 <div key={f.id} className="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3">
                   <Link href={`/profile/${f.requester?.username ?? ''}`}>
                     <UserAvatar
@@ -263,15 +387,19 @@ export default function FriendsClient({
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
 
           {/* Enviadas */}
-          {pending.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold">Enviadas</p>
-              {pending.map(f => (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-semibold flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5" /> Enviadas ({pending.length})
+            </p>
+            {pending.length === 0 ? (
+              <p className="text-sm text-slate-500 py-3 text-center">No tenés solicitudes enviadas.</p>
+            ) : (
+              pending.map(f => (
                 <div key={f.id} className="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3 opacity-70">
                   <Link href={`/profile/${f.addressee?.username ?? ''}`}>
                     <UserAvatar
@@ -281,22 +409,16 @@ export default function FriendsClient({
                       size="md"
                       showName
                       showAlias
+                      linkable={false}
                     />
                   </Link>
                   <span className="flex items-center gap-1 text-xs text-slate-400">
                     <Clock className="w-3.5 h-3.5" /> Pendiente
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {requests.length === 0 && pending.length === 0 && (
-            <div className="text-center py-10 text-slate-500">
-              <p className="text-3xl mb-2">📭</p>
-              <p className="text-sm">No tenés solicitudes pendientes.</p>
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -21,14 +21,14 @@ export default async function DashboardPage() {
   const leagueIds = (memberships ?? []).map(m => m.league_id)
   const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string }] : [])
 
-  let friendIds: string[] = []
-  if (leagueIds.length > 0) {
-    const { data: members } = await supabase
-      .from('league_members')
-      .select('user_id')
-      .in('league_id', leagueIds)
-    friendIds = [...new Set((members ?? []).map(m => m.user_id))].filter(id => id !== user!.id)
-  }
+  // Solo usuarios que el usuario actual sigue (él es el requester)
+  const { data: friendships } = await supabase
+    .from('friendships')
+    .select('addressee_id')
+    .eq('requester_id', user!.id)
+    .eq('status', 'accepted')
+
+  const friendIds = (friendships ?? []).map(f => f.addressee_id)
 
   const FEED_SELECT = '*, profiles(username, avatar_url), matches(id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, match_date), leagues(name), feed_reactions(id, emoji, user_id, profiles(username)), feed_comments(id, content, user_id, created_at, profiles(username))'
 
@@ -55,12 +55,15 @@ export default async function DashboardPage() {
           .order('created_at', { ascending: false })
           .limit(20)
       : Promise.resolve({ data: [] }),
-    supabase
-      .from('feed_events')
-      .select(FEED_SELECT)
-      .eq('type', 'result')
-      .order('created_at', { ascending: false })
-      .limit(10),
+    friendIds.length > 0
+      ? supabase
+          .from('feed_events')
+          .select(FEED_SELECT)
+          .eq('type', 'result')
+          .in('user_id', friendIds)
+          .order('created_at', { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: [] }),
     // Posts propios + de amigos en ligas compartidas
     supabase
       .from('user_posts')
