@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-yellow-400">
           <Trophy className="w-5 h-5" />
-          Mundial 2026
+          MyScore FootApp
         </Link>
         <div className="flex items-center gap-4">
           <span className="text-sm text-slate-400">{profile?.username}</span>

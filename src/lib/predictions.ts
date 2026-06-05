@@ -3,7 +3,7 @@ import { Match } from '@/types'
 
 export function isPredictionLocked(match: Match): boolean {
   const kickoff = new Date(match.match_date)
-  const lockTime = new Date(kickoff.getTime() - 60 * 60 * 1000)
+  const lockTime = new Date(kickoff.getTime() - 15 * 60 * 1000)
   return new Date() >= lockTime || match.status !== 'scheduled'
 }
 

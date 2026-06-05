@@ -7,7 +7,7 @@ export default function Home() {
       <div className="mb-6 flex items-center justify-center w-20 h-20 rounded-full bg-yellow-500/20">
         <Trophy className="w-10 h-10 text-yellow-400" />
       </div>
-      <h1 className="text-4xl font-bold mb-2">Mundial 2026</h1>
+      <h1 className="text-4xl font-bold mb-2">My Score</h1>
       <p className="text-lg text-slate-400 mb-8">
         Compite con tus amigos prediciendo los resultados de cada partido
       </p>

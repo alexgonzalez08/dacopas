@@ -5,7 +5,7 @@ import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Lock, Clock, CheckCircle } from 'lucide-react'
+import { Lock, Clock, CheckCircle, Info } from 'lucide-react'
 
 type MatchWithPrediction = Match & { prediction: Prediction | null }
 
@@ -79,10 +79,17 @@ export default function DashboardMatches({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-lg">Partidos</h2>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <span>3 pts = exacto</span>
-          <span>1 pt = ganador</span>
+        <h2 className="font-semibold text-lg flex items-center gap-2">
+          ⚽ Próximos Partidos
+        </h2>
+        <div className="relative group">
+          <Info className="w-4 h-4 text-slate-400 cursor-pointer hover:text-white transition" />
+          <div className="absolute right-0 top-6 w-56 bg-slate-700 text-slate-200 text-xs rounded-xl p-3 shadow-lg hidden group-hover:block z-10 leading-relaxed">
+            <p className="font-semibold mb-1">Sistema de puntos:</p>
+            <p>🎯 Resultado exacto → <span className="text-yellow-400 font-bold">3 pts</span></p>
+            <p>✅ Ganador / empate → <span className="text-yellow-400 font-bold">1 pt</span></p>
+            <p className="mt-2 text-slate-400">Los marcadores se bloquean <span className="text-white font-semibold">15 minutos</span> antes de cada partido.</p>
+          </div>
         </div>
       </div>
 
@@ -105,10 +112,22 @@ export default function DashboardMatches({
                 <div key={match.id} className="bg-slate-800 rounded-xl p-4">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {format(new Date(match.match_date), "d MMM · HH:mm", { locale: es })}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {format(new Date(match.match_date), "HH:mm", { locale: es })}
+                      </span>
+                      {match.group_name && (
+                        <span className="text-xs text-slate-500">
+                          Fase de Grupos · Grupo {match.group_name}
+                        </span>
+                      )}
+                      {!match.group_name && (
+                        <span className="text-xs text-slate-500">
+                          {STAGE_LABELS[match.stage] ?? match.stage}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       {match.status === 'finished' && (
                         <span className="text-xs text-green-400 font-semibold">
