@@ -41,7 +41,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const leaderboard = (members ?? [])
     .map(m => ({
       user_id: m.user_id,
-      profiles: m.profiles as { username: string } | null,
+      profiles: (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as unknown as { username: string } | null,
       points: pointsMap.get(m.user_id)?.points ?? 0,
       exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
       correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
