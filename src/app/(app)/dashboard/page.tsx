@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           </div>
         )}
         <div className="flex gap-3 mt-3">
-          <Link href="/leagues/new" className="flex-1 py-2.5 text-center bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 transition text-sm">
+          <Link href="/leagues/new" className="hidden md:flex flex-1 py-2.5 text-center bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 transition text-sm justify-center">
             + Crear liga
           </Link>
           <Link href="/leagues/new?join=1" className="flex-1 py-2.5 text-center bg-slate-700 text-white font-semibold rounded-lg hover:bg-slate-600 transition text-sm">

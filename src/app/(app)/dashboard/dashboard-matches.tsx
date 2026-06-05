@@ -5,7 +5,7 @@ import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Lock, Clock, CheckCircle, Info, ChevronRight } from 'lucide-react'
+import { Lock, Clock, CheckCircle, Info, ChevronRight, Save } from 'lucide-react'
 import Link from 'next/link'
 
 type MatchWithPrediction = Match & { prediction: Prediction | null }
@@ -193,9 +193,15 @@ export default function DashboardMatches({
                         <button
                           onClick={() => handleSave(match)}
                           disabled={saving[match.id]}
-                          className="px-4 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                          title="Guardar predicción"
+                          className="flex items-center justify-center w-9 h-9 bg-yellow-500 text-slate-900 rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
                         >
-                          {saving[match.id] ? 'Guardando...' : saved[match.id] ? '✓ Guardado' : 'Guardar'}
+                          {saving[match.id]
+                            ? <span className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                            : saved[match.id]
+                              ? <CheckCircle className="w-4 h-4" />
+                              : <Save className="w-4 h-4" />
+                          }
                         </button>
                       </div>
                     )}
