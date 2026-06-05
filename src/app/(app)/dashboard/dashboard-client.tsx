@@ -4,10 +4,13 @@ import Feed, { FeedItem } from '@/components/feed'
 import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
 
+type League = { id: string; name: string }
+
 export default function DashboardClient({
   userId,
   username,
   avatarUrl,
+  leagues,
   initialFeed,
   serverNow,
   hasLeagues,
@@ -15,6 +18,7 @@ export default function DashboardClient({
   userId: string
   username: string
   avatarUrl?: string | null
+  leagues: League[]
   initialFeed: FeedItem[]
   serverNow: string
   hasLeagues: boolean
@@ -45,7 +49,7 @@ export default function DashboardClient({
 
       {showWelcome && <WelcomeCard username={username} />}
 
-      <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} onPost={handleNewPost} />
+      <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
       <Feed items={feed} userId={userId} onDeletePost={handleDeletePost} serverNow={serverNow} />
     </div>
   )

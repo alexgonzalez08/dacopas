@@ -15,10 +15,11 @@ export default async function DashboardPage() {
 
   const { data: memberships } = await supabase
     .from('league_members')
-    .select('league_id')
+    .select('league_id, leagues(id, name)')
     .eq('user_id', user!.id)
 
   const leagueIds = (memberships ?? []).map(m => m.league_id)
+  const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string }] : [])
 
   let friendIds: string[] = []
   if (leagueIds.length > 0) {
@@ -119,6 +120,7 @@ export default async function DashboardPage() {
       userId={user!.id}
       username={profile?.username ?? ''}
       avatarUrl={profile?.avatar_url ?? null}
+      leagues={leagues}
       initialFeed={feed}
       serverNow={serverNow}
       hasLeagues={leagueIds.length > 0}

@@ -10,11 +10,8 @@ type Props = {
   linkable?: boolean
 }
 
-const sizes = {
-  sm: 'flex-none w-7 h-7 text-xs',
-  md: 'flex-none w-9 h-9 text-sm',
-  lg: 'flex-none w-12 h-12 text-base',
-}
+const sizePx = { sm: 28, md: 36, lg: 48 }
+const textSize = { sm: '11px', md: '13px', lg: '16px' }
 
 export default function UserAvatar({
   username,
@@ -26,14 +23,25 @@ export default function UserAvatar({
   linkable = true,
 }: Props) {
   const displayName = fullName || username
-  const sizeClass = sizes[size]
+  const px = sizePx[size]
 
   const avatar = (
-    <div className={`${sizeClass} rounded-full overflow-hidden bg-slate-700 flex items-center justify-center font-bold text-slate-300 uppercase shrink-0`}>
-      {avatarUrl
-        ? <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover block" />
-        : <span className="leading-none">{displayName?.[0] ?? '?'}</span>
-      }
+    <div
+      style={{ width: px, height: px, minWidth: px, minHeight: px }}
+      className="rounded-full overflow-hidden bg-slate-700 flex items-center justify-center font-bold text-slate-300 uppercase shrink-0"
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={displayName}
+          style={{ width: px, height: px, minWidth: px, minHeight: px }}
+          className="object-cover block"
+        />
+      ) : (
+        <span style={{ fontSize: textSize[size], lineHeight: 1 }}>
+          {displayName?.[0] ?? '?'}
+        </span>
+      )}
     </div>
   )
 
@@ -47,7 +55,7 @@ export default function UserAvatar({
   )
 
   const inner = (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex items-center gap-2 shrink-0">
       {avatar}
       {nameEl}
     </div>
@@ -56,7 +64,7 @@ export default function UserAvatar({
   if (!linkable) return inner
 
   return (
-    <Link href={`/profile/${username}`} className="flex items-center gap-2 hover:opacity-80 transition">
+    <Link href={`/profile/${username}`} className="inline-flex items-center gap-2 hover:opacity-80 transition shrink-0">
       {avatar}
       {nameEl}
     </Link>

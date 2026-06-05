@@ -29,10 +29,12 @@ export default function ProfileClient({
   profile,
   userId,
   initialPosts,
+  leagues = [],
 }: {
   profile: Profile
   userId: string
   initialPosts: Post[]
+  leagues?: { id: string; name: string }[]
 }) {
   const [username, setUsername] = useState(profile.username)
   const [fullName, setFullName] = useState(profile.full_name ?? '')
@@ -206,7 +208,7 @@ export default function ProfileClient({
       </div>
 
       {/* Crear post */}
-      <CreatePost userId={userId} username={username} onPost={handleNewPost} />
+      <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
 
       {/* Posts del usuario */}
       {posts.length === 0 ? (

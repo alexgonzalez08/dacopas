@@ -164,6 +164,26 @@ function MatchPost({ item, now }: { item: MatchPost; now: string }) {
 
 // ─── Activity Posts ───────────────────────────────────────────────────────────
 
+function ActivityHeader({ item, now }: { item: ActivityPost; now: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-2">
+      <UserAvatar
+        username={item.profiles?.username ?? ''}
+        avatarUrl={item.profiles?.avatar_url}
+        size="md"
+      />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-white leading-tight truncate">
+          {item.profiles?.username ?? 'Usuario'}
+        </p>
+        <p suppressHydrationWarning className="text-xs text-slate-500">
+          {timeAgo(item.created_at, now)}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function PredictionPost({ item, userId, now }: { item: ActivityPost; userId: string; now: string }) {
   const match = item.matches
   const nowDate = new Date(now)
@@ -176,32 +196,16 @@ function PredictionPost({ item, userId, now }: { item: ActivityPost; userId: str
 
   return (
     <div className="bg-slate-800 rounded-2xl p-4">
-      <div className="flex gap-3">
-        <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-          <Star className="w-4 h-4 text-blue-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <UserAvatar
-                username={item.profiles?.username ?? ''}
-                avatarUrl={item.profiles?.avatar_url}
-                size="sm"
-                linkable={false}
-              />
-              <span className="font-semibold text-white truncate">{item.profiles?.username ?? 'Usuario'}</span>
-            </div>
-            <span className="text-slate-400">envió su predicción para</span>
-            {match
-              ? <Link href={`/matches/${match.id}`} className="text-yellow-400 hover:underline font-medium min-w-0 truncate">{match.home_team} vs {match.away_team}</Link>
-              : <span className="text-slate-300">un partido</span>
-            }
-            {score && <span className="text-slate-400">· <span className="text-white font-bold">{score}</span></span>}
-            {!score && isLocked === false && <span className="text-xs text-slate-500">(oculto hasta el inicio)</span>}
-          </div>
-          <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
-        </div>
-      </div>
+      <ActivityHeader item={item} now={now} />
+      <p className="text-sm text-slate-300 mb-1">
+        <span className="text-slate-400">Envió su predicción para </span>
+        {match
+          ? <Link href={`/matches/${match.id}`} className="text-yellow-400 hover:underline font-medium">{match.home_team} vs {match.away_team}</Link>
+          : <span>un partido</span>
+        }
+        {score && <span className="text-slate-400"> · <span className="text-white font-bold">{score}</span></span>}
+        {!score && !isLocked && <span className="text-xs text-slate-500 ml-1">(oculto hasta el inicio)</span>}
+      </p>
       <PostInteractions
         eventId={item.id}
         userId={userId}
@@ -217,21 +221,21 @@ function ResultPost({ item, userId, now }: { item: ActivityPost; userId: string;
   const match = item.matches
   return (
     <div className="bg-slate-800 rounded-2xl p-4">
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3 mb-3">
         <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
           <Trophy className="w-4 h-4 text-green-400" />
         </div>
-        <div className="flex-1">
-          <p className="text-xs text-slate-400 mb-2">Resultado final</p>
-          <div className="flex items-center gap-3">
-            {match && <img src={match.home_team_flag ?? ''} alt="" className="w-6 h-6 object-contain" />}
-            <span className="text-sm font-medium">{m.home_team}</span>
-            <span className="text-xl font-black text-yellow-400">{m.home_score} - {m.away_score}</span>
-            <span className="text-sm font-medium">{m.away_team}</span>
-            {match && <img src={match.away_team_flag ?? ''} alt="" className="w-6 h-6 object-contain" />}
-          </div>
-          <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
+        <div>
+          <p className="text-sm font-semibold text-white">Resultado final</p>
+          <p suppressHydrationWarning className="text-xs text-slate-500">{timeAgo(item.created_at, now)}</p>
         </div>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        {match?.home_team_flag?.startsWith('http') && <img src={match.home_team_flag} alt="" className="w-5 h-5 object-contain shrink-0" />}
+        <span className="font-medium truncate">{m.home_team}</span>
+        <span className="text-lg font-black text-yellow-400 shrink-0">{m.home_score} - {m.away_score}</span>
+        <span className="font-medium truncate">{m.away_team}</span>
+        {match?.away_team_flag?.startsWith('http') && <img src={match.away_team_flag} alt="" className="w-5 h-5 object-contain shrink-0" />}
       </div>
       <PostInteractions
         eventId={item.id}
@@ -246,30 +250,14 @@ function ResultPost({ item, userId, now }: { item: ActivityPost; userId: string;
 function LeagueJoinPost({ item, userId, now }: { item: ActivityPost; userId: string; now: string }) {
   return (
     <div className="bg-slate-800 rounded-2xl p-4">
-      <div className="flex gap-3">
-        <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
-          <UserPlus className="w-4 h-4 text-purple-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <UserAvatar
-                username={item.profiles?.username ?? ''}
-                avatarUrl={item.profiles?.avatar_url}
-                size="sm"
-                linkable={false}
-              />
-              <span className="font-semibold text-white truncate">{item.profiles?.username ?? 'Usuario'}</span>
-            </div>
-            <span className="text-slate-400">se unió a la liga</span>
-            {item.leagues
-              ? <Link href={`/leagues/${item.league_id}`} className="text-yellow-400 hover:underline font-medium min-w-0 truncate">{item.leagues.name}</Link>
-              : <span className="text-slate-300">una liga</span>
-            }
-          </div>
-          <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
-        </div>
-      </div>
+      <ActivityHeader item={item} now={now} />
+      <p className="text-sm text-slate-300 mb-1">
+        <span className="text-slate-400">Se unió a la liga </span>
+        {item.leagues
+          ? <Link href={`/leagues/${item.league_id}`} className="text-yellow-400 hover:underline font-medium">{item.leagues.name}</Link>
+          : <span>una liga</span>
+        }
+      </p>
       <PostInteractions
         eventId={item.id}
         userId={userId}

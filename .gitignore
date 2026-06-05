@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Capacitor — no subir builds nativos al repo
+android/
+ios/
+
 # Build outputs
 .next/
 out/
