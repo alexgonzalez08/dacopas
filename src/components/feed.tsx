@@ -3,6 +3,7 @@ import { formatDistanceToNow, differenceInHours, differenceInMinutes, format } f
 import { es } from 'date-fns/locale'
 import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight } from 'lucide-react'
 import PostInteractions from './post-interactions'
+import UserPostCard from './user-post-card'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,20 @@ type ActivityPost = {
   sortDate: Date
 }
 
-export type FeedItem = MatchPost | ActivityPost
+type UserPostItem = {
+  kind: 'user_post'
+  id: string
+  user_id: string
+  content: string | null
+  image_url: string | null
+  created_at: string
+  profiles?: { username: string } | null
+  post_reactions?: { id: string; emoji: string; user_id: string }[]
+  post_comments?: { id: string; content: string; user_id: string; created_at: string; profiles?: { username: string } }[]
+  sortDate: Date
+}
+
+export type FeedItem = MatchPost | ActivityPost | UserPostItem
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -248,7 +262,15 @@ function LeagueJoinPost({ item, userId }: { item: ActivityPost; userId: string }
 
 // ─── Feed principal ───────────────────────────────────────────────────────────
 
-export default function Feed({ items, userId }: { items: FeedItem[]; userId: string }) {
+export default function Feed({
+  items,
+  userId,
+  onDeletePost,
+}: {
+  items: FeedItem[]
+  userId: string
+  onDeletePost?: (id: string) => void
+}) {
   if (items.length === 0) {
     return (
       <div className="text-center py-12 text-slate-500">
@@ -262,9 +284,20 @@ export default function Feed({ items, userId }: { items: FeedItem[]; userId: str
     <div className="space-y-3">
       {items.map(item => {
         if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} />
-        if (item.type === 'prediction') return <PredictionPost key={item.id} item={item as ActivityPost} userId={userId} />
-        if (item.type === 'result') return <ResultPost key={item.id} item={item as ActivityPost} userId={userId} />
-        if (item.type === 'league_join') return <LeagueJoinPost key={item.id} item={item as ActivityPost} userId={userId} />
+        if (item.kind === 'user_post') return (
+          <UserPostCard
+            key={item.id}
+            post={item as any}
+            userId={userId}
+            onDelete={onDeletePost ?? (() => {})}
+          />
+        )
+        if (item.kind === 'activity') {
+          const a = item as ActivityPost
+          if (a.type === 'prediction') return <PredictionPost key={a.id} item={a} userId={userId} />
+          if (a.type === 'result') return <ResultPost key={a.id} item={a} userId={userId} />
+          if (a.type === 'league_join') return <LeagueJoinPost key={a.id} item={a} userId={userId} />
+        }
         return null
       })}
     </div>
