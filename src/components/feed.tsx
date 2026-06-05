@@ -33,7 +33,7 @@ type ActivityPost = {
   match_id: number | null
   league_id: string | null
   metadata: Record<string, any>
-  profiles?: { username: string } | null
+  profiles?: { username: string; avatar_url?: string | null } | null
   matches?: {
     id: number
     home_team: string
@@ -55,7 +55,7 @@ type UserPostItem = {
   content: string | null
   image_url: string | null
   created_at: string
-  profiles?: { username: string } | null
+  profiles?: { username: string; full_name?: string | null; avatar_url?: string | null } | null
   post_reactions?: { id: string; emoji: string; user_id: string }[]
   post_comments?: { id: string; content: string; user_id: string; created_at: string; profiles?: { username: string } }[]
   sortDate: Date
@@ -180,17 +180,25 @@ function PredictionPost({ item, userId, now }: { item: ActivityPost; userId: str
         <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
           <Star className="w-4 h-4 text-blue-400" />
         </div>
-        <div className="flex-1">
-          <p className="text-sm flex flex-wrap items-center gap-1">
-            <UserAvatar username={item.profiles?.username ?? ''} size="sm" showName />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <UserAvatar
+                username={item.profiles?.username ?? ''}
+                avatarUrl={item.profiles?.avatar_url}
+                size="sm"
+                linkable={false}
+              />
+              <span className="font-semibold text-white truncate">{item.profiles?.username ?? 'Usuario'}</span>
+            </div>
             <span className="text-slate-400">envió su predicción para</span>
             {match
-              ? <Link href={`/matches/${match.id}`} className="text-yellow-400 hover:underline font-medium">{match.home_team} vs {match.away_team}</Link>
+              ? <Link href={`/matches/${match.id}`} className="text-yellow-400 hover:underline font-medium min-w-0 truncate">{match.home_team} vs {match.away_team}</Link>
               : <span className="text-slate-300">un partido</span>
             }
             {score && <span className="text-slate-400">· <span className="text-white font-bold">{score}</span></span>}
             {!score && isLocked === false && <span className="text-xs text-slate-500">(oculto hasta el inicio)</span>}
-          </p>
+          </div>
           <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
         </div>
       </div>
@@ -242,15 +250,23 @@ function LeagueJoinPost({ item, userId, now }: { item: ActivityPost; userId: str
         <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
           <UserPlus className="w-4 h-4 text-purple-400" />
         </div>
-        <div className="flex-1">
-          <p className="text-sm flex flex-wrap items-center gap-1">
-            <UserAvatar username={item.profiles?.username ?? ''} size="sm" showName />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <UserAvatar
+                username={item.profiles?.username ?? ''}
+                avatarUrl={item.profiles?.avatar_url}
+                size="sm"
+                linkable={false}
+              />
+              <span className="font-semibold text-white truncate">{item.profiles?.username ?? 'Usuario'}</span>
+            </div>
             <span className="text-slate-400">se unió a la liga</span>
             {item.leagues
-              ? <Link href={`/leagues/${item.league_id}`} className="text-yellow-400 hover:underline font-medium">{item.leagues.name}</Link>
+              ? <Link href={`/leagues/${item.league_id}`} className="text-yellow-400 hover:underline font-medium min-w-0 truncate">{item.leagues.name}</Link>
               : <span className="text-slate-300">una liga</span>
             }
-          </p>
+          </div>
           <p suppressHydrationWarning className="text-xs text-slate-500 mt-1">{timeAgo(item.created_at, now)}</p>
         </div>
       </div>

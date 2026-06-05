@@ -11,9 +11,9 @@ type Props = {
 }
 
 const sizes = {
-  sm: 'w-7 h-7 text-xs',
-  md: 'w-9 h-9 text-sm',
-  lg: 'w-12 h-12 text-base',
+  sm: 'flex-none w-7 h-7 text-xs',
+  md: 'flex-none w-9 h-9 text-sm',
+  lg: 'flex-none w-12 h-12 text-base',
 }
 
 export default function UserAvatar({
@@ -31,8 +31,8 @@ export default function UserAvatar({
   const avatar = (
     <div className={`${sizeClass} rounded-full overflow-hidden bg-slate-700 flex items-center justify-center font-bold text-slate-300 uppercase shrink-0`}>
       {avatarUrl
-        ? <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-        : displayName?.[0] ?? '?'
+        ? <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover block" />
+        : <span className="leading-none">{displayName?.[0] ?? '?'}</span>
       }
     </div>
   )
@@ -47,7 +47,7 @@ export default function UserAvatar({
   )
 
   const inner = (
-    <div className="flex items-center gap-2">
+    <div className="inline-flex items-center gap-2">
       {avatar}
       {nameEl}
     </div>

@@ -62,7 +62,7 @@ export default function CreatePost({
       const { data, error: insertError } = await supabase
         .from('user_posts')
         .insert({ user_id: userId, content: content.trim() || null, image_url })
-        .select('*, profiles(username), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username))')
+        .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username))')
         .single()
 
       if (insertError) throw insertError
@@ -80,8 +80,8 @@ export default function CreatePost({
   const canPost = (content.trim().length > 0 || image !== null) && !loading
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl p-4 space-y-3">
-      <div className="flex gap-3">
+    <form onSubmit={handleSubmit} className="w-full bg-slate-800 rounded-2xl p-4 space-y-3">
+      <div className="flex gap-3 min-w-0">
         <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-700 shrink-0 flex items-center justify-center text-sm font-bold text-slate-300 uppercase">
           {avatarUrl
             ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
@@ -94,7 +94,7 @@ export default function CreatePost({
           placeholder="¿Qué estás pensando?"
           maxLength={500}
           rows={2}
-          className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none focus:outline-none"
+          className="flex-1 min-w-0 bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none focus:outline-none"
         />
       </div>
 
@@ -115,8 +115,8 @@ export default function CreatePost({
       {error && <p className="text-xs text-red-400">{error}</p>}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-1 border-t border-slate-700">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1 border-t border-slate-700">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}

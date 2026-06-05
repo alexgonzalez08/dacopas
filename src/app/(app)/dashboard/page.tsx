@@ -26,10 +26,10 @@ export default async function DashboardPage() {
       .from('league_members')
       .select('user_id')
       .in('league_id', leagueIds)
-    friendIds = [...new Set((members ?? []).map(m => m.user_id))]
+    friendIds = [...new Set((members ?? []).map(m => m.user_id))].filter(id => id !== user!.id)
   }
 
-  const FEED_SELECT = '*, profiles(username), matches(id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, match_date), leagues(name), feed_reactions(id, emoji, user_id, profiles(username)), feed_comments(id, content, user_id, created_at, profiles(username))'
+  const FEED_SELECT = '*, profiles(username, avatar_url), matches(id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, match_date), leagues(name), feed_reactions(id, emoji, user_id, profiles(username)), feed_comments(id, content, user_id, created_at, profiles(username))'
 
   const [
     { data: allUpcoming },
@@ -60,20 +60,13 @@ export default async function DashboardPage() {
       .eq('type', 'result')
       .order('created_at', { ascending: false })
       .limit(10),
-    // Posts de usuarios en ligas compartidas
-    friendIds.length > 0
-      ? supabase
-          .from('user_posts')
-          .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
-          .in('user_id', friendIds)
-          .order('created_at', { ascending: false })
-          .limit(20)
-      : supabase
-          .from('user_posts')
-          .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
-          .eq('user_id', user!.id)
-          .order('created_at', { ascending: false })
-          .limit(20),
+    // Posts propios + de amigos en ligas compartidas
+    supabase
+      .from('user_posts')
+      .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
+      .in('user_id', [user!.id, ...friendIds])
+      .order('created_at', { ascending: false })
+      .limit(30),
   ])
 
   const predMap = new Map((predictions ?? []).map(p => [p.match_id, p]))
@@ -128,6 +121,7 @@ export default async function DashboardPage() {
       avatarUrl={profile?.avatar_url ?? null}
       initialFeed={feed}
       serverNow={serverNow}
+      hasLeagues={leagueIds.length > 0}
     />
   )
 }
