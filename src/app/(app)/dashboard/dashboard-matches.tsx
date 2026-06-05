@@ -5,7 +5,8 @@ import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Lock, Clock, CheckCircle, Info } from 'lucide-react'
+import { Lock, Clock, CheckCircle, Info, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
 type MatchWithPrediction = Match & { prediction: Prediction | null }
 
@@ -178,19 +179,27 @@ export default function DashboardMatches({
                     </span>
                   </div>
 
-                  {/* Botón guardar */}
-                  {!locked && (
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-xs text-red-400">{errors[match.id]}</span>
-                      <button
-                        onClick={() => handleSave(match)}
-                        disabled={saving[match.id]}
-                        className="px-4 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
-                      >
-                        {saving[match.id] ? 'Guardando...' : saved[match.id] ? '✓ Guardado' : 'Guardar'}
-                      </button>
-                    </div>
-                  )}
+                  {/* Botón guardar + ver más */}
+                  <div className="mt-3 flex items-center justify-between">
+                    <Link
+                      href={`/matches/${match.id}`}
+                      className="flex items-center gap-1 text-xs text-slate-400 hover:text-yellow-400 transition"
+                    >
+                      Ver más <ChevronRight className="w-3 h-3" />
+                    </Link>
+                    {!locked && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-red-400">{errors[match.id]}</span>
+                        <button
+                          onClick={() => handleSave(match)}
+                          disabled={saving[match.id]}
+                          className="px-4 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                        >
+                          {saving[match.id] ? 'Guardando...' : saved[match.id] ? '✓ Guardado' : 'Guardar'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             })}
