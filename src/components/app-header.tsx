@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Trophy, LogOut, LayoutDashboard, Star, Users, Menu, X, UserCircle } from 'lucide-react'
+import { Trophy, LogOut, LayoutDashboard, Star, Users, Menu, X, UserCircle, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Ligas', icon: Users },
+  { href: '/friends', label: 'Seguidores', icon: UserPlus },
   { href: '/profile', label: 'Mi Perfil', icon: UserCircle },
 ]
 

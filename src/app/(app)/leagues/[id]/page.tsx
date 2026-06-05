@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Medal } from 'lucide-react'
 import CopyButton from './copy-button'
+import InviteFriends from './invite-friends'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -24,6 +25,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     .single()
 
   if (!member) notFound()
+
+  // Amigos que no están en la liga
+  const { data: friendships } = await supabase
+    .from('friendships')
+    .select('requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url)')
+    .eq('status', 'accepted')
+    .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
 
   const [{ data: members }, { data: points }] = await Promise.all([
     supabase
@@ -48,6 +56,11 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     }))
     .sort((a, b) => b.points - a.points)
 
+  const memberUserIds = new Set((members ?? []).map(m => m.user_id))
+  const friendsNotInLeague = (friendships ?? [])
+    .map(f => ((f.requester as any)?.id === user!.id ? f.addressee : f.requester) as any)
+    .filter((p: any) => p != null && !memberUserIds.has(p.id)) as { id: string; username: string; full_name: string | null; avatar_url: string | null }[]
+
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
 
   return (
@@ -61,6 +74,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         </div>
         <CopyButton code={league.code} />
       </div>
+
+      {friendsNotInLeague.length > 0 && (
+        <InviteFriends leagueId={id} leagueCode={league.code} friends={friendsNotInLeague} />
+      )}
 
       <div>
         <h2 className="font-semibold mb-3 text-slate-300">Tabla de posiciones</h2>
