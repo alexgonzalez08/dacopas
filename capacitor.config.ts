@@ -1,11 +1,11 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'com.myscore.app',
-  appName: 'MyScore FootApp',
+  appId: 'com.dacopas.app',
+  appName: 'Dacopas',
   // Apunta a la app en producción — sin necesidad de export estático
   server: {
-    url: 'https://my-score-app-psi.vercel.app',
+    url: 'https://dacopas.vercel.app',
     cleartext: false,
   },
   ios: {

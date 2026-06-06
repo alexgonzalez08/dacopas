@@ -2,12 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MyScore FootApp",
+  title: "Dacopas",
   description: "Predecí los resultados del Mundial 2026 con tus amigos",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "MyScore",
+    title: "Dacopas",
   },
   formatDetection: { telephone: false },
 };

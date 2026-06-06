@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-col min-h-screen">
-      <AppHeader username={profile?.username ?? ''} avatarUrl={profile?.avatar_url} />
+      <AppHeader username={profile?.username ?? ''} avatarUrl={profile?.avatar_url} userId={user.id} />
       <main className="flex-1 px-4 py-6 max-w-3xl mx-auto w-full">{children}</main>
     </div>
   )

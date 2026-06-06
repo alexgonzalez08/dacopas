@@ -10,7 +10,7 @@ export default function WelcomeCard({ username }: { username: string }) {
           ⚽
         </div>
         <div>
-          <p className="text-sm font-semibold text-white">MyScore FootApp</p>
+          <p className="text-sm font-semibold text-white">Dacopas</p>
           <p className="text-xs text-yellow-400">Bienvenido/a 🎉</p>
         </div>
       </div>
@@ -21,7 +21,7 @@ export default function WelcomeCard({ username }: { username: string }) {
           ¡Hola, {username}! 👋
         </h2>
         <p className="text-sm text-slate-300 leading-relaxed mb-4">
-          Bienvenido/a a <span className="text-yellow-400 font-semibold">MyScore</span> — ya estamos listos para divertirnos prediciendo los resultados del Mundial 2026 con tus amigos.
+          Bienvenido/a a <span className="text-yellow-400 font-semibold">Dacopas</span> — ya estamos listos para divertirnos prediciendo los resultados del Mundial 2026 con tus amigos.
         </p>
 
         <div className="bg-slate-700/50 rounded-xl p-4 mb-4 space-y-3">
