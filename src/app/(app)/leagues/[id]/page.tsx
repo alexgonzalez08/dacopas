@@ -6,6 +6,7 @@ import CopyButton from './copy-button'
 import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
+import EditLeague from './edit-league'
 
 const adminSupabase = createAdmin(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -257,7 +258,17 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               Código: <span className="font-mono font-semibold text-yellow-400">{league.code}</span>
             </p>
           </div>
-          <CopyButton code={league.code} />
+          <div className="flex items-center gap-2 shrink-0">
+            {userRole === 'admin' && (
+              <EditLeague
+                leagueId={id}
+                initialName={league.name}
+                initialDescription={league.description ?? null}
+                initialImageUrl={league.image_url ?? null}
+              />
+            )}
+            <CopyButton code={league.code} />
+          </div>
         </div>
       </div>
 
