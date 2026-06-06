@@ -124,7 +124,7 @@ export default function RegisterPage() {
             <input
               type="text"
               value={alias}
-              onChange={e => setAlias(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+              onChange={e => setAlias(e.target.value.replace(/\s+/g, '_'))}
               required
               minLength={3}
               maxLength={20}
