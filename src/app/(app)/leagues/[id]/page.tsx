@@ -1,10 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdmin } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import { Medal } from 'lucide-react'
 import CopyButton from './copy-button'
 import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
+
+const adminSupabase = createAdmin(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -45,14 +51,25 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     const invite = invites?.find(n => n.metadata?.league_id === id) ?? null
     if (!invite) notFound()
 
-    // Vista de invitado — mostrar leaderboard y banner de aceptar/declinar
-    const { data: points } = await supabase
+    // Vista de invitado — usar adminSupabase para bypassear RLS en queries de solo lectura
+    const { data: guestMembers } = await adminSupabase
+      .from('league_members')
+      .select('user_id, role, profiles(username, full_name, avatar_url)')
+      .eq('league_id', id)
+      .is('left_at', null)
+
+    const guestMemberList = (guestMembers ?? []).map(m => ({
+      user_id: m.user_id,
+      profiles: (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { username: string } | null,
+    }))
+
+    const { data: points } = await adminSupabase
       .from('league_points')
       .select('user_id, points, exact_results, correct_winner')
       .eq('league_id', id)
 
     const pointsMap = new Map((points ?? []).map(p => [p.user_id, p]))
-    const leaderboard = members
+    const leaderboard = guestMemberList
       .map(m => ({
         user_id: m.user_id,
         username: m.profiles?.username ?? 'Usuario',
