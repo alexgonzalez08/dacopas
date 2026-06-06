@@ -274,7 +274,7 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
 
       {/* Modal: Crear torneo */}
       {modal === 'create' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
           <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
               <h2 className="font-bold text-white flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-400" /> Crear torneo</h2>
@@ -320,7 +320,7 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
 
       {/* Modal: Unirse a torneo */}
       {modal === 'join' && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
           <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
               <h2 className="font-bold text-white flex items-center gap-2"><Hash className="w-4 h-4 text-yellow-400" /> Unirse a torneo</h2>
