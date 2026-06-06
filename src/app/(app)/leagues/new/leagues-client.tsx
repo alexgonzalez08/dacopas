@@ -60,7 +60,7 @@ export default function LeaguesClient({ leagues }: { leagues: League[] }) {
     return (
       <div className="max-w-sm mx-auto text-center space-y-4 mt-8">
         <Trophy className="w-12 h-12 text-yellow-400 mx-auto" />
-        <h2 className="text-xl font-bold">¡Liga creada!</h2>
+        <h2 className="text-xl font-bold">¡Torneo creado!</h2>
         <p className="text-slate-400">Compartí este código con tus amigos:</p>
         <div className="flex items-center gap-3 bg-slate-800 rounded-xl px-4 py-3">
           <span className="text-3xl font-bold tracking-widest text-yellow-400 flex-1">{created.code}</span>
@@ -85,7 +85,7 @@ export default function LeaguesClient({ leagues }: { leagues: League[] }) {
               onClick={() => { setTab(t); setError('') }}
               className={`flex-1 py-2.5 text-sm font-semibold transition ${tab === t ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
             >
-              {t === 'create' ? 'Crear liga' : 'Unirse a liga'}
+              {t === 'create' ? 'Crear torneo' : 'Unirse a torneo'}
             </button>
           ))}
         </div>
@@ -93,7 +93,7 @@ export default function LeaguesClient({ leagues }: { leagues: League[] }) {
         {tab === 'create' ? (
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Nombre de la liga</label>
+              <label className="block text-sm text-slate-400 mb-1">Nombre del torneo</label>
               <input
                 type="text"
                 value={name}
@@ -105,13 +105,13 @@ export default function LeaguesClient({ leagues }: { leagues: League[] }) {
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" disabled={loading} className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
-              {loading ? 'Creando...' : 'Crear liga'}
+              {loading ? 'Creando...' : 'Crear torneo'}
             </button>
           </form>
         ) : (
           <form onSubmit={handleJoin} className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Código de la liga</label>
+              <label className="block text-sm text-slate-400 mb-1">Código del torneo</label>
               <input
                 type="text"
                 value={code}
@@ -132,7 +132,7 @@ export default function LeaguesClient({ leagues }: { leagues: League[] }) {
 
       {leagues.length > 0 && (
         <div>
-          <h2 className="font-semibold text-slate-300 mb-3">Mis ligas</h2>
+          <h2 className="font-semibold text-slate-300 mb-3">Mis torneos</h2>
           <div className="space-y-2">
             {leagues.map(league => (
               <Link

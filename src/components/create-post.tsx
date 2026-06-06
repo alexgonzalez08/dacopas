@@ -90,8 +90,8 @@ export default function CreatePost({
 
   const canPost = (content.trim().length > 0 || image !== null) && !loading
   const visibilityLabel = visibility === 'leagues'
-    ? 'Todas mis ligas'
-    : (leagues.find(l => l.id === selectedLeague)?.name ?? 'Liga específica')
+    ? 'Todos mis torneos'
+    : (leagues.find(l => l.id === selectedLeague)?.name ?? 'Torneo específico')
 
   return (
     <form onSubmit={handleSubmit} className="bg-slate-800 rounded-2xl">
@@ -172,7 +172,7 @@ export default function CreatePost({
                   >
                     <Globe className="w-4 h-4 shrink-0" />
                     <div className="text-left min-w-0">
-                      <p className="font-medium">Todas mis ligas</p>
+                      <p className="font-medium">Todos mis torneos</p>
                       <p className="text-xs text-slate-400">Visible para todos</p>
                     </div>
                   </button>
@@ -186,7 +186,7 @@ export default function CreatePost({
                       <Lock className="w-4 h-4 shrink-0" />
                       <div className="text-left min-w-0">
                         <p className="font-medium truncate">{league.name}</p>
-                        <p className="text-xs text-slate-400">Solo esta liga</p>
+                        <p className="text-xs text-slate-400">Solo este torneo</p>
                       </div>
                     </button>
                   ))}

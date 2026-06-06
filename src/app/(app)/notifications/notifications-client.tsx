@@ -136,12 +136,12 @@ function NotificationItem({
           <div className="space-y-1.5">
             <p className="text-sm text-slate-200">
               <Link href={`/profile/${name}`} className="font-semibold text-white hover:text-yellow-400">@{name}</Link>
-              <span className="text-slate-400"> te invitó a la liga </span>
+              <span className="text-slate-400"> te invitó al torneo </span>
               <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
             </p>
             {isJoined ? (
               <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
-                <Check className="w-3.5 h-3.5" /> Te uniste a la liga
+                <Check className="w-3.5 h-3.5" /> Te uniste al torneo
               </span>
             ) : isDeclined ? (
               <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">

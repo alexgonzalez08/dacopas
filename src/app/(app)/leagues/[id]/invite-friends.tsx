@@ -42,8 +42,8 @@ export default function InviteFriends({
 
     sendPushNotification({
       toUserId: friend.id,
-      title: '¡Te invitaron a una liga!',
-      body: `Te invitaron a la liga "${leagueName}" en Dacopas`,
+      title: '¡Te invitaron a un torneo!',
+      body: `Te invitaron al torneo "${leagueName}" en Dacopas`,
       data: { url: `/leagues/new?join=1&code=${leagueCode}` },
     })
 
@@ -55,7 +55,7 @@ export default function InviteFriends({
     <div className="space-y-3">
       <h2 className="font-semibold text-slate-300 flex items-center gap-2">
         <UserPlus className="w-4 h-4 text-yellow-400" />
-        Invitar amigos
+        Invitar al torneo
       </h2>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {friends.map(friend => {

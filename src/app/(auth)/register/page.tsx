@@ -119,7 +119,7 @@ export default function RegisterPage() {
           {/* Alias */}
           <div>
             <label className="block text-sm text-slate-400 mb-1">
-              Alias <span className="text-slate-500 text-xs">(único, visible en las ligas)</span>
+              Alias <span className="text-slate-500 text-xs">(único, visible en los torneos)</span>
             </label>
             <input
               type="text"

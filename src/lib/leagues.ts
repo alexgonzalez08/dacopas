@@ -43,13 +43,13 @@ export async function joinLeague(code: string, userId: string) {
     .eq('code', code.toUpperCase())
     .single()
 
-  if (error || !league) throw new Error('Liga no encontrada')
+  if (error || !league) throw new Error('Torneo no encontrado')
 
   const { error: memberError } = await supabase
     .from('league_members')
     .insert({ league_id: league.id, user_id: userId })
 
-  if (memberError?.code === '23505') throw new Error('Ya estás en esta liga')
+  if (memberError?.code === '23505') throw new Error('Ya estás en este torneo')
   if (memberError) throw memberError
 
   return league

@@ -18,8 +18,8 @@ const STEPS = [
   },
   {
     emoji: '🏆',
-    title: () => 'Armá tu liga y ponele nombre',
-    text: `Creá una liga, poné el nombre que quieras — "Los Cracks del Laburo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. El que quede último paga el asado. O las birras. O los dos.`,
+    title: () => 'Armá tu torneo y ponele nombre',
+    text: `Creá un torneo, poné el nombre que quieras — "Los Cracks del Laburo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. El que quede último paga el asado. O las birras. O los dos.`,
   },
   {
     emoji: '🎯',
@@ -110,7 +110,7 @@ export default function WelcomeCard({ username }: { username: string }) {
               onClick={() => dismiss()}
               className="flex-1 py-2.5 text-sm font-semibold text-slate-900 bg-yellow-500 hover:bg-yellow-400 rounded-xl transition flex items-center justify-center gap-2"
             >
-              <Users className="w-4 h-4" /> Crear mi liga
+              <Users className="w-4 h-4" /> Crear mi torneo
             </Link>
           ) : (
             <button

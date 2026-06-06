@@ -252,10 +252,10 @@ function LeagueJoinPost({ item, userId, now }: { item: ActivityPost; userId: str
     <div className="bg-slate-800 rounded-2xl p-4">
       <ActivityHeader item={item} now={now} />
       <p className="text-sm text-slate-300 mb-1">
-        <span className="text-slate-400">Se unió a la liga </span>
+        <span className="text-slate-400">Se unió al torneo </span>
         {item.leagues
           ? <Link href={`/leagues/${item.league_id}`} className="text-yellow-400 hover:underline font-medium">{item.leagues.name}</Link>
-          : <span>una liga</span>
+          : <span>un torneo</span>
         }
       </p>
       <PostInteractions
@@ -285,7 +285,7 @@ export default function Feed({
     return (
       <div className="text-center py-12 text-slate-500">
         <p className="text-4xl mb-3">⚽</p>
-        <p className="text-sm">El feed está vacío. Unite a una liga para ver actividad.</p>
+        <p className="text-sm">El feed está vacío. Unite a un torneo para ver actividad.</p>
       </div>
     )
   }

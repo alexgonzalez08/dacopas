@@ -9,7 +9,7 @@ import WhistleIcon from '@/components/whistle-icon'
 const NAV_LINKS = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
-  { href: '/leagues/new', label: 'Ligas', icon: Users },
+  { href: '/leagues/new', label: 'Torneos', icon: Users },
   { href: '/friends', label: 'Amistades', icon: UserPlus },
   { href: '/profile', label: 'Mi Perfil', icon: UserCircle },
 ]

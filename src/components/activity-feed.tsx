@@ -100,7 +100,7 @@ function LeagueJoinEvent({ event }: { event: FeedEvent }) {
             <Link href={`/leagues/${event.league_id}`} className="text-yellow-400 hover:underline">
               {event.leagues.name}
             </Link>
-          ) : 'una liga'}
+          ) : 'un torneo'}
         </p>
         <p className="text-xs text-slate-500 mt-0.5">{timeAgo(event.created_at)}</p>
       </div>
