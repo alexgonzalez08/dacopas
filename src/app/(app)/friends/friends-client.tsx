@@ -32,7 +32,7 @@ export default function FriendsClient({
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [tab, setTab] = useState<'following' | 'followers' | 'requests'>('following')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
     const q = search.trim()
