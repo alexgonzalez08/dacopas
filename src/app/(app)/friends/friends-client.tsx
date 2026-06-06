@@ -84,6 +84,12 @@ export default function FriendsClient({
       setPending(p => [...p, data])
       setSearchResults(r => r.filter(u => u.id !== addresseeId))
       setShowDropdown(false)
+      // Notificar al destinatario
+      await supabase.from('notifications').insert({
+        user_id: addresseeId,
+        from_user_id: userId,
+        type: 'follow_request',
+      })
     }
     setLoadingId(null)
   }
@@ -100,6 +106,12 @@ export default function FriendsClient({
     if (data) {
       setRequests(r => r.filter(f => f.id !== friendshipId))
       setFollowers(f => [...f, data])
+      // Notificar al que envió la solicitud
+      await supabase.from('notifications').insert({
+        user_id: data.requester?.id,
+        from_user_id: userId,
+        type: 'follow_accepted',
+      })
     }
     setLoadingId(null)
   }

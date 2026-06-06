@@ -109,7 +109,7 @@ function MatchPost({ item, now }: { item: MatchPost; now: string }) {
           <span className="text-lg">⚽</span>
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-white">MyScore FootApp</p>
+          <p className="text-sm font-semibold text-white">Dacopas</p>
           <p className={`text-xs ${accent}`}>{label}</p>
         </div>
       </div>

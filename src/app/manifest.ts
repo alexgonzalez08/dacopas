@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MyScore FootApp',
-    short_name: 'MyScore',
+    name: 'Dacopas',
+    short_name: 'Dacopas',
     description: 'Predecí los resultados del Mundial 2026 con tus amigos',
     start_url: '/dashboard',
     display: 'standalone',

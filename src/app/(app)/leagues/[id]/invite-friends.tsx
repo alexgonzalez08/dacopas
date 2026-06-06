@@ -24,7 +24,7 @@ export default function InviteFriends({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'MyScore FootApp',
+          title: 'Dacopas',
           text: `¡Te invito a mi liga de pronósticos del Mundial 2026! Usá el código ${leagueCode} para unirte.`,
           url: `${window.location.origin}/leagues/new?join=1&code=${leagueCode}`,
         })
@@ -33,7 +33,7 @@ export default function InviteFriends({
     } else {
       // Fallback: copiar al portapapeles
       await navigator.clipboard.writeText(
-        `¡Te invito a mi liga de pronósticos! Entrá a MyScore y usá el código ${leagueCode} para unirte.`
+        `¡Te invito a mi liga de pronósticos! Entrá a Dacopas y usá el código ${leagueCode} para unirte.`
       )
       setInvited(s => new Set([...s, friend.id]))
     }
