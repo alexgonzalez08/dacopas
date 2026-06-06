@@ -17,7 +17,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: league } = await supabase
+  // Usar adminClient para leer el torneo — el usuario puede ser invitado (no miembro aún)
+  const { data: league } = await adminSupabase
     .from('leagues')
     .select('*')
     .eq('id', id)
