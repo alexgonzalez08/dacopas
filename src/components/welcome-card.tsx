@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { X, Users, ChevronRight } from 'lucide-react'
 
@@ -9,7 +9,7 @@ const STEPS = [
   {
     emoji: '🎉',
     title: (username: string) => `¡Bienvenido, ${username}!`,
-    text: `Entraste a Dacopas, el lugar donde los pibes se la juegan prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás listo para demostrar quién sabe más de fútbol en tu grupo?`,
+    text: `Entraste a Dacopas, el lugar donde los amigos se la juegan prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás listo para demostrar quién sabe más de fútbol en tu grupo?`,
   },
   {
     emoji: '👥',
@@ -19,28 +19,34 @@ const STEPS = [
   {
     emoji: '🏆',
     title: () => 'Armá tu torneo y ponele nombre',
-    text: `Creá un torneo, poné el nombre que quieras — "Los Cracks del Laburo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. El que quede último paga el asado. O las birras. O los dos.`,
+    text: `Creá un torneo, poné el nombre que quieras — "Los Cracks del Trabajo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. El que quede último paga la cuenta. O las cervezas. O los dos.`,
+  },
+  {
+    emoji: '👑',
+    title: () => 'Torneos con roles',
+    text: `Cada torneo tiene su jerarquía. El Admin crea e invita directamente. Los Moderadores pueden proponer invitados — el Admin aprueba. Y los Participantes a darle al pronóstico. También podés solicitar unirte a torneos de tus amigos.`,
   },
   {
     emoji: '🎯',
-    title: () => '¿Cómo se puntúa el pique?',
-    text: `Predecís el resultado exacto → 3 puntos. 🔥 Acertás quién gana → 1 punto. El que más puntos junte al final del Mundial se lleva la copa y los derechos eternos de joder a todos con que "yo lo sabía".`,
+    title: () => '¿Cómo se puntúa?',
+    text: `Predecís el resultado exacto → 3 puntos. 🔥 Acertás quién gana → 1 punto. El que más puntos junte al final del Mundial se lleva la copa y los derechos eternos de presumirles a todos que "yo lo sabía".`,
   },
   {
     emoji: '⏰',
     title: () => '¡No te quedés afuera!',
-    text: `Tus predicciones se cierran 15 minutos antes de cada partido. Así que nada de ver el gol y después decir que lo ibas a poner. El que llega tarde al pique, que se vaya a mirar tele solo.`,
+    text: `Tus predicciones se cierran 15 minutos antes de cada partido. Así que nada de ver el gol y después decir que lo ibas a poner. El que llega tarde al pronóstico, que se quede sin puntos.`,
   },
   {
     emoji: '🍺',
     title: () => '¡A disfrutar del fútbol!',
-    text: `Invitá a tus amigos, armá el grupo, hacé los piques y que el que pierda pague la ronda. El fútbol es mejor con amigos — y aún mejor cuando podés frotarles en la cara que acertaste el marcador exacto. ¡Dale Dacopas! 🏆`,
+    text: `Invitá a tus amigos, armá el torneo, hacé los pronósticos y que el que pierda pague la ronda. El fútbol es mejor con amigos — y aún mejor cuando podés frotarles en la cara que acertaste el marcador exacto. ¡Dale Dacopas! 🏆`,
   },
 ]
 
 export default function WelcomeCard({ username }: { username: string }) {
   const [step, setStep] = useState(0)
-  const [closed, setClosed] = useState(true) // empieza cerrado hasta verificar localStorage
+  const [closed, setClosed] = useState(true)
+  const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) setClosed(false)
@@ -51,6 +57,19 @@ export default function WelcomeCard({ username }: { username: string }) {
     setClosed(true)
   }
 
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const delta = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(delta) < 50) return // swipe mínimo de 50px
+    if (delta > 0 && step < STEPS.length - 1) setStep(s => s + 1) // swipe izquierda → siguiente
+    if (delta < 0 && step > 0) setStep(s => s - 1) // swipe derecha → anterior
+    touchStartX.current = null
+  }
+
   if (closed) return null
 
   const current = STEPS[step]
@@ -58,8 +77,11 @@ export default function WelcomeCard({ username }: { username: string }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
-
+      <div
+        className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
           <div className="flex items-center gap-2">
@@ -121,7 +143,6 @@ export default function WelcomeCard({ username }: { username: string }) {
             </button>
           )}
         </div>
-
       </div>
     </div>
   )
