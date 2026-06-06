@@ -12,6 +12,38 @@ export default async function NotificationsPage() {
     .order('created_at', { ascending: false })
     .limit(50)
 
+  // Ligas en las que ya es miembro
+  const { data: memberships } = await supabase
+    .from('league_members')
+    .select('league_id')
+    .eq('user_id', user!.id)
+  const joinedLeagueIds = new Set((memberships ?? []).map(m => m.league_id))
+
+  // Amistades aceptadas — para saber cuáles solicitudes ya fueron aceptadas
+  const { data: acceptedFriendships } = await supabase
+    .from('friendships')
+    .select('requester_id, addressee_id')
+    .eq('status', 'accepted')
+    .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
+  const friendIds = new Set((acceptedFriendships ?? []).map(f =>
+    f.requester_id === user!.id ? f.addressee_id : f.requester_id
+  ))
+
+  // Solicitudes declinadas o eliminadas — pendientes que ya no existen
+  const { data: pendingFriendships } = await supabase
+    .from('friendships')
+    .select('requester_id')
+    .eq('addressee_id', user!.id)
+    .eq('status', 'pending')
+  const pendingFromIds = new Set((pendingFriendships ?? []).map(f => f.requester_id))
+
+  const notificationsEnriched = (notifications ?? []).map(n => ({
+    ...n,
+    alreadyJoined: n.type === 'league_invite' ? joinedLeagueIds.has(n.metadata?.league_id) : false,
+    alreadyAccepted: n.type === 'follow_request' ? friendIds.has(n.from_user_id) : false,
+    alreadyDeclined: n.type === 'follow_request' ? !pendingFromIds.has(n.from_user_id) && !friendIds.has(n.from_user_id) : false,
+  }))
+
   // Marcar todas como leídas
   await supabase
     .from('notifications')
@@ -22,7 +54,7 @@ export default async function NotificationsPage() {
   return (
     <NotificationsClient
       userId={user!.id}
-      initialNotifications={notifications ?? []}
+      initialNotifications={notificationsEnriched}
     />
   )
 }

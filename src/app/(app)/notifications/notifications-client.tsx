@@ -1,12 +1,14 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserCheck, Check, Loader2 } from 'lucide-react'
+import { UserCheck, Check, Loader2, Users, Trash2, X, UserX } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import UserAvatar from '@/components/user-avatar'
 import WhistleIcon from '@/components/whistle-icon'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { joinLeague } from '@/lib/leagues'
 
 type Profile = { id: string; username: string; full_name: string | null; avatar_url: string | null }
 type Notification = {
@@ -15,7 +17,15 @@ type Notification = {
   read: boolean
   created_at: string
   from_user: Profile | null
+  from_user_id: string | null
   metadata: Record<string, any>
+  alreadyJoined?: boolean
+  alreadyAccepted?: boolean
+  alreadyDeclined?: boolean
+  // estados locales
+  accepted?: boolean
+  declined?: boolean
+  joined?: boolean
 }
 
 function timeAgo(date: string) {
@@ -33,6 +43,11 @@ function NotificationIcon({ type }: { type: string }) {
       <UserCheck className="w-4 h-4 text-green-400" />
     </div>
   )
+  if (type === 'league_invite') return (
+    <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+      <Users className="w-4 h-4 text-blue-400" />
+    </div>
+  )
   return (
     <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
       <WhistleIcon className="w-4 h-4 text-slate-400" />
@@ -41,16 +56,25 @@ function NotificationIcon({ type }: { type: string }) {
 }
 
 function NotificationItem({
-  notif,
-  onAccept,
-  accepting,
+  notif, onAccept, onDecline, accepting, declining,
+  onJoin, joining, joinError, onDelete, deleting,
 }: {
-  notif: Notification & { accepted?: boolean }
+  notif: Notification
   onAccept: (notif: Notification) => void
+  onDecline: (notif: Notification) => void
   accepting: string | null
+  declining: string | null
+  onJoin: (notif: Notification) => void
+  joining: string | null
+  joinError: string | null
+  onDelete: (id: string) => void
+  deleting: string | null
 }) {
   const user = notif.from_user
   const name = user?.username ?? 'Alguien'
+  const isJoined = notif.alreadyJoined || notif.joined
+  const isAccepted = notif.alreadyAccepted || notif.accepted
+  const isDeclined = notif.alreadyDeclined || notif.declined
 
   return (
     <div className={`flex items-start gap-3 px-4 py-3 rounded-xl transition ${
@@ -59,56 +83,96 @@ function NotificationItem({
       <NotificationIcon type={notif.type} />
 
       <div className="flex-1 min-w-0 space-y-1.5">
-        <div className="flex items-center gap-2">
-          {user && (
-            <UserAvatar
-              username={user.username}
-              fullName={user.full_name}
-              avatarUrl={user.avatar_url}
-              size="sm"
-            />
-          )}
-        </div>
+        {user && <UserAvatar username={user.username} fullName={user.full_name} avatarUrl={user.avatar_url} size="sm" />}
 
+        {/* Solicitud de amistad */}
         {notif.type === 'follow_request' && (
-          <p className="text-sm text-slate-200">
-            <Link href={`/profile/${name}`} className="font-semibold text-white hover:text-yellow-400">@{name}</Link>
-            <span className="text-slate-400"> te envió una solicitud de seguimiento</span>
-          </p>
+          <>
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${name}`} className="font-semibold text-white hover:text-yellow-400">@{name}</Link>
+              <span className="text-slate-400"> te envió una solicitud de amistad</span>
+            </p>
+            {isAccepted ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
+                <UserCheck className="w-3.5 h-3.5" /> Ya son amigos
+              </span>
+            ) : isDeclined ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <UserX className="w-3.5 h-3.5" /> Solicitud declinada
+              </span>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onAccept(notif)}
+                  disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                >
+                  {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  Aceptar
+                </button>
+                <button
+                  onClick={() => onDecline(notif)}
+                  disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition"
+                >
+                  {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                  Declinar
+                </button>
+              </div>
+            )}
+          </>
         )}
+
+        {/* Amistad aceptada */}
         {notif.type === 'follow_accepted' && (
           <p className="text-sm text-slate-200">
             <Link href={`/profile/${name}`} className="font-semibold text-white hover:text-yellow-400">@{name}</Link>
-            <span className="text-slate-400"> aceptó tu solicitud de seguimiento</span>
+            <span className="text-slate-400"> aceptó tu solicitud de amistad</span>
           </p>
         )}
 
-        <p className="text-xs text-slate-500">{timeAgo(notif.created_at)}</p>
+        {/* Invitación a liga */}
+        {notif.type === 'league_invite' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${name}`} className="font-semibold text-white hover:text-yellow-400">@{name}</Link>
+              <span className="text-slate-400"> te invitó a la liga </span>
+              <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+            </p>
+            {isJoined ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
+                <Check className="w-3.5 h-3.5" /> Ya sos miembro de esta liga
+              </span>
+            ) : (
+              <div className="space-y-1">
+                <button
+                  onClick={() => onJoin(notif)}
+                  disabled={joining === notif.id}
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 disabled:opacity-50 transition"
+                >
+                  {joining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
+                  Unirse a la liga
+                </button>
+                {joinError && joining !== notif.id && <p className="text-xs text-red-400">{joinError}</p>}
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Botón aceptar solicitud */}
-        {notif.type === 'follow_request' && !notif.accepted && (
-          <button
-            onClick={() => onAccept(notif)}
-            disabled={accepting === notif.id}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition mt-1"
-          >
-            {accepting === notif.id
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <Check className="w-3.5 h-3.5" />
-            }
-            Aceptar solicitud
-          </button>
-        )}
-        {notif.type === 'follow_request' && notif.accepted && (
-          <span className="flex items-center gap-1 text-xs text-green-400">
-            <UserCheck className="w-3.5 h-3.5" /> Solicitud aceptada
-          </span>
-        )}
+        <p className="text-xs text-slate-500">{timeAgo(notif.created_at)}</p>
       </div>
 
-      {!notif.read && (
-        <div className="w-2 h-2 rounded-full bg-yellow-400 shrink-0 mt-2" />
-      )}
+      <div className="flex items-center gap-1 shrink-0">
+        {!notif.read && <div className="w-2 h-2 rounded-full bg-yellow-400" />}
+        <button
+          onClick={() => onDelete(notif.id)}
+          disabled={deleting === notif.id}
+          className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-slate-700 rounded-lg transition"
+          title="Eliminar notificación"
+        >
+          {deleting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+        </button>
+      </div>
     </div>
   )
 }
@@ -120,29 +184,31 @@ export default function NotificationsClient({
   userId: string
   initialNotifications: Notification[]
 }) {
-  const [notifications, setNotifications] = useState<(Notification & { accepted?: boolean })[]>(initialNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
   const [accepting, setAccepting] = useState<string | null>(null)
+  const [declining, setDeclining] = useState<string | null>(null)
+  const [joining, setJoining] = useState<string | null>(null)
+  const [joinError, setJoinError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
+  const [clearingAll, setClearingAll] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const supabase = createClient()
     const channel = supabase
       .channel('notifications-page')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${userId}`,
-      }, async (payload) => {
-        const { data } = await supabase
-          .from('notifications')
-          .select('*, from_user:from_user_id(id, username, full_name, avatar_url)')
-          .eq('id', payload.new.id)
-          .single()
-        if (data) {
-          setNotifications(n => [{ ...data, accepted: false }, ...n])
-          await supabase.from('notifications').update({ read: true }).eq('id', data.id)
-        }
-      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        async (payload) => {
+          const { data } = await supabase
+            .from('notifications')
+            .select('*, from_user:from_user_id(id, username, full_name, avatar_url)')
+            .eq('id', payload.new.id)
+            .single()
+          if (data) {
+            setNotifications(n => [{ ...data, alreadyJoined: false, alreadyAccepted: false, alreadyDeclined: false }, ...n])
+            await supabase.from('notifications').update({ read: true }).eq('id', data.id)
+          }
+        })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [userId])
@@ -151,8 +217,6 @@ export default function NotificationsClient({
     if (!notif.from_user) return
     setAccepting(notif.id)
     const supabase = createClient()
-
-    // Buscar la friendship pendiente
     const { data: friendship } = await supabase
       .from('friendships')
       .select('id')
@@ -160,25 +224,63 @@ export default function NotificationsClient({
       .eq('addressee_id', userId)
       .eq('status', 'pending')
       .single()
-
     if (friendship) {
-      await supabase
-        .from('friendships')
-        .update({ status: 'accepted' })
-        .eq('id', friendship.id)
-
-      // Notificar al que envió la solicitud
+      await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendship.id)
       await supabase.from('notifications').insert({
         user_id: notif.from_user.id,
         from_user_id: userId,
         type: 'follow_accepted',
       })
-
-      setNotifications(prev =>
-        prev.map(n => n.id === notif.id ? { ...n, accepted: true } : n)
-      )
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
     }
     setAccepting(null)
+  }
+
+  async function handleDecline(notif: Notification) {
+    if (!notif.from_user) return
+    setDeclining(notif.id)
+    const supabase = createClient()
+    await supabase
+      .from('friendships')
+      .delete()
+      .eq('requester_id', notif.from_user.id)
+      .eq('addressee_id', userId)
+      .eq('status', 'pending')
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, declined: true, alreadyDeclined: true } : n))
+    setDeclining(null)
+  }
+
+  async function handleJoinLeague(notif: Notification) {
+    if (!notif.metadata?.league_code) return
+    setJoining(notif.id)
+    setJoinError(null)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      const league = await joinLeague(notif.metadata.league_code, user!.id)
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, joined: true, alreadyJoined: true } : n))
+      router.push(`/leagues/${league.id}`)
+    } catch (err: any) {
+      setJoinError(err.message)
+    } finally {
+      setJoining(null)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setDeleting(id)
+    const supabase = createClient()
+    await supabase.from('notifications').delete().eq('id', id)
+    setNotifications(prev => prev.filter(n => n.id !== id))
+    setDeleting(null)
+  }
+
+  async function handleClearAll() {
+    setClearingAll(true)
+    const supabase = createClient()
+    await supabase.from('notifications').delete().eq('user_id', userId)
+    setNotifications([])
+    setClearingAll(false)
   }
 
   return (
@@ -189,7 +291,14 @@ export default function NotificationsClient({
           Notificaciones
         </h1>
         {notifications.length > 0 && (
-          <span className="text-xs text-slate-500">{notifications.length} notificaciones</span>
+          <button
+            onClick={handleClearAll}
+            disabled={clearingAll}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition"
+          >
+            {clearingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Limpiar todo
+          </button>
         )}
       </div>
 
@@ -205,7 +314,14 @@ export default function NotificationsClient({
               key={notif.id}
               notif={notif}
               onAccept={handleAccept}
+              onDecline={handleDecline}
               accepting={accepting}
+              declining={declining}
+              onJoin={handleJoinLeague}
+              joining={joining}
+              joinError={joinError}
+              onDelete={handleDelete}
+              deleting={deleting}
             />
           ))}
         </div>

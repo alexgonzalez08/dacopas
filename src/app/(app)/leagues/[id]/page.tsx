@@ -76,7 +76,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       </div>
 
       {friendsNotInLeague.length > 0 && (
-        <InviteFriends leagueId={id} leagueCode={league.code} friends={friendsNotInLeague} />
+        <InviteFriends leagueId={id} leagueCode={league.code} leagueName={league.name} userId={user!.id} friends={friendsNotInLeague} />
       )}
 
       <div>

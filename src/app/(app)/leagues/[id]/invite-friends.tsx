@@ -2,16 +2,22 @@
 import { useState } from 'react'
 import UserAvatar from '@/components/user-avatar'
 import { UserPlus, Check, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { sendPushNotification } from '@/lib/push'
 
 type Friend = { id: string; username: string; full_name: string | null; avatar_url: string | null }
 
 export default function InviteFriends({
   leagueId,
   leagueCode,
+  leagueName,
+  userId,
   friends,
 }: {
   leagueId: string
   leagueCode: string
+  leagueName: string
+  userId: string
   friends: Friend[]
 }) {
   const [invited, setInvited] = useState<Set<string>>(new Set())
@@ -20,23 +26,29 @@ export default function InviteFriends({
 
   async function invite(friend: Friend) {
     setLoading(friend.id)
-    // Compartir el código por Web Share API si está disponible
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Dacopas',
-          text: `¡Te invito a mi liga de pronósticos del Mundial 2026! Usá el código ${leagueCode} para unirte.`,
-          url: `${window.location.origin}/leagues/new?join=1&code=${leagueCode}`,
-        })
-        setInvited(s => new Set([...s, friend.id]))
-      } catch {}
-    } else {
-      // Fallback: copiar al portapapeles
-      await navigator.clipboard.writeText(
-        `¡Te invito a mi liga de pronósticos! Entrá a Dacopas y usá el código ${leagueCode} para unirte.`
-      )
-      setInvited(s => new Set([...s, friend.id]))
-    }
+    const supabase = createClient()
+
+    // Insertar notificación de invitación a liga
+    await supabase.from('notifications').insert({
+      user_id: friend.id,
+      from_user_id: userId,
+      type: 'league_invite',
+      metadata: {
+        league_id: leagueId,
+        league_name: leagueName,
+        league_code: leagueCode,
+      },
+    })
+
+    // Push notification
+    sendPushNotification({
+      toUserId: friend.id,
+      title: '¡Te invitaron a una liga!',
+      body: `Te invitaron a la liga "${leagueName}" en Dacopas`,
+      data: { url: `/leagues/new?join=1&code=${leagueCode}` },
+    })
+
+    setInvited(s => new Set([...s, friend.id]))
     setLoading(null)
   }
 
@@ -46,7 +58,7 @@ export default function InviteFriends({
     <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
       <h2 className="font-semibold text-slate-300 flex items-center gap-2">
         <UserPlus className="w-4 h-4 text-yellow-400" />
-        Invitar seguidores a esta liga
+        Invitar amigos a esta liga
       </h2>
       <div className="space-y-2">
         {visible.map(friend => (

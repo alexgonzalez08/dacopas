@@ -1,8 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Feed, { FeedItem } from '@/components/feed'
 import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
+import { initPushNotifications } from '@/lib/push'
 
 type League = { id: string; name: string }
 
@@ -24,7 +25,11 @@ export default function DashboardClient({
   hasLeagues: boolean
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(initialFeed)
-  const [showWelcome, setShowWelcome] = useState(!hasLeagues)
+  const [showWelcome] = useState(true)
+
+  useEffect(() => {
+    initPushNotifications(userId)
+  }, [userId])
 
   function handleNewPost(post: any) {
     const newItem: FeedItem = {

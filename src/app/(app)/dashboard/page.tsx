@@ -21,14 +21,16 @@ export default async function DashboardPage() {
   const leagueIds = (memberships ?? []).map(m => m.league_id)
   const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string }] : [])
 
-  // Solo usuarios que el usuario actual sigue (él es el requester)
+  // Amigos en ambas direcciones
   const { data: friendships } = await supabase
     .from('friendships')
-    .select('addressee_id')
-    .eq('requester_id', user!.id)
+    .select('requester_id, addressee_id')
     .eq('status', 'accepted')
+    .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
 
-  const friendIds = (friendships ?? []).map(f => f.addressee_id)
+  const friendIds = (friendships ?? []).map(f =>
+    f.requester_id === user!.id ? f.addressee_id : f.requester_id
+  )
 
   const FEED_SELECT = '*, profiles(username, avatar_url), matches(id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, match_date), leagues(name), feed_reactions(id, emoji, user_id, profiles(username)), feed_comments(id, content, user_id, created_at, profiles(username))'
 
