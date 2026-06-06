@@ -28,11 +28,8 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      // Si es recovery, ir a reset-password
-      if (type === 'recovery') {
-        return NextResponse.redirect(`${origin}/reset-password`)
-      }
-      return NextResponse.redirect(`${origin}${next}`)
+      // Siempre redirigir a reset-password desde este callback (solo llega via recovery email)
+      return NextResponse.redirect(`${origin}/reset-password`)
     }
   }
 
