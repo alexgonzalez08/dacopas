@@ -1,69 +1,106 @@
 'use client'
-import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createLeague, joinLeague, leaveLeague } from '@/lib/leagues'
-import { Trophy, Copy, Check, ChevronRight, LogOut, X, Loader2 } from 'lucide-react'
+import { Trophy, Copy, Check, ChevronRight, LogOut, X, Loader2, Plus, Hash, ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { sendPushNotification } from '@/lib/push'
 
-type League = { id: string; name: string; code: string; role: string }
+type League = { id: string; name: string; code: string; role: string; image_url?: string | null }
 
 export default function LeaguesClient({ leagues: initial }: { leagues: League[] }) {
   const router = useRouter()
-  const params = useSearchParams()
-  const [tab, setTab] = useState<'create' | 'join'>(params.get('join') ? 'join' : 'create')
-  const [name, setName] = useState('')
-  const [code, setCode] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [created, setCreated] = useState<{ name: string; code: string } | null>(null)
-  const [copied, setCopied] = useState(false)
 
   const [leagues, setLeagues] = useState<League[]>(initial)
+  const [modal, setModal] = useState<'create' | 'join' | null>(null)
+
+  // Crear torneo
+  const [name, setName] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const imageRef = useRef<HTMLInputElement>(null)
+
+  // Unirse
+  const [code, setCode] = useState('')
+  const [joining, setJoining] = useState(false)
+  const [joinError, setJoinError] = useState('')
+
+  // Abandonar
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null)
   const [leaving, setLeaving] = useState<string | null>(null)
   const [leftMessage, setLeftMessage] = useState<string | null>(null)
   const [leaveError, setLeaveError] = useState<string | null>(null)
 
+  function closeModal() {
+    setModal(null)
+    setName(''); setImageFile(null); setImagePreview(null); setCreateError('')
+    setCode(''); setJoinError('')
+  }
+
+  function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true); setError('')
+    setCreating(true); setCreateError('')
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      const league = await createLeague(name, user!.id)
-      setCreated({ name: league.name, code: league.code })
+
+      let imageUrl: string | undefined
+      if (imageFile) {
+        const ext = imageFile.name.split('.').pop()
+        const path = `${user!.id}/${Date.now()}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('league-images')
+          .upload(path, imageFile, { upsert: true })
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage.from('league-images').getPublicUrl(path)
+          imageUrl = publicUrl
+        }
+      }
+
+      const league = await createLeague(name, user!.id, imageUrl)
+      closeModal()
+      router.push(`/leagues/${league.id}`)
     } catch (err: any) {
-      setError(err.message)
+      setCreateError(err.message)
     } finally {
-      setLoading(false)
+      setCreating(false)
     }
   }
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true); setError('')
+    setJoining(true); setJoinError('')
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       const league = await joinLeague(code, user!.id)
+      closeModal()
       router.push(`/leagues/${league.id}`)
     } catch (err: any) {
-      setError(err.message)
+      setJoinError(err.message)
     } finally {
-      setLoading(false)
+      setJoining(false)
     }
   }
 
   async function handleLeave(league: League) {
     setLeaving(league.id)
+    setLeaveError(null)
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       await leaveLeague(league.id, user!.id)
 
-      // Notificar a los admins
       const { data: admins } = await supabase
         .from('league_members')
         .select('user_id')
@@ -72,16 +109,11 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
         .is('left_at', null)
 
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user!.id)
-        .single()
+        .from('profiles').select('username').eq('id', user!.id).single()
 
       await Promise.all((admins ?? []).map(a =>
         supabase.from('notifications').insert({
-          user_id: a.user_id,
-          from_user_id: user!.id,
-          type: 'member_left',
+          user_id: a.user_id, from_user_id: user!.id, type: 'member_left',
           metadata: { league_id: league.id, league_name: league.name, username: profile?.username ?? '' },
         })
       ))
@@ -101,141 +133,170 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
     }
   }
 
-  function copyCode() {
-    if (!created) return
-    navigator.clipboard.writeText(created.code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  if (created) {
-    return (
-      <div className="max-w-sm mx-auto text-center space-y-4 mt-8">
-        <Trophy className="w-12 h-12 text-yellow-400 mx-auto" />
-        <h2 className="text-xl font-bold">¡Torneo creado!</h2>
-        <p className="text-slate-400">Compartí este código con tus amigos:</p>
-        <div className="flex items-center gap-3 bg-slate-800 rounded-xl px-4 py-3">
-          <span className="text-3xl font-bold tracking-widest text-yellow-400 flex-1">{created.code}</span>
-          <button onClick={copyCode} className="text-slate-400 hover:text-white">
-            {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+  return (
+    <div className="space-y-6">
+      {/* Encabezado con botones */}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Mis torneos</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setModal('join')}
+            className="flex items-center gap-1.5 text-sm px-3 py-2 bg-slate-800 text-slate-300 font-semibold rounded-xl hover:bg-slate-700 border border-slate-700 transition"
+          >
+            <Hash className="w-4 h-4" /> Unirse
+          </button>
+          <button
+            onClick={() => setModal('create')}
+            className="flex items-center gap-1.5 text-sm px-3 py-2 bg-yellow-500 text-slate-900 font-semibold rounded-xl hover:bg-yellow-400 transition"
+          >
+            <Plus className="w-4 h-4" /> Crear
           </button>
         </div>
-        <button onClick={() => router.push('/dashboard')} className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 transition">
-          Ir al dashboard
-        </button>
       </div>
-    )
-  }
 
-  return (
-    <div className="space-y-8">
-      <div className="max-w-sm mx-auto space-y-6">
-        <div className="flex rounded-xl overflow-hidden border border-slate-700">
-          {(['create', 'join'] as const).map(t => (
-            <button key={t} onClick={() => { setTab(t); setError('') }}
-              className={`flex-1 py-2.5 text-sm font-semibold transition ${tab === t ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>
-              {t === 'create' ? 'Crear torneo' : 'Unirse a torneo'}
-            </button>
+      {/* Lista de torneos */}
+      {leftMessage && (
+        <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-sm text-green-400">
+          <span>{leftMessage}</span>
+          <button onClick={() => setLeftMessage(null)}><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {leagues.length === 0 ? (
+        <div className="text-center py-16 text-slate-500">
+          <Trophy className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No estás en ningún torneo todavía.</p>
+          <p className="text-xs mt-1">Creá uno o uníte con un código.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {leagues.map(league => (
+            <div key={league.id}>
+              <div className="flex items-center bg-slate-800 rounded-xl overflow-hidden">
+                {league.image_url && (
+                  <img src={league.image_url} alt={league.name} className="w-12 h-12 object-cover shrink-0" />
+                )}
+                <Link
+                  href={`/leagues/${league.id}`}
+                  className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-slate-700 transition min-w-0"
+                >
+                  <span className="font-medium truncate">{league.name}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-mono text-slate-400">{league.code}</span>
+                    <ChevronRight className="w-4 h-4 text-slate-500" />
+                  </div>
+                </Link>
+                {league.role !== 'admin' && (
+                  <button
+                    onClick={() => { setConfirmLeave(league.id); setLeaveError(null) }}
+                    className="px-3 py-3 text-slate-600 hover:text-red-400 hover:bg-slate-700 transition border-l border-slate-700 shrink-0"
+                    title="Abandonar torneo"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {confirmLeave === league.id && (
+                <div className="mt-1 bg-slate-800 border border-red-500/30 rounded-xl px-4 py-3 space-y-3">
+                  <p className="text-sm text-slate-300">
+                    ¿Seguro que querés abandonar <span className="font-semibold text-white">"{league.name}"</span>?
+                    <span className="block text-xs text-slate-500 mt-1">No seguirás acumulando puntos en este torneo.</span>
+                  </p>
+                  {leaveError && <p className="text-xs text-red-400">{leaveError}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleLeave(league)}
+                      disabled={leaving === league.id}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 disabled:opacity-50 transition"
+                    >
+                      {leaving === league.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
+                      Sí, abandonar
+                    </button>
+                    <button
+                      onClick={() => { setConfirmLeave(null); setLeaveError(null) }}
+                      className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
+      )}
 
-        {tab === 'create' ? (
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Nombre del torneo</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required
-                placeholder="Ej: Los Pibes del Trabajo"
-                className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500" />
+      {/* Modal: Crear torneo */}
+      {modal === 'create' && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+          <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+              <h2 className="font-bold text-white flex items-center gap-2"><Trophy className="w-4 h-4 text-yellow-400" /> Crear torneo</h2>
+              <button onClick={closeModal} className="text-slate-500 hover:text-white transition"><X className="w-4 h-4" /></button>
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button type="submit" disabled={loading}
-              className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
-              {loading ? 'Creando...' : 'Crear torneo'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleJoin} className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Código del torneo</label>
-              <input type="text" value={code} onChange={e => setCode(e.target.value.toUpperCase())} required
-                placeholder="Ej: AB3XYZ" maxLength={6}
-                className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 uppercase tracking-widest text-lg font-bold" />
-            </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button type="submit" disabled={loading}
-              className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
-              {loading ? 'Uniéndose...' : 'Unirse'}
-            </button>
-          </form>
-        )}
-      </div>
-
-      {leagues.length > 0 && (
-        <div>
-          <h2 className="font-semibold text-slate-300 mb-3">Mis torneos</h2>
-
-          {leftMessage && (
-            <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 mb-3 text-sm text-green-400">
-              <span>{leftMessage}</span>
-              <button onClick={() => setLeftMessage(null)}>
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            {leagues.map(league => (
-              <div key={league.id}>
-                <div className="flex items-center bg-slate-800 rounded-xl overflow-hidden">
-                  <Link href={`/leagues/${league.id}`}
-                    className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-slate-700 transition">
-                    <span className="font-medium">{league.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-slate-400">{league.code}</span>
-                      <ChevronRight className="w-4 h-4 text-slate-500" />
-                    </div>
-                  </Link>
-                  {league.role !== 'admin' && (
-                    <button
-                      onClick={() => setConfirmLeave(league.id)}
-                      className="px-3 py-3 text-slate-600 hover:text-red-400 hover:bg-slate-700 transition border-l border-slate-700"
-                      title="Abandonar torneo"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Modal de confirmación inline */}
-                {confirmLeave === league.id && (
-                  <div className="mt-1 bg-slate-800 border border-red-500/30 rounded-xl px-4 py-3 space-y-3">
-                    <p className="text-sm text-slate-300">
-                      ¿Seguro que querés abandonar <span className="font-semibold text-white">"{league.name}"</span>?
-                      <span className="block text-xs text-slate-500 mt-1">No seguirás acumulando puntos en este torneo.</span>
-                    </p>
-                    {leaveError && <p className="text-xs text-red-400">{leaveError}</p>}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setLeaveError(null); handleLeave(league) }}
-                        disabled={leaving === league.id}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 disabled:opacity-50 transition"
-                      >
-                        {leaving === league.id
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <LogOut className="w-3.5 h-3.5" />}
-                        Sí, abandonar
-                      </button>
-                      <button
-                        onClick={() => { setConfirmLeave(null); setLeaveError(null) }}
-                        className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
+            <form onSubmit={handleCreate} className="p-4 space-y-4">
+              {/* Imagen opcional */}
+              <div
+                onClick={() => imageRef.current?.click()}
+                className="relative w-full h-32 rounded-xl border-2 border-dashed border-slate-700 hover:border-yellow-500/50 transition cursor-pointer overflow-hidden flex items-center justify-center bg-slate-800"
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-slate-500">
+                    <ImageIcon className="w-6 h-6" />
+                    <span className="text-xs">Imagen del torneo (opcional)</span>
                   </div>
                 )}
               </div>
-            ))}
+              <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Nombre del torneo</label>
+                <input
+                  type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus
+                  placeholder="Ej: Los Pibes del Trabajo"
+                  className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500"
+                />
+              </div>
+
+              {createError && <p className="text-red-400 text-sm">{createError}</p>}
+
+              <button type="submit" disabled={creating}
+                className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trophy className="w-4 h-4" />}
+                {creating ? 'Creando...' : 'Crear torneo'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Unirse a torneo */}
+      {modal === 'join' && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+          <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+              <h2 className="font-bold text-white flex items-center gap-2"><Hash className="w-4 h-4 text-yellow-400" /> Unirse a torneo</h2>
+              <button onClick={closeModal} className="text-slate-500 hover:text-white transition"><X className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleJoin} className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Código del torneo</label>
+                <input
+                  type="text" value={code} onChange={e => setCode(e.target.value.toUpperCase())} required autoFocus
+                  placeholder="Ej: AB3XYZ" maxLength={6}
+                  className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 uppercase tracking-widest text-xl font-bold text-center"
+                />
+              </div>
+              {joinError && <p className="text-red-400 text-sm">{joinError}</p>}
+              <button type="submit" disabled={joining}
+                className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Hash className="w-4 h-4" />}
+                {joining ? 'Uniéndose...' : 'Unirse al torneo'}
+              </button>
+            </form>
           </div>
         </div>
       )}

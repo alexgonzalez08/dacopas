@@ -15,14 +15,14 @@ async function ensureProfile(userId: string) {
   }, { onConflict: 'id', ignoreDuplicates: true })
 }
 
-export async function createLeague(name: string, userId: string) {
+export async function createLeague(name: string, userId: string, imageUrl?: string) {
   const supabase = createClient()
   await ensureProfile(userId)
   const code = generateCode()
 
   const { data: league, error } = await supabase
     .from('leagues')
-    .insert({ name, code, created_by: userId })
+    .insert({ name, code, created_by: userId, ...(imageUrl ? { image_url: imageUrl } : {}) })
     .select()
     .single()
 

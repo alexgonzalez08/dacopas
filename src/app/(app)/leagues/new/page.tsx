@@ -7,7 +7,7 @@ export default async function LeaguesPage() {
 
   const { data: memberships } = await supabase
     .from('league_members')
-    .select('role, leagues(id, name, code)')
+    .select('role, leagues(id, name, code, image_url)')
     .eq('user_id', user!.id)
     .is('left_at', null)
 
