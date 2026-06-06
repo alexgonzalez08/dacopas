@@ -8,13 +8,12 @@ import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import EditLeague from './edit-league'
 
-const adminSupabase = createAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const adminSupabase = createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
