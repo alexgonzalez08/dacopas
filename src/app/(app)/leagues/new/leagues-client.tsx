@@ -17,6 +17,7 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
 
   // Crear torneo
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -36,7 +37,7 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
 
   function closeModal() {
     setModal(null)
-    setName(''); setImageFile(null); setImagePreview(null); setCreateError('')
+    setName(''); setDescription(''); setImageFile(null); setImagePreview(null); setCreateError('')
     setCode(''); setJoinError('')
   }
 
@@ -67,7 +68,7 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
         }
       }
 
-      const league = await createLeague(name, user!.id, imageUrl)
+      const league = await createLeague(name, user!.id, imageUrl, description || undefined)
 
       // Feed event: anunciar creación del torneo
       await supabase.from('feed_events').insert({
@@ -303,6 +304,18 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
                   type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus
                   placeholder="Ej: Los Pibes del Trabajo"
                   className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">
+                  Descripción <span className="text-slate-600 text-xs">(opcional)</span>
+                </label>
+                <textarea
+                  value={description} onChange={e => setDescription(e.target.value)}
+                  placeholder="¿De qué trata este torneo? Contale a tus amigos..."
+                  rows={3} maxLength={300}
+                  className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 resize-none text-sm"
                 />
               </div>
 
