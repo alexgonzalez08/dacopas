@@ -87,49 +87,68 @@ export default function LeagueClient({
     setProcessingReq(req.notif_id)
     const supabase = createClient()
 
-    // Agregar al usuario como participante
-    await supabase.from('league_members').upsert(
-      { league_id: leagueId, user_id: req.target_user_id, role: 'participant' },
-      { onConflict: 'league_id,user_id', ignoreDuplicates: true }
-    )
+    // Verificar si el usuario ya es miembro (otro admin aprobó antes)
+    const { data: existing } = await supabase
+      .from('league_members')
+      .select('user_id, left_at')
+      .eq('league_id', leagueId)
+      .eq('user_id', req.target_user_id)
+      .maybeSingle()
 
-    // Eliminar la notificación del admin
-    await supabase.from('notifications').delete().eq('id', req.notif_id)
+    const alreadyMember = existing && !existing.left_at
 
-    // Notificar al moderador
-    await supabase.from('notifications').insert({
-      user_id: req.mod_user_id,
-      from_user_id: userId,
-      type: 'mod_invite_approved',
-      metadata: { league_id: leagueId, league_name: leagueName, target_username: req.target_username },
-    })
-    sendPushNotification({
-      toUserId: req.mod_user_id,
-      title: 'Solicitud aprobada',
-      body: `Tu solicitud para invitar a @${req.target_username} al torneo "${leagueName}" fue aprobada`,
-    })
+    if (!alreadyMember) {
+      await supabase.from('league_members').upsert(
+        { league_id: leagueId, user_id: req.target_user_id, role: 'participant' },
+        { onConflict: 'league_id,user_id', ignoreDuplicates: true }
+      )
 
-    // Notificar al usuario invitado con link al torneo
-    await supabase.from('notifications').insert({
-      user_id: req.target_user_id,
-      from_user_id: userId,
-      type: 'league_added',
-      metadata: { league_id: leagueId, league_name: leagueName },
-    })
-    sendPushNotification({
-      toUserId: req.target_user_id,
-      title: '¡Te agregaron a un torneo!',
-      body: `Fuiste agregado al torneo "${leagueName}" en Dacopas`,
-      data: { url: `/leagues/${leagueId}` },
-    })
+      await supabase.from('notifications').insert({
+        user_id: req.mod_user_id,
+        from_user_id: userId,
+        type: 'mod_invite_approved',
+        metadata: { league_id: leagueId, league_name: leagueName, target_username: req.target_username },
+      })
+      sendPushNotification({
+        toUserId: req.mod_user_id,
+        title: 'Solicitud aprobada',
+        body: `Tu solicitud para invitar a @${req.target_username} al torneo "${leagueName}" fue aprobada`,
+      })
 
-    // Actualizar UI: eliminar request y agregar nuevo miembro
-    setModRequests(prev => prev.filter(r => r.notif_id !== req.notif_id))
-    setMemberList(prev => [...prev, {
-      user_id: req.target_user_id,
-      role: 'participant',
-      profiles: { username: req.target_username, full_name: null, avatar_url: null },
-    }])
+      await supabase.from('notifications').insert({
+        user_id: req.target_user_id,
+        from_user_id: userId,
+        type: 'league_added',
+        metadata: { league_id: leagueId, league_name: leagueName },
+      })
+      sendPushNotification({
+        toUserId: req.target_user_id,
+        title: '¡Te agregaron a un torneo!',
+        body: `Fuiste agregado al torneo "${leagueName}" en Dacopas`,
+        data: { url: `/leagues/${leagueId}` },
+      })
+    }
+
+    // Eliminar TODAS las notificaciones mod_invite_request para este target en este torneo
+    const { data: allReqs } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('type', 'mod_invite_request')
+      .eq('metadata->>league_id', leagueId)
+      .eq('metadata->>target_user_id', req.target_user_id)
+    if (allReqs?.length) {
+      await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
+    }
+
+    // Actualizar UI
+    setModRequests(prev => prev.filter(r => r.target_user_id !== req.target_user_id))
+    if (!alreadyMember) {
+      setMemberList(prev => [...prev, {
+        user_id: req.target_user_id,
+        role: 'participant',
+        profiles: { username: req.target_username, full_name: null, avatar_url: null },
+      }])
+    }
     setProcessingReq(null)
   }
 
