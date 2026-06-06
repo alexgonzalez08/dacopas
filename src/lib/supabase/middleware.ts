@@ -21,6 +21,14 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // Si llega un code de Supabase (recovery, confirmation) redirigir al callback
+  const code = request.nextUrl.searchParams.get('code')
+  if (code && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+    const callbackUrl = new URL('/auth/callback', request.url)
+    callbackUrl.searchParams.set('code', code)
+    return NextResponse.redirect(callbackUrl)
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
