@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { leaveLeague } from '@/lib/leagues'
-import { Shield, ChevronDown, LogOut, Loader2, Crown, Users, Check, X, Bell } from 'lucide-react'
+import { Shield, ChevronDown, LogOut, Loader2, Crown, Users, Check, X, Bell, Medal, Trophy, LayoutList } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
 import { sendPushNotification } from '@/lib/push'
 import Link from 'next/link'
@@ -22,6 +22,13 @@ type ModRequest = {
   target_username: string
   league_code: string
 }
+type LeaderboardEntry = {
+  user_id: string
+  username: string
+  points: number
+  exact_results: number
+  correct_winner: number
+}
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: 'Admin',
@@ -34,6 +41,8 @@ const ROLE_COLORS: Record<Role, string> = {
   moderator: 'text-blue-400 bg-blue-400/10',
   participant: 'text-slate-400 bg-slate-700',
 }
+
+const MEDAL_COLORS = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
 
 function RoleBadge({ role }: { role: Role }) {
   return (
@@ -51,6 +60,7 @@ export default function LeagueClient({
   members: initialMembers,
   adminIds,
   modRequests: initialModRequests = [],
+  leaderboard: initialLeaderboard = [],
 }: {
   leagueId: string
   leagueName: string
@@ -59,10 +69,13 @@ export default function LeagueClient({
   members: Member[]
   adminIds: string[]
   modRequests?: ModRequest[]
+  leaderboard?: LeaderboardEntry[]
 }) {
   const router = useRouter()
+  const [tab, setTab] = useState<'gestion' | 'posiciones'>('posiciones')
   const [memberList, setMemberList] = useState(initialMembers)
   const [modRequests, setModRequests] = useState(initialModRequests)
+  const [leaderboard] = useState(initialLeaderboard)
   const [changingRole, setChangingRole] = useState<string | null>(null)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [processingReq, setProcessingReq] = useState<string | null>(null)
@@ -87,7 +100,6 @@ export default function LeagueClient({
     setProcessingReq(req.notif_id)
     const supabase = createClient()
 
-    // Verificar si el usuario ya es miembro (otro admin aprobó antes)
     const { data: existing } = await supabase
       .from('league_members')
       .select('user_id, left_at')
@@ -102,7 +114,6 @@ export default function LeagueClient({
         { league_id: leagueId, user_id: req.target_user_id, role: 'participant' },
         { onConflict: 'league_id,user_id', ignoreDuplicates: true }
       )
-
       await supabase.from('notifications').insert({
         user_id: req.mod_user_id,
         from_user_id: userId,
@@ -114,7 +125,6 @@ export default function LeagueClient({
         title: 'Solicitud aprobada',
         body: `Tu solicitud para invitar a @${req.target_username} al torneo "${leagueName}" fue aprobada`,
       })
-
       await supabase.from('notifications').insert({
         user_id: req.target_user_id,
         from_user_id: userId,
@@ -129,7 +139,7 @@ export default function LeagueClient({
       })
     }
 
-    // Eliminar TODAS las notificaciones mod_invite_request para este target en este torneo
+    // Eliminar TODAS las notificaciones mod_invite_request para este target
     const { data: allReqs } = await supabase
       .from('notifications')
       .select('id')
@@ -140,7 +150,6 @@ export default function LeagueClient({
       await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
     }
 
-    // Actualizar UI
     setModRequests(prev => prev.filter(r => r.target_user_id !== req.target_user_id))
     if (!alreadyMember) {
       setMemberList(prev => [...prev, {
@@ -156,10 +165,7 @@ export default function LeagueClient({
     setProcessingReq(req.notif_id)
     const supabase = createClient()
 
-    // Eliminar la notificación del admin
     await supabase.from('notifications').delete().eq('id', req.notif_id)
-
-    // Notificar solo al moderador
     await supabase.from('notifications').insert({
       user_id: req.mod_user_id,
       from_user_id: userId,
@@ -201,109 +207,168 @@ export default function LeagueClient({
     }
   }
 
-  return (
-    <div className="space-y-4">
+  // Vista con tabs — solo para admins
+  if (userRole === 'admin') {
+    const pendingCount = modRequests.length
+    return (
+      <div className="space-y-4">
+        {/* Tabs */}
+        <div className="flex rounded-xl overflow-hidden border border-slate-700">
+          <button
+            onClick={() => setTab('posiciones')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+          >
+            <Trophy className="w-4 h-4" /> Posiciones
+          </button>
+          <button
+            onClick={() => setTab('gestion')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition relative ${tab === 'gestion' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+          >
+            <LayoutList className="w-4 h-4" /> Gestión
+            {pendingCount > 0 && (
+              <span className="absolute top-1.5 right-3 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        </div>
 
-      {/* Solicitudes pendientes de moderadores — solo admin */}
-      {userRole === 'admin' && modRequests.length > 0 && (
-        <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
-          <h2 className="font-semibold text-slate-300 flex items-center gap-2">
-            <Bell className="w-4 h-4 text-purple-400" />
-            Solicitudes de invitación
-          </h2>
-          <div className="space-y-3">
-            {modRequests.map(req => (
-              <div key={req.notif_id} className="space-y-2">
-                <p className="text-sm text-slate-200">
-                  <span className="font-semibold text-white">@{req.mod_username}</span>
-                  <span className="text-slate-400"> quiere invitar a </span>
-                  <span className="font-semibold text-white">@{req.target_username}</span>
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleApproveRequest(req)}
-                    disabled={processingReq === req.notif_id}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
-                  >
-                    {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    Aprobar
-                  </button>
-                  <button
-                    onClick={() => handleDeclineRequest(req)}
-                    disabled={processingReq === req.notif_id}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition"
-                  >
-                    {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                    Rechazar
-                  </button>
+        {/* Tab: Posiciones */}
+        {tab === 'posiciones' && (
+          <div className="space-y-2">
+            {leaderboard.map((entry, i) => (
+              <div
+                key={entry.user_id}
+                className={`flex items-center gap-4 rounded-xl px-4 py-3 ${entry.user_id === userId ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800'}`}
+              >
+                <span className={`w-6 text-center font-bold ${MEDAL_COLORS[i] ?? 'text-slate-400'}`}>
+                  {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
+                </span>
+                <span className="flex-1 font-medium">{entry.username}</span>
+                <div className="text-right">
+                  <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
+                  <span className="text-slate-500 text-sm"> pts</span>
+                </div>
+                <div className="text-xs text-slate-500 hidden sm:block">
+                  {entry.exact_results} exactos · {entry.correct_winner} ganador
                 </div>
               </div>
             ))}
+            {leaderboard.length === 0 && (
+              <p className="text-sm text-slate-500 text-center py-6">Aún no hay puntos registrados.</p>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Gestión de miembros — solo admin */}
-      {userRole === 'admin' && (
-        <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
-          <h2 className="font-semibold text-slate-300 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-yellow-400" />
-            Miembros
-          </h2>
-          <div className="space-y-2">
-            {memberList.map(m => (
-              <div key={m.user_id} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <UserAvatar
-                    username={m.profiles?.username ?? ''}
-                    fullName={m.profiles?.full_name ?? null}
-                    avatarUrl={m.profiles?.avatar_url ?? null}
-                    size="sm"
-                    showName
-                    linkable
-                  />
+        {/* Tab: Gestión */}
+        {tab === 'gestion' && (
+          <div className="space-y-4">
+            {/* Solicitudes pendientes */}
+            {modRequests.length > 0 && (
+              <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
+                <h2 className="font-semibold text-slate-300 flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-purple-400" />
+                  Solicitudes de invitación
+                  <span className="ml-auto text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">{modRequests.length}</span>
+                </h2>
+                <div className="space-y-3 divide-y divide-slate-700">
+                  {modRequests.map(req => (
+                    <div key={req.notif_id} className="pt-3 first:pt-0 space-y-2">
+                      <p className="text-sm text-slate-200">
+                        <Link href={`/profile/${req.mod_username}`} className="font-semibold text-white hover:text-yellow-400">@{req.mod_username}</Link>
+                        <span className="text-slate-400"> quiere invitar a </span>
+                        <span className="font-semibold text-white">@{req.target_username}</span>
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApproveRequest(req)}
+                          disabled={processingReq === req.notif_id}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                        >
+                          {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          Aprobar
+                        </button>
+                        <button
+                          onClick={() => handleDeclineRequest(req)}
+                          disabled={processingReq === req.notif_id}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition"
+                        >
+                          {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                          Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {m.user_id === userId ? (
-                  <RoleBadge role={m.role} />
-                ) : (
-                  <div className="relative shrink-0">
-                    <button
-                      onClick={() => setOpenDropdown(openDropdown === m.user_id ? null : m.user_id)}
-                      disabled={changingRole === m.user_id}
-                      className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${ROLE_COLORS[m.role]} transition`}
-                    >
-                      {changingRole === m.user_id
-                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                        : <>{ROLE_LABELS[m.role]} <ChevronDown className="w-3 h-3" /></>
-                      }
-                    </button>
-                    {openDropdown === m.user_id && (
-                      <div className="absolute right-0 top-full mt-1 bg-slate-700 rounded-xl shadow-xl z-20 overflow-hidden w-36">
-                        {(['admin', 'moderator', 'participant'] as Role[]).map(r => (
-                          <button
-                            key={r}
-                            onClick={() => handleRoleChange(m.user_id, r)}
-                            className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-600 transition ${m.role === r ? 'text-yellow-400' : 'text-slate-200'}`}
-                          >
-                            {r === 'admin' && <Crown className="w-3.5 h-3.5 shrink-0" />}
-                            {r === 'moderator' && <Shield className="w-3.5 h-3.5 shrink-0" />}
-                            {r === 'participant' && <Users className="w-3.5 h-3.5 shrink-0" />}
-                            {ROLE_LABELS[r]}
-                          </button>
-                        ))}
+              </div>
+            )}
+
+            {/* Lista de miembros con gestión de roles */}
+            <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
+              <h2 className="font-semibold text-slate-300 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-yellow-400" />
+                Miembros
+                <span className="ml-auto text-xs text-slate-500">{memberList.length}</span>
+              </h2>
+              <div className="space-y-2">
+                {memberList.map(m => (
+                  <div key={m.user_id} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <UserAvatar
+                        username={m.profiles?.username ?? ''}
+                        fullName={m.profiles?.full_name ?? null}
+                        avatarUrl={m.profiles?.avatar_url ?? null}
+                        size="sm"
+                        showName
+                        linkable
+                      />
+                    </div>
+                    {m.user_id === userId ? (
+                      <RoleBadge role={m.role} />
+                    ) : (
+                      <div className="relative shrink-0">
+                        <button
+                          onClick={() => setOpenDropdown(openDropdown === m.user_id ? null : m.user_id)}
+                          disabled={changingRole === m.user_id}
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${ROLE_COLORS[m.role]} transition`}
+                        >
+                          {changingRole === m.user_id
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <>{ROLE_LABELS[m.role]} <ChevronDown className="w-3 h-3" /></>
+                          }
+                        </button>
+                        {openDropdown === m.user_id && (
+                          <div className="absolute right-0 top-full mt-1 bg-slate-700 rounded-xl shadow-xl z-20 overflow-hidden w-36">
+                            {(['admin', 'moderator', 'participant'] as Role[]).map(r => (
+                              <button
+                                key={r}
+                                onClick={() => handleRoleChange(m.user_id, r)}
+                                className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-600 transition ${m.role === r ? 'text-yellow-400' : 'text-slate-200'}`}
+                              >
+                                {r === 'admin' && <Crown className="w-3.5 h-3.5 shrink-0" />}
+                                {r === 'moderator' && <Shield className="w-3.5 h-3.5 shrink-0" />}
+                                {r === 'participant' && <Users className="w-3.5 h-3.5 shrink-0" />}
+                                {ROLE_LABELS[r]}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    )
+  }
 
-      {/* Abandonar torneo — solo no-admins */}
-      {userRole !== 'admin' && (
-        <div>
+  // Vista sin tabs — moderadores y participantes
+  return (
+    <div className="space-y-4">
+      <div>
           {showConfirm ? (
             <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
               <p className="text-sm text-slate-300">¿Seguro que querés abandonar <span className="font-semibold text-white">"{leagueName}"</span>?</p>
@@ -326,7 +391,6 @@ export default function LeagueClient({
             </button>
           )}
         </div>
-      )}
     </div>
   )
 }
