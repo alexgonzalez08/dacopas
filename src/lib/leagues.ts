@@ -57,12 +57,14 @@ export async function joinLeague(code: string, userId: string) {
 
 export async function leaveLeague(leagueId: string, userId: string) {
   const supabase = createClient()
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from('league_members')
     .update({ left_at: new Date().toISOString() })
     .eq('league_id', leagueId)
     .eq('user_id', userId)
+    .select('user_id')
   if (error) throw error
+  if (!count && count !== null) throw new Error('No se pudo actualizar la membresía')
 }
 
 export async function getUserLeagues(userId: string) {

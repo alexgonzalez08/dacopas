@@ -24,6 +24,7 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
   const [confirmLeave, setConfirmLeave] = useState<string | null>(null)
   const [leaving, setLeaving] = useState<string | null>(null)
   const [leftMessage, setLeftMessage] = useState<string | null>(null)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -93,8 +94,8 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
       setLeagues(prev => prev.filter(l => l.id !== league.id))
       setConfirmLeave(null)
       setLeftMessage(`Abandonaste el torneo "${league.name}"`)
-    } catch {
-      // silently fail
+    } catch (err: any) {
+      setLeaveError(err?.message ?? 'Error al abandonar el torneo')
     } finally {
       setLeaving(null)
     }
@@ -212,9 +213,10 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
                       ¿Seguro que querés abandonar <span className="font-semibold text-white">"{league.name}"</span>?
                       <span className="block text-xs text-slate-500 mt-1">No seguirás acumulando puntos en este torneo.</span>
                     </p>
+                    {leaveError && <p className="text-xs text-red-400">{leaveError}</p>}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleLeave(league)}
+                        onClick={() => { setLeaveError(null); handleLeave(league) }}
                         disabled={leaving === league.id}
                         className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 disabled:opacity-50 transition"
                       >
@@ -224,7 +226,7 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
                         Sí, abandonar
                       </button>
                       <button
-                        onClick={() => setConfirmLeave(null)}
+                        onClick={() => { setConfirmLeave(null); setLeaveError(null) }}
                         className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition"
                       >
                         Cancelar
