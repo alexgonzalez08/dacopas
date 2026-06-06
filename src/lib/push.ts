@@ -12,9 +12,16 @@ export async function initPushNotifications(userId: string) {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
 
-    // Pedir permiso
-    const permission = await PushNotifications.requestPermissions()
-    if (permission.receive !== 'granted') return
+    // Verificar estado actual antes de pedir
+    let status = await PushNotifications.checkPermissions()
+
+    if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale') {
+      status = await PushNotifications.requestPermissions()
+    }
+
+    if (status.receive === 'denied') return
+
+    if (status.receive !== 'granted') return
 
     // Registrar para recibir el token
     await PushNotifications.register()

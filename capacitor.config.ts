@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Dacopas',
   // Apunta a la app en producción — sin necesidad de export estático
   server: {
-    url: 'https://dacopas.vercel.app',
+    url: 'https://dacopas.com',
     cleartext: false,
   },
   ios: {

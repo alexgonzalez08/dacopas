@@ -141,18 +141,32 @@ function NotificationItem({
             </p>
             {isJoined ? (
               <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
-                <Check className="w-3.5 h-3.5" /> Ya sos miembro de esta liga
+                <Check className="w-3.5 h-3.5" /> Te uniste a la liga
+              </span>
+            ) : isDeclined ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <X className="w-3.5 h-3.5" /> Invitación declinada
               </span>
             ) : (
               <div className="space-y-1">
-                <button
-                  onClick={() => onJoin(notif)}
-                  disabled={joining === notif.id}
-                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 disabled:opacity-50 transition"
-                >
-                  {joining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
-                  Unirse a la liga
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onJoin(notif)}
+                    disabled={joining === notif.id || declining === notif.id}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                  >
+                    {joining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    Aceptar
+                  </button>
+                  <button
+                    onClick={() => onDecline(notif)}
+                    disabled={joining === notif.id || declining === notif.id}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition"
+                  >
+                    {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                    Declinar
+                  </button>
+                </div>
                 {joinError && joining !== notif.id && <p className="text-xs text-red-400">{joinError}</p>}
               </div>
             )}
@@ -259,12 +273,25 @@ export default function NotificationsClient({
       const { data: { user } } = await supabase.auth.getUser()
       const league = await joinLeague(notif.metadata.league_code, user!.id)
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, joined: true, alreadyJoined: true } : n))
-      router.push(`/leagues/${league.id}`)
+      // Redirigir a la liga después de un momento para que el usuario vea el mensaje
+      setTimeout(() => router.push(`/leagues/${league.id}`), 1200)
     } catch (err: any) {
       setJoinError(err.message)
     } finally {
       setJoining(null)
     }
+  }
+
+  async function handleDeclineLeague(notif: Notification) {
+    setDeclining(notif.id)
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, declined: true, alreadyDeclined: true } : n))
+    // Esperar un momento para que el usuario vea el mensaje de declinado, luego eliminar
+    setTimeout(async () => {
+      const supabase = createClient()
+      await supabase.from('notifications').delete().eq('id', notif.id)
+      setNotifications(prev => prev.filter(n => n.id !== notif.id))
+    }, 1500)
+    setDeclining(null)
   }
 
   async function handleDelete(id: string) {
@@ -314,7 +341,7 @@ export default function NotificationsClient({
               key={notif.id}
               notif={notif}
               onAccept={handleAccept}
-              onDecline={handleDecline}
+              onDecline={notif.type === 'league_invite' ? handleDeclineLeague : handleDecline}
               accepting={accepting}
               declining={declining}
               onJoin={handleJoinLeague}
