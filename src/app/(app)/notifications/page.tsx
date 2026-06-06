@@ -12,11 +12,12 @@ export default async function NotificationsPage() {
     .order('created_at', { ascending: false })
     .limit(50)
 
-  // Ligas en las que ya es miembro
+  // Ligas en las que ya es miembro activo (excluir abandonadas)
   const { data: memberships } = await supabase
     .from('league_members')
     .select('league_id')
     .eq('user_id', user!.id)
+    .is('left_at', null)
   const joinedLeagueIds = new Set((memberships ?? []).map(m => m.league_id))
 
   // Amistades aceptadas — para saber cuáles solicitudes ya fueron aceptadas
