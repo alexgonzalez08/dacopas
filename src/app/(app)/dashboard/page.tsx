@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     f.requester_id === user!.id ? f.addressee_id : f.requester_id
   )
 
-  const FEED_SELECT = '*, profiles(username, avatar_url), matches(id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, match_date), leagues(name), feed_reactions(id, emoji, user_id, profiles(username)), feed_comments(id, content, user_id, created_at, profiles(username))'
+  const FEED_SELECT = '*, profiles(username, avatar_url), matches(id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, match_date), leagues(name, created_by), feed_reactions(id, emoji, user_id, profiles(username)), feed_comments(id, content, user_id, created_at, profiles(username))'
 
   const [
     { data: allUpcoming },
@@ -93,9 +93,11 @@ export default async function DashboardPage() {
   }))
 
   const seen = new Set<string>()
-  const feedEvents = [...(friendEvents ?? []), ...(resultEvents ?? [])].filter(e => {
+  const feedEvents = [...(friendEvents ?? []), ...(resultEvents ?? [])].filter((e: any) => {
     if (seen.has(e.id)) return false
     seen.add(e.id)
+    // No mostrar "se unió al torneo" si el usuario es el creador del torneo
+    if (e.type === 'league_join' && e.leagues?.created_by === e.user_id) return false
     return true
   })
 
