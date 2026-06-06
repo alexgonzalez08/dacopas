@@ -9,7 +9,7 @@ const STEPS = [
   {
     emoji: '🎉',
     title: (username: string) => `¡Bienvenido, ${username}!`,
-    text: `Entraste a Dacopas, el lugar donde los amigos se la juegan prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás listo para demostrar quién sabe más de fútbol en tu grupo?`,
+    text: `Entraste a Dacopas, el lugar donde los pibes se la juegan prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás listo para demostrar quién sabe más de fútbol en tu grupo?`,
   },
   {
     emoji: '👥',
@@ -18,8 +18,8 @@ const STEPS = [
   },
   {
     emoji: '🏆',
-    title: () => 'Armá tu torneo y ponele nombre',
-    text: `Creá un torneo, poné el nombre que quieras — "Los Cracks del Trabajo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. El que quede último paga la cuenta. O las cervezas. O los dos.`,
+    title: () => 'Armá tu liga y ponele nombre',
+    text: `Creá una liga, poné el nombre que quieras — "Los Cracks del Laburo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. El que quede último paga el asado. O las birras. O los dos.`,
   },
   {
     emoji: '👑',
@@ -29,17 +29,17 @@ const STEPS = [
   {
     emoji: '🎯',
     title: () => '¿Cómo se puntúa?',
-    text: `Predecís el resultado exacto → 3 puntos. 🔥 Acertás quién gana → 1 punto. El que más puntos junte al final del Mundial se lleva la copa y los derechos eternos de presumirles a todos que "yo lo sabía".`,
+    text: `Predecís el resultado exacto → 3 puntos. 🔥 Acertás quién gana → 1 punto. El que más puntos junte al final del Mundial se lleva la copa y los derechos eternos de joder a todos con que "yo lo sabía".`,
   },
   {
     emoji: '⏰',
     title: () => '¡No te quedés afuera!',
-    text: `Tus predicciones se cierran 15 minutos antes de cada partido. Así que nada de ver el gol y después decir que lo ibas a poner. El que llega tarde al pronóstico, que se quede sin puntos.`,
+    text: `Tus predicciones se cierran 15 minutos antes de cada partido. Así que nada de ver el gol y después decir que lo ibas a poner. El que llega tarde al pique, que se vaya a mirar tele solo.`,
   },
   {
     emoji: '🍺',
     title: () => '¡A disfrutar del fútbol!',
-    text: `Invitá a tus amigos, armá el torneo, hacé los pronósticos y que el que pierda pague la ronda. El fútbol es mejor con amigos — y aún mejor cuando podés frotarles en la cara que acertaste el marcador exacto. ¡Dale Dacopas! 🏆`,
+    text: `Invitá a tus amigos, armá el grupo, hacé los piques y que el que pierda pague la ronda. El fútbol es mejor con amigos — y aún mejor cuando podés frotarles en la cara que acertaste el marcador exacto. ¡Dale Dacopas! 🏆`,
   },
 ]
 
