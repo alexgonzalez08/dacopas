@@ -45,12 +45,29 @@ export async function joinLeague(code: string, userId: string) {
 
   if (error || !league) throw new Error('Torneo no encontrado')
 
-  const { error: memberError } = await supabase
+  // Verificar si ya existe una fila (miembro activo o que abandonó)
+  const { data: existing } = await supabase
     .from('league_members')
-    .insert({ league_id: league.id, user_id: userId })
+    .select('user_id, left_at')
+    .eq('league_id', league.id)
+    .eq('user_id', userId)
+    .maybeSingle()
 
-  if (memberError?.code === '23505') throw new Error('Ya estás en este torneo')
-  if (memberError) throw memberError
+  if (existing) {
+    if (!existing.left_at) throw new Error('Ya estás en este torneo')
+    // Reactivar membresía — los puntos acumulados se restauran automáticamente
+    const { error: updateError } = await supabase
+      .from('league_members')
+      .update({ left_at: null, role: 'participant' })
+      .eq('league_id', league.id)
+      .eq('user_id', userId)
+    if (updateError) throw updateError
+  } else {
+    const { error: insertError } = await supabase
+      .from('league_members')
+      .insert({ league_id: league.id, user_id: userId, role: 'participant' })
+    if (insertError) throw insertError
+  }
 
   return league
 }

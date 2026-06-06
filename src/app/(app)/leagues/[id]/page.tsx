@@ -36,14 +36,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   // Si no es miembro, verificar si tiene invitación pendiente
   if (!currentMember) {
-    const { data: invite } = await supabase
+    const { data: invites } = await supabase
       .from('notifications')
-      .select('id')
+      .select('id, metadata')
       .eq('user_id', user!.id)
       .eq('type', 'league_invite')
-      .eq('metadata->>league_id', id)
-      .maybeSingle()
 
+    const invite = invites?.find(n => n.metadata?.league_id === id) ?? null
     if (!invite) notFound()
 
     // Vista de invitado — mostrar leaderboard y banner de aceptar/declinar
