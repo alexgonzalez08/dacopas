@@ -44,12 +44,17 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   if (!currentMember) {
     const { data: invites } = await supabase
       .from('notifications')
-      .select('id, metadata')
+      .select('id, metadata, type')
       .eq('user_id', user!.id)
-      .eq('type', 'league_invite')
+      .in('type', ['league_invite', 'league_created'])
 
     const invite = invites?.find(n => n.metadata?.league_id === id) ?? null
     if (!invite) notFound()
+
+    // Para league_created no hay código de invitación — usamos el código del torneo
+    const inviteCode = invite.type === 'league_invite'
+      ? invite.metadata?.league_code
+      : league.code
 
     // Vista de invitado — usar adminSupabase para bypassear RLS en queries de solo lectura
     const { data: guestMembers } = await adminSupabase
@@ -90,9 +95,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
         <LeagueInviteBanner
           leagueId={id}
-          leagueCode={league.code}
+          leagueCode={inviteCode}
           leagueName={league.name}
           notificationId={invite.id}
+          isRequest={invite.type === 'league_created'}
         />
 
         <div>

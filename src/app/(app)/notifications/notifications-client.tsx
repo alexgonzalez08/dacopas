@@ -536,31 +536,14 @@ export default function NotificationsClient({
 
   async function handleRequestJoin(notif: Notification) {
     setAccepting(notif.id)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('profiles').select('username').eq('id', user!.id).single()
-
-    // Obtener admins del torneo
-    const { data: admins } = await supabase
-      .from('league_members')
-      .select('user_id')
-      .eq('league_id', notif.metadata?.league_id)
-      .eq('role', 'admin')
-      .is('left_at', null)
-
-    await Promise.all((admins ?? []).map(a =>
-      supabase.from('notifications').insert({
-        user_id: a.user_id,
-        from_user_id: user!.id,
-        type: 'join_request',
-        metadata: {
-          league_id: notif.metadata?.league_id,
-          league_name: notif.metadata?.league_name,
-          requester_username: profile?.username ?? '',
-        },
-      })
-    ))
-
+    await fetch('/api/leagues/join-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leagueId: notif.metadata?.league_id,
+        leagueName: notif.metadata?.league_name,
+      }),
+    })
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
     setAccepting(null)
   }
