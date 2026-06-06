@@ -9,37 +9,37 @@ const STEPS = [
   {
     emoji: '🎉',
     title: (username: string) => `¡Hola, ${username}!`,
-    text: `Entraste a Dacopas, el lugar donde los pibes se la juegan prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás listo para demostrar quién sabe más de fútbol en tu grupo?`,
+    text: `Entraste a Dacopas, el lugar donde la gente se la juega prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás para demostrar quién sabe más de fútbol en tu grupo?`,
   },
   {
     emoji: '👥',
     title: () => '¡Buscá a tus amigos!',
-    text: `Agregá a tus amigos desde la sección de Amistades. Buscalos por alias o nombre y mandales una solicitud. Porque esto no es un monólogo — el que gana solo no tiene a quién echarle en cara que se equivocó.`,
+    text: `Agregá a tus amigos desde la sección de Amistades. Buscalos por alias o nombre y mandales una solicitud. Porque esto no es un monólogo — quien gana en solitario no tiene a quién echarle en cara que se equivocó.`,
   },
   {
     emoji: '🏆',
     title: () => 'Armá tu liga y ponele nombre',
-    text: `Creá una liga, poné el nombre que quieras — "Los Cracks del Laburo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. El que quede último paga el asado. O las birras. O los dos.`,
+    text: `Creá una liga, poné el nombre que quieras — "Los Cracks del Laburo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. Quien quede en último lugar paga el asado. O las birras. O los dos.`,
   },
   {
     emoji: '👑',
     title: () => 'Torneos con roles',
-    text: `Cada torneo tiene su jerarquía. El Admin crea e invita directamente. Los Moderadores pueden proponer invitados — el Admin aprueba. Y los Participantes a darle al pronóstico. También podés solicitar unirte a torneos de tus amigos.`,
+    text: `Cada torneo tiene su jerarquía. La persona Admin crea e invita directamente. Las Moderadoras y Moderadores pueden proponer invitados — el Admin aprueba. Y quienes participan, a darle al pronóstico. También podés solicitar unirte a torneos de tus amigos.`,
   },
   {
     emoji: '🎯',
     title: () => '¿Cómo se puntúa?',
-    text: `Predecís el resultado exacto → 3 puntos. 🔥 Acertás quién gana → 1 punto. El que más puntos junte al final del Mundial se lleva la copa y los derechos eternos de joder a todos con que "yo lo sabía".`,
+    text: `Predecís el resultado exacto → 3 puntos. 🔥 Acertás quién gana → 1 punto. Quien más puntos junte al final del Mundial se lleva la copa y los derechos eternos de joder a todos con que "yo lo sabía".`,
   },
   {
     emoji: '⏰',
     title: () => '¡No te quedés afuera!',
-    text: `Tus predicciones se cierran 15 minutos antes de cada partido. Así que nada de ver el gol y después decir que lo ibas a poner. El que llega tarde al pique, que se vaya a mirar tele solo.`,
+    text: `Tus predicciones se cierran 15 minutos antes de cada partido. Así que nada de ver el gol y después decir que lo ibas a poner. Quien llega tarde al pique se queda sin poder predecir.`,
   },
   {
     emoji: '🍺',
     title: () => '¡A disfrutar del fútbol!',
-    text: `Invitá a tus amigos, armá el grupo, hacé los piques y que el que pierda pague la ronda. El fútbol es mejor con amigos — y aún mejor cuando podés frotarles en la cara que acertaste el marcador exacto. ¡Dale Dacopas! 🏆`,
+    text: `Invitá a tus amigos, armá el grupo, hacé los piques y que quien pierda pague la ronda. El fútbol es mejor con amigos — y aún mejor cuando podés frotarles en la cara que acertaste el marcador exacto. ¡Dale Dacopas! 🏆`,
   },
 ]
 
