@@ -61,6 +61,19 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     .map(f => ((f.requester as any)?.id === user!.id ? f.addressee : f.requester) as any)
     .filter((p: any) => p != null && !memberUserIds.has(p.id)) as { id: string; username: string; full_name: string | null; avatar_url: string | null }[]
 
+  const friendIds = friendsNotInLeague.map(f => f.id)
+  const { data: pendingNotifs } = friendIds.length > 0
+    ? await supabase
+        .from('notifications')
+        .select('user_id')
+        .eq('from_user_id', user!.id)
+        .eq('type', 'league_invite')
+        .eq('metadata->>league_id', id)
+        .in('user_id', friendIds)
+    : { data: [] }
+
+  const pendingInvites = (pendingNotifs ?? []).map(n => n.user_id)
+
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
 
   return (
@@ -76,7 +89,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       </div>
 
       {friendsNotInLeague.length > 0 && (
-        <InviteFriends leagueId={id} leagueCode={league.code} leagueName={league.name} userId={user!.id} friends={friendsNotInLeague} />
+        <InviteFriends leagueId={id} leagueCode={league.code} leagueName={league.name} userId={user!.id} friends={friendsNotInLeague} pendingInvites={pendingInvites} />
       )}
 
       <div>
