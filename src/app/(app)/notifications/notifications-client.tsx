@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserCheck, Check, Loader2, Users, Trash2, X, UserX } from 'lucide-react'
+import { UserCheck, Check, Loader2, Users, Trash2, X, UserX, Shield, LogOut, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import UserAvatar from '@/components/user-avatar'
@@ -9,6 +9,7 @@ import WhistleIcon from '@/components/whistle-icon'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { joinLeague } from '@/lib/leagues'
+import { sendPushNotification } from '@/lib/push'
 
 type Profile = { id: string; username: string; full_name: string | null; avatar_url: string | null }
 type Notification = {
@@ -22,7 +23,6 @@ type Notification = {
   alreadyJoined?: boolean
   alreadyAccepted?: boolean
   alreadyDeclined?: boolean
-  // estados locales
   accepted?: boolean
   declined?: boolean
   joined?: boolean
@@ -43,9 +43,29 @@ function NotificationIcon({ type }: { type: string }) {
       <UserCheck className="w-4 h-4 text-green-400" />
     </div>
   )
-  if (type === 'league_invite') return (
+  if (type === 'league_invite' || type === 'league_added') return (
     <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
       <Users className="w-4 h-4 text-blue-400" />
+    </div>
+  )
+  if (type === 'mod_invite_request') return (
+    <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+      <Shield className="w-4 h-4 text-purple-400" />
+    </div>
+  )
+  if (type === 'mod_invite_approved') return (
+    <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+      <Check className="w-4 h-4 text-green-400" />
+    </div>
+  )
+  if (type === 'mod_invite_declined') return (
+    <div className="w-9 h-9 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+      <X className="w-4 h-4 text-red-400" />
+    </div>
+  )
+  if (type === 'member_left') return (
+    <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
+      <LogOut className="w-4 h-4 text-slate-400" />
     </div>
   )
   return (
@@ -57,7 +77,7 @@ function NotificationIcon({ type }: { type: string }) {
 
 function NotificationItem({
   notif, onAccept, onDecline, accepting, declining,
-  onJoin, joining, joinError, onDelete, deleting,
+  onJoin, joining, joinError, onApproveModInvite, onDeclineModInvite, onDelete, deleting,
 }: {
   notif: Notification
   onAccept: (notif: Notification) => void
@@ -67,6 +87,8 @@ function NotificationItem({
   onJoin: (notif: Notification) => void
   joining: string | null
   joinError: string | null
+  onApproveModInvite: (notif: Notification) => void
+  onDeclineModInvite: (notif: Notification) => void
   onDelete: (id: string) => void
   deleting: string | null
 }) {
@@ -102,21 +124,13 @@ function NotificationItem({
               </span>
             ) : (
               <div className="flex gap-2">
-                <button
-                  onClick={() => onAccept(notif)}
-                  disabled={accepting === notif.id || declining === notif.id}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
-                >
-                  {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                  Aceptar
+                <button onClick={() => onAccept(notif)} disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
+                  {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Aceptar
                 </button>
-                <button
-                  onClick={() => onDecline(notif)}
-                  disabled={accepting === notif.id || declining === notif.id}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition"
-                >
-                  {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                  Declinar
+                <button onClick={() => onDecline(notif)} disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition">
+                  {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Declinar
                 </button>
               </div>
             )}
@@ -131,7 +145,7 @@ function NotificationItem({
           </p>
         )}
 
-        {/* Invitación a liga */}
+        {/* Invitación a torneo (requiere aceptar/declinar) */}
         {notif.type === 'league_invite' && (
           <div className="space-y-1.5">
             <p className="text-sm text-slate-200">
@@ -148,29 +162,99 @@ function NotificationItem({
                 <X className="w-3.5 h-3.5" /> Invitación declinada
               </span>
             ) : (
-              <div className="space-y-1">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onJoin(notif)}
-                    disabled={joining === notif.id || declining === notif.id}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
-                  >
-                    {joining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    Aceptar
-                  </button>
-                  <button
-                    onClick={() => onDecline(notif)}
-                    disabled={joining === notif.id || declining === notif.id}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition"
-                  >
-                    {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                    Declinar
-                  </button>
-                </div>
+              <div className="flex gap-2">
+                <button onClick={() => onJoin(notif)} disabled={joining === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
+                  {joining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Aceptar
+                </button>
+                <button onClick={() => onDecline(notif)} disabled={joining === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition">
+                  {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Declinar
+                </button>
                 {joinError && joining !== notif.id && <p className="text-xs text-red-400">{joinError}</p>}
               </div>
             )}
           </div>
+        )}
+
+        {/* Agregado directamente al torneo (por aprobación de moderador) */}
+        {notif.type === 'league_added' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="text-slate-400">Fuiste agregado al torneo </span>
+              <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+            </p>
+            <Link
+              href={`/leagues/${notif.metadata?.league_id}`}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> Ver torneo
+            </Link>
+          </div>
+        )}
+
+        {/* Solicitud de moderador para invitar a alguien — vista del admin */}
+        {notif.type === 'mod_invite_request' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${notif.metadata?.mod_username}`} className="font-semibold text-white hover:text-yellow-400">@{notif.metadata?.mod_username}</Link>
+              <span className="text-slate-400"> quiere invitar a </span>
+              <span className="font-semibold text-white">@{notif.metadata?.target_username}</span>
+              <span className="text-slate-400"> al torneo </span>
+              <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+            </p>
+            {isAccepted ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
+                <Check className="w-3.5 h-3.5" /> Aprobado
+              </span>
+            ) : isDeclined ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <X className="w-3.5 h-3.5" /> Declinado
+              </span>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => onApproveModInvite(notif)} disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
+                  {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Aprobar
+                </button>
+                <button onClick={() => onDeclineModInvite(notif)} disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition">
+                  {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Declinar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Respuesta al moderador — aprobado */}
+        {notif.type === 'mod_invite_approved' && (
+          <p className="text-sm text-slate-200">
+            <span className="text-slate-400">Tu solicitud para invitar a </span>
+            <span className="font-semibold text-white">@{notif.metadata?.target_username}</span>
+            <span className="text-slate-400"> al torneo </span>
+            <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+            <span className="text-green-400"> fue aprobada</span>
+          </p>
+        )}
+
+        {/* Respuesta al moderador — declinado */}
+        {notif.type === 'mod_invite_declined' && (
+          <p className="text-sm text-slate-200">
+            <span className="text-slate-400">Tu solicitud para invitar a </span>
+            <span className="font-semibold text-white">@{notif.metadata?.target_username}</span>
+            <span className="text-slate-400"> al torneo </span>
+            <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+            <span className="text-red-400"> fue declinada</span>
+          </p>
+        )}
+
+        {/* Alguien abandonó el torneo — vista del admin */}
+        {notif.type === 'member_left' && (
+          <p className="text-sm text-slate-200">
+            <span className="font-semibold text-white">@{notif.metadata?.username}</span>
+            <span className="text-slate-400"> abandonó el torneo </span>
+            <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+          </p>
         )}
 
         <p className="text-xs text-slate-500">{timeAgo(notif.created_at)}</p>
@@ -178,12 +262,8 @@ function NotificationItem({
 
       <div className="flex items-center gap-1 shrink-0">
         {!notif.read && <div className="w-2 h-2 rounded-full bg-yellow-400" />}
-        <button
-          onClick={() => onDelete(notif.id)}
-          disabled={deleting === notif.id}
-          className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-slate-700 rounded-lg transition"
-          title="Eliminar notificación"
-        >
+        <button onClick={() => onDelete(notif.id)} disabled={deleting === notif.id}
+          className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-slate-700 rounded-lg transition">
           {deleting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
         </button>
       </div>
@@ -232,19 +312,11 @@ export default function NotificationsClient({
     setAccepting(notif.id)
     const supabase = createClient()
     const { data: friendship } = await supabase
-      .from('friendships')
-      .select('id')
-      .eq('requester_id', notif.from_user.id)
-      .eq('addressee_id', userId)
-      .eq('status', 'pending')
-      .single()
+      .from('friendships').select('id')
+      .eq('requester_id', notif.from_user.id).eq('addressee_id', userId).eq('status', 'pending').single()
     if (friendship) {
       await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendship.id)
-      await supabase.from('notifications').insert({
-        user_id: notif.from_user.id,
-        from_user_id: userId,
-        type: 'follow_accepted',
-      })
+      await supabase.from('notifications').insert({ user_id: notif.from_user.id, from_user_id: userId, type: 'follow_accepted' })
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
     }
     setAccepting(null)
@@ -254,12 +326,8 @@ export default function NotificationsClient({
     if (!notif.from_user) return
     setDeclining(notif.id)
     const supabase = createClient()
-    await supabase
-      .from('friendships')
-      .delete()
-      .eq('requester_id', notif.from_user.id)
-      .eq('addressee_id', userId)
-      .eq('status', 'pending')
+    await supabase.from('friendships').delete()
+      .eq('requester_id', notif.from_user.id).eq('addressee_id', userId).eq('status', 'pending')
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, declined: true, alreadyDeclined: true } : n))
     setDeclining(null)
   }
@@ -273,7 +341,6 @@ export default function NotificationsClient({
       const { data: { user } } = await supabase.auth.getUser()
       const league = await joinLeague(notif.metadata.league_code, user!.id)
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, joined: true, alreadyJoined: true } : n))
-      // Redirigir a la liga después de un momento para que el usuario vea el mensaje
       setTimeout(() => router.push(`/leagues/${league.id}`), 1200)
     } catch (err: any) {
       setJoinError(err.message)
@@ -285,12 +352,78 @@ export default function NotificationsClient({
   async function handleDeclineLeague(notif: Notification) {
     setDeclining(notif.id)
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, declined: true, alreadyDeclined: true } : n))
-    // Esperar un momento para que el usuario vea el mensaje de declinado, luego eliminar
     setTimeout(async () => {
       const supabase = createClient()
       await supabase.from('notifications').delete().eq('id', notif.id)
       setNotifications(prev => prev.filter(n => n.id !== notif.id))
     }, 1500)
+    setDeclining(null)
+  }
+
+  async function handleApproveModInvite(notif: Notification) {
+    setAccepting(notif.id)
+    const supabase = createClient()
+    const { league_id, league_name, league_code, target_user_id, target_username, mod_username } = notif.metadata ?? {}
+
+    // Agregar al usuario directamente al torneo
+    await supabase.from('league_members').upsert(
+      { league_id, user_id: target_user_id, role: 'participant' },
+      { onConflict: 'league_id,user_id', ignoreDuplicates: true }
+    )
+
+    // Notificar al moderador que fue aprobado
+    if (notif.from_user_id) {
+      await supabase.from('notifications').insert({
+        user_id: notif.from_user_id,
+        from_user_id: userId,
+        type: 'mod_invite_approved',
+        metadata: { league_id, league_name, target_username },
+      })
+      sendPushNotification({
+        toUserId: notif.from_user_id,
+        title: 'Solicitud aprobada',
+        body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue aprobada`,
+      })
+    }
+
+    // Notificar al usuario agregado con botón "Ver torneo"
+    await supabase.from('notifications').insert({
+      user_id: target_user_id,
+      from_user_id: userId,
+      type: 'league_added',
+      metadata: { league_id, league_name },
+    })
+    sendPushNotification({
+      toUserId: target_user_id,
+      title: '¡Te agregaron a un torneo!',
+      body: `Fuiste agregado al torneo "${league_name}" en Dacopas`,
+      data: { url: `/leagues/${league_id}` },
+    })
+
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
+    setAccepting(null)
+  }
+
+  async function handleDeclineModInvite(notif: Notification) {
+    setDeclining(notif.id)
+    const supabase = createClient()
+    const { league_id, league_name, target_username } = notif.metadata ?? {}
+
+    if (notif.from_user_id) {
+      await supabase.from('notifications').insert({
+        user_id: notif.from_user_id,
+        from_user_id: userId,
+        type: 'mod_invite_declined',
+        metadata: { league_id, league_name, target_username },
+      })
+      sendPushNotification({
+        toUserId: notif.from_user_id,
+        title: 'Solicitud declinada',
+        body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue declinada`,
+      })
+    }
+
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, declined: true, alreadyDeclined: true } : n))
     setDeclining(null)
   }
 
@@ -318,11 +451,8 @@ export default function NotificationsClient({
           Notificaciones
         </h1>
         {notifications.length > 0 && (
-          <button
-            onClick={handleClearAll}
-            disabled={clearingAll}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition"
-          >
+          <button onClick={handleClearAll} disabled={clearingAll}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition">
             {clearingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
             Limpiar todo
           </button>
@@ -347,6 +477,8 @@ export default function NotificationsClient({
               onJoin={handleJoinLeague}
               joining={joining}
               joinError={joinError}
+              onApproveModInvite={handleApproveModInvite}
+              onDeclineModInvite={handleDeclineModInvite}
               onDelete={handleDelete}
               deleting={deleting}
             />

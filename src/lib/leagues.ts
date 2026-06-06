@@ -28,7 +28,7 @@ export async function createLeague(name: string, userId: string) {
 
   if (error) throw error
 
-  await supabase.from('league_members').insert({ league_id: league.id, user_id: userId })
+  await supabase.from('league_members').insert({ league_id: league.id, user_id: userId, role: 'admin' })
 
   return league
 }
@@ -53,6 +53,16 @@ export async function joinLeague(code: string, userId: string) {
   if (memberError) throw memberError
 
   return league
+}
+
+export async function leaveLeague(leagueId: string, userId: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('league_members')
+    .delete()
+    .eq('league_id', leagueId)
+    .eq('user_id', userId)
+  if (error) throw error
 }
 
 export async function getUserLeagues(userId: string) {

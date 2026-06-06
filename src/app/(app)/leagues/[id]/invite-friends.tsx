@@ -1,26 +1,31 @@
 'use client'
 import { useState } from 'react'
 import UserAvatar from '@/components/user-avatar'
-import { UserPlus, Check, Loader2 } from 'lucide-react'
+import { UserPlus, Check, Loader2, Clock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendPushNotification } from '@/lib/push'
 
 type Friend = { id: string; username: string; full_name: string | null; avatar_url: string | null }
+type Role = 'admin' | 'moderator' | 'participant'
 
 export default function InviteFriends({
   leagueId,
   leagueCode,
   leagueName,
   userId,
+  userRole,
   friends,
   pendingInvites = [],
+  adminIds = [],
 }: {
   leagueId: string
   leagueCode: string
   leagueName: string
   userId: string
+  userRole: Role
   friends: Friend[]
   pendingInvites?: string[]
+  adminIds?: string[]
 }) {
   const [invited, setInvited] = useState<Set<string>>(new Set(pendingInvites))
   const [loading, setLoading] = useState<string | null>(null)
@@ -29,34 +34,62 @@ export default function InviteFriends({
     setLoading(friend.id)
     const supabase = createClient()
 
-    await supabase.from('notifications').insert({
-      user_id: friend.id,
-      from_user_id: userId,
-      type: 'league_invite',
-      metadata: {
-        league_id: leagueId,
-        league_name: leagueName,
-        league_code: leagueCode,
-      },
-    })
-
-    sendPushNotification({
-      toUserId: friend.id,
-      title: '¡Te invitaron a un torneo!',
-      body: `Te invitaron al torneo "${leagueName}" en Dacopas`,
-      data: { url: `/leagues/new?join=1&code=${leagueCode}` },
-    })
+    if (userRole === 'admin') {
+      // Admin invita directamente
+      await supabase.from('notifications').insert({
+        user_id: friend.id,
+        from_user_id: userId,
+        type: 'league_invite',
+        metadata: { league_id: leagueId, league_name: leagueName, league_code: leagueCode },
+      })
+      sendPushNotification({
+        toUserId: friend.id,
+        title: '¡Te invitaron a un torneo!',
+        body: `Te invitaron al torneo "${leagueName}" en Dacopas`,
+        data: { url: `/leagues/new?join=1&code=${leagueCode}` },
+      })
+    } else {
+      // Moderador solicita aprobación al admin
+      const me = await supabase.from('profiles').select('username').eq('id', userId).single()
+      await Promise.all(adminIds.map(adminId =>
+        supabase.from('notifications').insert({
+          user_id: adminId,
+          from_user_id: userId,
+          type: 'mod_invite_request',
+          metadata: {
+            league_id: leagueId,
+            league_name: leagueName,
+            league_code: leagueCode,
+            target_user_id: friend.id,
+            target_username: friend.username,
+            mod_username: me.data?.username ?? '',
+          },
+        })
+      ))
+      adminIds.forEach(adminId => sendPushNotification({
+        toUserId: adminId,
+        title: 'Solicitud de invitación',
+        body: `Un moderador quiere invitar a @${friend.username} al torneo "${leagueName}"`,
+      }))
+    }
 
     setInvited(s => new Set([...s, friend.id]))
     setLoading(null)
   }
 
+  const isMod = userRole === 'moderator'
+
   return (
     <div className="space-y-3">
-      <h2 className="font-semibold text-slate-300 flex items-center gap-2">
-        <UserPlus className="w-4 h-4 text-yellow-400" />
-        Invitar al torneo
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-slate-300 flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-yellow-400" />
+          Invitar al torneo
+        </h2>
+        {isMod && (
+          <span className="text-xs text-slate-500">Las invitaciones requieren aprobación del admin</span>
+        )}
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {friends.map(friend => {
           const isInvited = invited.has(friend.id)
@@ -81,14 +114,16 @@ export default function InviteFriends({
                 disabled={isLoading || isInvited}
                 className={`flex items-center gap-1 text-xs px-2.5 py-1 font-semibold rounded-lg transition w-full justify-center disabled:opacity-60 ${
                   isInvited
-                    ? 'bg-green-500/20 text-green-400'
+                    ? isMod ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
                     : 'bg-yellow-500 text-slate-900 hover:bg-yellow-400'
                 }`}
               >
                 {isLoading
                   ? <Loader2 className="w-3 h-3 animate-spin" />
                   : isInvited
-                    ? <><Check className="w-3 h-3" /> Invitado</>
+                    ? isMod
+                      ? <><Clock className="w-3 h-3" /> Pendiente</>
+                      : <><Check className="w-3 h-3" /> Invitado</>
                     : <><UserPlus className="w-3 h-3" /> Invitar</>
                 }
               </button>

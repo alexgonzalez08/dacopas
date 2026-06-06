@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { Medal } from 'lucide-react'
 import CopyButton from './copy-button'
 import InviteFriends from './invite-friends'
+import LeagueClient from './league-client'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,62 +18,90 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   if (!league) notFound()
 
-  const { data: member } = await supabase
+  // Traer todos los miembros con perfil y rol
+  const { data: membersData } = await supabase
     .from('league_members')
-    .select('user_id')
+    .select('user_id, role, profiles(username, full_name, avatar_url)')
     .eq('league_id', id)
-    .eq('user_id', user!.id)
-    .single()
 
-  if (!member) notFound()
+  const members = (membersData ?? []).map(m => ({
+    user_id: m.user_id,
+    role: (m.role ?? 'participant') as 'admin' | 'moderator' | 'participant',
+    profiles: (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { username: string; full_name: string | null; avatar_url: string | null } | null,
+  }))
 
-  // Amigos que no están en la liga
-  const { data: friendships } = await supabase
-    .from('friendships')
-    .select('requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url)')
-    .eq('status', 'accepted')
-    .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
+  const currentMember = members.find(m => m.user_id === user!.id)
+  if (!currentMember) notFound()
 
-  const [{ data: members }, { data: points }] = await Promise.all([
-    supabase
-      .from('league_members')
-      .select('user_id, profiles(username)')
-      .eq('league_id', id),
-    supabase
-      .from('league_points')
-      .select('user_id, points, exact_results, correct_winner')
-      .eq('league_id', id),
-  ])
+  const userRole = currentMember.role
+  const adminIds = members.filter(m => m.role === 'admin').map(m => m.user_id)
+
+  // Amigos que no están en el torneo (solo para admin y moderador)
+  let friendsNotInLeague: { id: string; username: string; full_name: string | null; avatar_url: string | null }[] = []
+  let pendingInvites: string[] = []
+
+  if (userRole === 'admin' || userRole === 'moderator') {
+    const { data: friendships } = await supabase
+      .from('friendships')
+      .select('requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url)')
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
+
+    const memberUserIds = new Set(members.map(m => m.user_id))
+    friendsNotInLeague = (friendships ?? [])
+      .map(f => ((f.requester as any)?.id === user!.id ? f.addressee : f.requester) as any)
+      .filter((p: any) => p != null && !memberUserIds.has(p.id))
+
+    const friendIds = friendsNotInLeague.map(f => f.id)
+    if (friendIds.length > 0) {
+      const notifType = userRole === 'admin' ? 'league_invite' : 'mod_invite_request'
+      const { data: pendingNotifs } = await supabase
+        .from('notifications')
+        .select('metadata')
+        .eq('from_user_id', user!.id)
+        .eq('type', notifType)
+        .eq('metadata->>league_id', id)
+
+      const pendingTargetIds = new Set(
+        (pendingNotifs ?? []).map(n =>
+          userRole === 'admin' ? n.metadata?.user_id : n.metadata?.target_user_id
+        ).filter(Boolean)
+      )
+      // For admin: pending are user_ids from league_invite notifications
+      if (userRole === 'admin') {
+        const { data: adminPending } = await supabase
+          .from('notifications')
+          .select('user_id')
+          .eq('from_user_id', user!.id)
+          .eq('type', 'league_invite')
+          .eq('metadata->>league_id', id)
+          .in('user_id', friendIds)
+        pendingInvites = (adminPending ?? []).map(n => n.user_id)
+      } else {
+        // For moderator: pending are target_user_id from mod_invite_request notifications
+        pendingInvites = Array.from(pendingTargetIds) as string[]
+      }
+    }
+  }
+
+  // Puntos para el leaderboard
+  const { data: points } = await supabase
+    .from('league_points')
+    .select('user_id, points, exact_results, correct_winner')
+    .eq('league_id', id)
 
   const pointsMap = new Map((points ?? []).map(p => [p.user_id, p]))
 
-  const leaderboard = (members ?? [])
+  const leaderboard = members
     .map(m => ({
       user_id: m.user_id,
-      profiles: (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as unknown as { username: string } | null,
+      username: m.profiles?.username ?? 'Usuario',
+      role: m.role,
       points: pointsMap.get(m.user_id)?.points ?? 0,
       exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
       correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
     }))
     .sort((a, b) => b.points - a.points)
-
-  const memberUserIds = new Set((members ?? []).map(m => m.user_id))
-  const friendsNotInLeague = (friendships ?? [])
-    .map(f => ((f.requester as any)?.id === user!.id ? f.addressee : f.requester) as any)
-    .filter((p: any) => p != null && !memberUserIds.has(p.id)) as { id: string; username: string; full_name: string | null; avatar_url: string | null }[]
-
-  const friendIds = friendsNotInLeague.map(f => f.id)
-  const { data: pendingNotifs } = friendIds.length > 0
-    ? await supabase
-        .from('notifications')
-        .select('user_id')
-        .eq('from_user_id', user!.id)
-        .eq('type', 'league_invite')
-        .eq('metadata->>league_id', id)
-        .in('user_id', friendIds)
-    : { data: [] }
-
-  const pendingInvites = (pendingNotifs ?? []).map(n => n.user_id)
 
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
 
@@ -89,7 +118,16 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       </div>
 
       {friendsNotInLeague.length > 0 && (
-        <InviteFriends leagueId={id} leagueCode={league.code} leagueName={league.name} userId={user!.id} friends={friendsNotInLeague} pendingInvites={pendingInvites} />
+        <InviteFriends
+          leagueId={id}
+          leagueCode={league.code}
+          leagueName={league.name}
+          userId={user!.id}
+          userRole={userRole}
+          friends={friendsNotInLeague}
+          pendingInvites={pendingInvites}
+          adminIds={adminIds}
+        />
       )}
 
       <div>
@@ -103,9 +141,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               <span className={`w-6 text-center font-bold ${medalColors[i] ?? 'text-slate-400'}`}>
                 {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
               </span>
-              <span className="flex-1 font-medium">
-                {entry.profiles?.username ?? 'Usuario'}
-              </span>
+              <span className="flex-1 font-medium">{entry.username}</span>
               <div className="text-right">
                 <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
                 <span className="text-slate-500 text-sm"> pts</span>
@@ -117,6 +153,15 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           ))}
         </div>
       </div>
+
+      <LeagueClient
+        leagueId={id}
+        leagueName={league.name}
+        userId={user!.id}
+        userRole={userRole}
+        members={members}
+        adminIds={adminIds}
+      />
     </div>
   )
 }
