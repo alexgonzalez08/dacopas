@@ -83,7 +83,7 @@ export default function LeagueClient({
   const [memberList, setMemberList] = useState(initialMembers)
   const [modRequests, setModRequests] = useState(initialModRequests)
   const [joinRequests, setJoinRequests] = useState(initialJoinRequests)
-  const [leaderboard] = useState(initialLeaderboard)
+  const [leaderboard, setLeaderboard] = useState(initialLeaderboard)
   const [changingRole, setChangingRole] = useState<string | null>(null)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [processingReq, setProcessingReq] = useState<string | null>(null)
@@ -108,63 +108,34 @@ export default function LeagueClient({
     setProcessingReq(req.notif_id)
     const supabase = createClient()
 
-    const { data: existing } = await supabase
-      .from('league_members')
-      .select('user_id, left_at')
-      .eq('league_id', leagueId)
-      .eq('user_id', req.target_user_id)
-      .maybeSingle()
-
-    const alreadyMember = existing && !existing.left_at
+    const res = await fetch('/api/leagues/approve-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId, targetUserId: req.target_user_id }),
+    })
+    const { alreadyMember } = await res.json()
 
     if (!alreadyMember) {
-      await supabase.from('league_members').upsert(
-        { league_id: leagueId, user_id: req.target_user_id, role: 'participant' },
-        { onConflict: 'league_id,user_id', ignoreDuplicates: true }
-      )
       await supabase.from('notifications').insert({
-        user_id: req.mod_user_id,
-        from_user_id: userId,
-        type: 'mod_invite_approved',
+        user_id: req.mod_user_id, from_user_id: userId, type: 'mod_invite_approved',
         metadata: { league_id: leagueId, league_name: leagueName, target_username: req.target_username },
       })
-      sendPushNotification({
-        toUserId: req.mod_user_id,
-        title: 'Solicitud aprobada',
-        body: `Tu solicitud para invitar a @${req.target_username} al torneo "${leagueName}" fue aprobada`,
-      })
+      sendPushNotification({ toUserId: req.mod_user_id, title: 'Solicitud aprobada', body: `Tu solicitud para invitar a @${req.target_username} al torneo "${leagueName}" fue aprobada` })
       await supabase.from('notifications').insert({
-        user_id: req.target_user_id,
-        from_user_id: userId,
-        type: 'league_added',
+        user_id: req.target_user_id, from_user_id: userId, type: 'league_added',
         metadata: { league_id: leagueId, league_name: leagueName },
       })
-      sendPushNotification({
-        toUserId: req.target_user_id,
-        title: '¡Te agregaron a un torneo!',
-        body: `Fuiste agregado al torneo "${leagueName}" en Dacopas`,
-        data: { url: `/leagues/${leagueId}` },
-      })
+      sendPushNotification({ toUserId: req.target_user_id, title: '¡Te agregaron a un torneo!', body: `Fuiste agregado al torneo "${leagueName}" en Dacopas`, data: { url: `/leagues/${leagueId}` } })
     }
 
-    // Eliminar TODAS las notificaciones mod_invite_request para este target
-    const { data: allReqs } = await supabase
-      .from('notifications')
-      .select('id')
-      .eq('type', 'mod_invite_request')
-      .eq('metadata->>league_id', leagueId)
-      .eq('metadata->>target_user_id', req.target_user_id)
-    if (allReqs?.length) {
-      await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
-    }
+    const { data: allReqs } = await supabase.from('notifications').select('id')
+      .eq('type', 'mod_invite_request').eq('metadata->>league_id', leagueId).eq('metadata->>target_user_id', req.target_user_id)
+    if (allReqs?.length) await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
 
     setModRequests(prev => prev.filter(r => r.target_user_id !== req.target_user_id))
     if (!alreadyMember) {
-      setMemberList(prev => [...prev, {
-        user_id: req.target_user_id,
-        role: 'participant',
-        profiles: { username: req.target_username, full_name: null, avatar_url: null },
-      }])
+      setMemberList(prev => [...prev, { user_id: req.target_user_id, role: 'participant', profiles: { username: req.target_username, full_name: null, avatar_url: null } }])
+      setLeaderboard(prev => [...prev, { user_id: req.target_user_id, username: req.target_username, points: 0, exact_results: 0, correct_winner: 0 }])
     }
     setProcessingReq(null)
   }
@@ -194,49 +165,27 @@ export default function LeagueClient({
     setProcessingReq(req.notif_id)
     const supabase = createClient()
 
-    const { data: existing } = await supabase
-      .from('league_members').select('user_id, left_at')
-      .eq('league_id', leagueId).eq('user_id', req.requester_user_id).maybeSingle()
-
-    if (!existing || existing.left_at) {
-      await supabase.from('league_members').upsert(
-        { league_id: leagueId, user_id: req.requester_user_id, role: 'participant' },
-        { onConflict: 'league_id,user_id', ignoreDuplicates: true }
-      )
-      if (existing?.left_at) {
-        await supabase.from('league_members').update({ left_at: null, role: 'participant' })
-          .eq('league_id', leagueId).eq('user_id', req.requester_user_id)
-      }
-    }
+    const res = await fetch('/api/leagues/approve-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId, targetUserId: req.requester_user_id }),
+    })
+    const { alreadyMember } = await res.json()
 
     await supabase.from('notifications').insert({
-      user_id: req.requester_user_id,
-      from_user_id: userId,
-      type: 'league_added',
+      user_id: req.requester_user_id, from_user_id: userId, type: 'league_added',
       metadata: { league_id: leagueId, league_name: leagueName },
     })
-    sendPushNotification({
-      toUserId: req.requester_user_id,
-      title: '¡Solicitud aprobada!',
-      body: `Tu solicitud para unirte a "${leagueName}" fue aprobada`,
-      data: { url: `/leagues/${leagueId}` },
-    })
+    sendPushNotification({ toUserId: req.requester_user_id, title: '¡Solicitud aprobada!', body: `Tu solicitud para unirte a "${leagueName}" fue aprobada`, data: { url: `/leagues/${leagueId}` } })
 
-    // Eliminar todas las join_request de este usuario para este torneo
     const { data: allReqs } = await supabase.from('notifications').select('id')
-      .eq('type', 'join_request').eq('metadata->>league_id', leagueId)
-      .eq('from_user_id', req.requester_user_id)
-    if (allReqs?.length) {
-      await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
-    }
+      .eq('type', 'join_request').eq('metadata->>league_id', leagueId).eq('from_user_id', req.requester_user_id)
+    if (allReqs?.length) await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
 
     setJoinRequests(prev => prev.filter(r => r.requester_user_id !== req.requester_user_id))
-    if (!existing || existing.left_at) {
-      setMemberList(prev => [...prev, {
-        user_id: req.requester_user_id,
-        role: 'participant',
-        profiles: { username: req.requester_username, full_name: null, avatar_url: null },
-      }])
+    if (!alreadyMember) {
+      setMemberList(prev => [...prev, { user_id: req.requester_user_id, role: 'participant', profiles: { username: req.requester_username, full_name: null, avatar_url: null } }])
+      setLeaderboard(prev => [...prev, { user_id: req.requester_user_id, username: req.requester_username, points: 0, exact_results: 0, correct_winner: 0 }])
     }
     setProcessingReq(null)
   }
