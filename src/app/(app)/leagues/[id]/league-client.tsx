@@ -59,13 +59,14 @@ export default function LeagueClient({
   async function handleRoleChange(memberId: string, newRole: Role) {
     setOpenDropdown(null)
     setChangingRole(memberId)
-    const supabase = createClient()
-    await supabase
-      .from('league_members')
-      .update({ role: newRole })
-      .eq('league_id', leagueId)
-      .eq('user_id', memberId)
-    setMemberList(prev => prev.map(m => m.user_id === memberId ? { ...m, role: newRole } : m))
+    const res = await fetch('/api/leagues/role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId, targetUserId: memberId, role: newRole }),
+    })
+    if (res.ok) {
+      setMemberList(prev => prev.map(m => m.user_id === memberId ? { ...m, role: newRole } : m))
+    }
     setChangingRole(null)
   }
 
