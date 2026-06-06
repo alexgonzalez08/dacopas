@@ -3,15 +3,24 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { leaveLeague } from '@/lib/leagues'
-import { Shield, ChevronDown, LogOut, Loader2, Crown, Users } from 'lucide-react'
+import { Shield, ChevronDown, LogOut, Loader2, Crown, Users, Check, X, Bell } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
 import { sendPushNotification } from '@/lib/push'
+import Link from 'next/link'
 
 type Role = 'admin' | 'moderator' | 'participant'
 type Member = {
   user_id: string
   role: Role
   profiles: { username: string; full_name: string | null; avatar_url: string | null } | null
+}
+type ModRequest = {
+  notif_id: string
+  mod_user_id: string
+  mod_username: string
+  target_user_id: string
+  target_username: string
+  league_code: string
 }
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -39,8 +48,9 @@ export default function LeagueClient({
   leagueName,
   userId,
   userRole,
-  members,
+  members: initialMembers,
   adminIds,
+  modRequests: initialModRequests = [],
 }: {
   leagueId: string
   leagueName: string
@@ -48,11 +58,14 @@ export default function LeagueClient({
   userRole: Role
   members: Member[]
   adminIds: string[]
+  modRequests?: ModRequest[]
 }) {
   const router = useRouter()
-  const [memberList, setMemberList] = useState(members)
+  const [memberList, setMemberList] = useState(initialMembers)
+  const [modRequests, setModRequests] = useState(initialModRequests)
   const [changingRole, setChangingRole] = useState<string | null>(null)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [processingReq, setProcessingReq] = useState<string | null>(null)
   const [leaving, setLeaving] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -70,14 +83,86 @@ export default function LeagueClient({
     setChangingRole(null)
   }
 
+  async function handleApproveRequest(req: ModRequest) {
+    setProcessingReq(req.notif_id)
+    const supabase = createClient()
+
+    // Agregar al usuario como participante
+    await supabase.from('league_members').upsert(
+      { league_id: leagueId, user_id: req.target_user_id, role: 'participant' },
+      { onConflict: 'league_id,user_id', ignoreDuplicates: true }
+    )
+
+    // Eliminar la notificación del admin
+    await supabase.from('notifications').delete().eq('id', req.notif_id)
+
+    // Notificar al moderador
+    await supabase.from('notifications').insert({
+      user_id: req.mod_user_id,
+      from_user_id: userId,
+      type: 'mod_invite_approved',
+      metadata: { league_id: leagueId, league_name: leagueName, target_username: req.target_username },
+    })
+    sendPushNotification({
+      toUserId: req.mod_user_id,
+      title: 'Solicitud aprobada',
+      body: `Tu solicitud para invitar a @${req.target_username} al torneo "${leagueName}" fue aprobada`,
+    })
+
+    // Notificar al usuario invitado con link al torneo
+    await supabase.from('notifications').insert({
+      user_id: req.target_user_id,
+      from_user_id: userId,
+      type: 'league_added',
+      metadata: { league_id: leagueId, league_name: leagueName },
+    })
+    sendPushNotification({
+      toUserId: req.target_user_id,
+      title: '¡Te agregaron a un torneo!',
+      body: `Fuiste agregado al torneo "${leagueName}" en Dacopas`,
+      data: { url: `/leagues/${leagueId}` },
+    })
+
+    // Actualizar UI: eliminar request y agregar nuevo miembro
+    setModRequests(prev => prev.filter(r => r.notif_id !== req.notif_id))
+    setMemberList(prev => [...prev, {
+      user_id: req.target_user_id,
+      role: 'participant',
+      profiles: { username: req.target_username, full_name: null, avatar_url: null },
+    }])
+    setProcessingReq(null)
+  }
+
+  async function handleDeclineRequest(req: ModRequest) {
+    setProcessingReq(req.notif_id)
+    const supabase = createClient()
+
+    // Eliminar la notificación del admin
+    await supabase.from('notifications').delete().eq('id', req.notif_id)
+
+    // Notificar solo al moderador
+    await supabase.from('notifications').insert({
+      user_id: req.mod_user_id,
+      from_user_id: userId,
+      type: 'mod_invite_declined',
+      metadata: { league_id: leagueId, league_name: leagueName, target_username: req.target_username },
+    })
+    sendPushNotification({
+      toUserId: req.mod_user_id,
+      title: 'Solicitud declinada',
+      body: `Tu solicitud para invitar a @${req.target_username} al torneo "${leagueName}" fue declinada`,
+    })
+
+    setModRequests(prev => prev.filter(r => r.notif_id !== req.notif_id))
+    setProcessingReq(null)
+  }
+
   async function handleLeave() {
     setLeaving(true)
     try {
       await leaveLeague(leagueId, userId)
-
-      // Notificar a todos los admins
       const supabase = createClient()
-      const me = members.find(m => m.user_id === userId)
+      const me = memberList.find(m => m.user_id === userId)
       await Promise.all(adminIds.map(adminId =>
         supabase.from('notifications').insert({
           user_id: adminId,
@@ -91,7 +176,6 @@ export default function LeagueClient({
         title: 'Un participante abandonó el torneo',
         body: `@${me?.profiles?.username ?? 'Alguien'} abandonó el torneo "${leagueName}"`,
       }))
-
       router.push('/leagues/new')
     } catch {
       setLeaving(false)
@@ -100,6 +184,46 @@ export default function LeagueClient({
 
   return (
     <div className="space-y-4">
+
+      {/* Solicitudes pendientes de moderadores — solo admin */}
+      {userRole === 'admin' && modRequests.length > 0 && (
+        <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
+          <h2 className="font-semibold text-slate-300 flex items-center gap-2">
+            <Bell className="w-4 h-4 text-purple-400" />
+            Solicitudes de invitación
+          </h2>
+          <div className="space-y-3">
+            {modRequests.map(req => (
+              <div key={req.notif_id} className="space-y-2">
+                <p className="text-sm text-slate-200">
+                  <span className="font-semibold text-white">@{req.mod_username}</span>
+                  <span className="text-slate-400"> quiere invitar a </span>
+                  <span className="font-semibold text-white">@{req.target_username}</span>
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleApproveRequest(req)}
+                    disabled={processingReq === req.notif_id}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                  >
+                    {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    Aprobar
+                  </button>
+                  <button
+                    onClick={() => handleDeclineRequest(req)}
+                    disabled={processingReq === req.notif_id}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition"
+                  >
+                    {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                    Rechazar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Gestión de miembros — solo admin */}
       {userRole === 'admin' && (
         <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
@@ -165,27 +289,20 @@ export default function LeagueClient({
             <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
               <p className="text-sm text-slate-300">¿Seguro que querés abandonar <span className="font-semibold text-white">"{leagueName}"</span>?</p>
               <div className="flex gap-2">
-                <button
-                  onClick={handleLeave}
-                  disabled={leaving}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 disabled:opacity-50 transition"
-                >
+                <button onClick={handleLeave} disabled={leaving}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 disabled:opacity-50 transition">
                   {leaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
                   Sí, abandonar
                 </button>
-                <button
-                  onClick={() => setShowConfirm(false)}
-                  className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition"
-                >
+                <button onClick={() => setShowConfirm(false)}
+                  className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition">
                   Cancelar
                 </button>
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowConfirm(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition"
-            >
+            <button onClick={() => setShowConfirm(true)}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition">
               <LogOut className="w-3.5 h-3.5" /> Abandonar torneo
             </button>
           )}

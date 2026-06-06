@@ -122,6 +122,26 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const userRole = currentMember.role
   const adminIds = members.filter(m => m.role === 'admin').map(m => m.user_id)
 
+  // Solicitudes de moderadores pendientes — solo para admins
+  let modRequests: { notif_id: string; mod_user_id: string; mod_username: string; target_user_id: string; target_username: string; league_code: string }[] = []
+  if (userRole === 'admin') {
+    const { data: pendingReqs } = await supabase
+      .from('notifications')
+      .select('id, from_user_id, metadata')
+      .eq('user_id', user!.id)
+      .eq('type', 'mod_invite_request')
+    modRequests = (pendingReqs ?? [])
+      .filter(n => n.metadata?.league_id === id)
+      .map(n => ({
+        notif_id: n.id,
+        mod_user_id: n.from_user_id ?? '',
+        mod_username: n.metadata?.mod_username ?? '',
+        target_user_id: n.metadata?.target_user_id ?? '',
+        target_username: n.metadata?.target_username ?? '',
+        league_code: n.metadata?.league_code ?? '',
+      }))
+  }
+
   // Amigos que no están en el torneo (solo para admin y moderador)
   let friendsNotInLeague: { id: string; username: string; full_name: string | null; avatar_url: string | null }[] = []
   let pendingInvites: string[] = []
@@ -240,6 +260,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         userRole={userRole}
         members={members}
         adminIds={adminIds}
+        modRequests={modRequests}
       />
     </div>
   )

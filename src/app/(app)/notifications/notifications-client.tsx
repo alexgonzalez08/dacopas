@@ -182,7 +182,9 @@ function NotificationItem({
           <div className="space-y-1.5">
             <p className="text-sm text-slate-200">
               <span className="text-slate-400">Fuiste agregado al torneo </span>
-              <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+              <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">
+                "{notif.metadata?.league_name}"
+              </Link>
             </p>
             <Link
               href={`/leagues/${notif.metadata?.league_id}`}
@@ -400,7 +402,9 @@ export default function NotificationsClient({
       data: { url: `/leagues/${league_id}` },
     })
 
-    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
+    // Eliminar la notificación del admin
+    await supabase.from('notifications').delete().eq('id', notif.id)
+    setNotifications(prev => prev.filter(n => n.id !== notif.id))
     setAccepting(null)
   }
 
@@ -423,7 +427,9 @@ export default function NotificationsClient({
       })
     }
 
-    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, declined: true, alreadyDeclined: true } : n))
+    // Eliminar la notificación del admin
+    await supabase.from('notifications').delete().eq('id', notif.id)
+    setNotifications(prev => prev.filter(n => n.id !== notif.id))
     setDeclining(null)
   }
 
