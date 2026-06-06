@@ -4,6 +4,7 @@ import { Medal } from 'lucide-react'
 import CopyButton from './copy-button'
 import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
+import LeagueInviteBanner from './league-invite-banner'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -18,7 +19,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   if (!league) notFound()
 
-  // Traer todos los miembros con perfil y rol
+  // Traer todos los miembros activos con perfil y rol
   const { data: membersData } = await supabase
     .from('league_members')
     .select('user_id, role, profiles(username, full_name, avatar_url)')
@@ -32,7 +33,75 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   }))
 
   const currentMember = members.find(m => m.user_id === user!.id)
-  if (!currentMember) notFound()
+
+  // Si no es miembro, verificar si tiene invitación pendiente
+  if (!currentMember) {
+    const { data: invite } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', user!.id)
+      .eq('type', 'league_invite')
+      .eq('metadata->>league_id', id)
+      .maybeSingle()
+
+    if (!invite) notFound()
+
+    // Vista de invitado — mostrar leaderboard y banner de aceptar/declinar
+    const { data: points } = await supabase
+      .from('league_points')
+      .select('user_id, points, exact_results, correct_winner')
+      .eq('league_id', id)
+
+    const pointsMap = new Map((points ?? []).map(p => [p.user_id, p]))
+    const leaderboard = members
+      .map(m => ({
+        user_id: m.user_id,
+        username: m.profiles?.username ?? 'Usuario',
+        points: pointsMap.get(m.user_id)?.points ?? 0,
+        exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
+        correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
+      }))
+      .sort((a, b) => b.points - a.points)
+
+    const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">{league.name}</h1>
+          <p className="text-xs text-slate-500 mt-1">Estás viendo este torneo como invitado</p>
+        </div>
+
+        <LeagueInviteBanner
+          leagueId={id}
+          leagueCode={league.code}
+          leagueName={league.name}
+          notificationId={invite.id}
+        />
+
+        <div>
+          <h2 className="font-semibold mb-3 text-slate-300">Tabla de posiciones</h2>
+          <div className="space-y-2">
+            {leaderboard.map((entry, i) => (
+              <div key={entry.user_id} className="flex items-center gap-4 rounded-xl px-4 py-3 bg-slate-800">
+                <span className={`w-6 text-center font-bold ${medalColors[i] ?? 'text-slate-400'}`}>
+                  {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
+                </span>
+                <span className="flex-1 font-medium">{entry.username}</span>
+                <div className="text-right">
+                  <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
+                  <span className="text-slate-500 text-sm"> pts</span>
+                </div>
+                <div className="text-xs text-slate-500 hidden sm:block">
+                  {entry.exact_results} exactos · {entry.correct_winner} ganador
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const userRole = currentMember.role
   const adminIds = members.filter(m => m.role === 'admin').map(m => m.user_id)
@@ -55,20 +124,6 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
     const friendIds = friendsNotInLeague.map(f => f.id)
     if (friendIds.length > 0) {
-      const notifType = userRole === 'admin' ? 'league_invite' : 'mod_invite_request'
-      const { data: pendingNotifs } = await supabase
-        .from('notifications')
-        .select('metadata')
-        .eq('from_user_id', user!.id)
-        .eq('type', notifType)
-        .eq('metadata->>league_id', id)
-
-      const pendingTargetIds = new Set(
-        (pendingNotifs ?? []).map(n =>
-          userRole === 'admin' ? n.metadata?.user_id : n.metadata?.target_user_id
-        ).filter(Boolean)
-      )
-      // For admin: pending are user_ids from league_invite notifications
       if (userRole === 'admin') {
         const { data: adminPending } = await supabase
           .from('notifications')
@@ -79,8 +134,15 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           .in('user_id', friendIds)
         pendingInvites = (adminPending ?? []).map(n => n.user_id)
       } else {
-        // For moderator: pending are target_user_id from mod_invite_request notifications
-        pendingInvites = Array.from(pendingTargetIds) as string[]
+        const { data: modPending } = await supabase
+          .from('notifications')
+          .select('metadata')
+          .eq('from_user_id', user!.id)
+          .eq('type', 'mod_invite_request')
+          .eq('metadata->>league_id', id)
+        pendingInvites = (modPending ?? [])
+          .map(n => n.metadata?.target_user_id)
+          .filter(Boolean) as string[]
       }
     }
   }

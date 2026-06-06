@@ -151,7 +151,7 @@ function NotificationItem({
             <p className="text-sm text-slate-200">
               <Link href={`/profile/${name}`} className="font-semibold text-white hover:text-yellow-400">@{name}</Link>
               <span className="text-slate-400"> te invitó al torneo </span>
-              <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+              <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">"{notif.metadata?.league_name}"</Link>
             </p>
             {isJoined ? (
               <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
