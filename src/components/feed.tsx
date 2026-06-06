@@ -27,7 +27,7 @@ type MatchPost = {
 type ActivityPost = {
   kind: 'activity'
   id: string
-  type: 'prediction' | 'result' | 'league_join'
+  type: 'prediction' | 'result' | 'league_join' | 'league_create'
   created_at: string
   user_id: string | null
   match_id: number | null
@@ -258,12 +258,25 @@ function LeagueJoinPost({ item, userId, now }: { item: ActivityPost; userId: str
           : <span>un torneo</span>
         }
       </p>
-      <PostInteractions
-        eventId={item.id}
-        userId={userId}
-        initialReactions={item.feed_reactions ?? []}
-        initialComments={item.feed_comments ?? []}
-      />
+      <PostInteractions eventId={item.id} userId={userId} initialReactions={item.feed_reactions ?? []} initialComments={item.feed_comments ?? []} />
+    </div>
+  )
+}
+
+function LeagueCreatePost({ item, userId, now }: { item: ActivityPost; userId: string; now: string }) {
+  return (
+    <div className="bg-slate-800 rounded-2xl p-4">
+      <ActivityHeader item={item} now={now} />
+      <p className="text-sm text-slate-300 mb-1">
+        <span className="text-slate-400">Creó el torneo </span>
+        {item.leagues
+          ? <Link href={`/leagues/${item.league_id}`} className="text-yellow-400 hover:underline font-medium">{item.leagues.name}</Link>
+          : <span>un torneo</span>
+        }
+        <span className="text-slate-400"> para el </span>
+        <span className="font-medium text-white">Mundial 2026</span>
+      </p>
+      <PostInteractions eventId={item.id} userId={userId} initialReactions={item.feed_reactions ?? []} initialComments={item.feed_comments ?? []} />
     </div>
   )
 }
@@ -307,6 +320,7 @@ export default function Feed({
           if (a.type === 'prediction') return <PredictionPost key={a.id} item={a} userId={userId} now={serverNow} />
           if (a.type === 'result') return <ResultPost key={a.id} item={a} userId={userId} now={serverNow} />
           if (a.type === 'league_join') return <LeagueJoinPost key={a.id} item={a} userId={userId} now={serverNow} />
+          if (a.type === 'league_create') return <LeagueCreatePost key={a.id} item={a} userId={userId} now={serverNow} />
         }
         return null
       })}

@@ -68,6 +68,51 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
       }
 
       const league = await createLeague(name, user!.id, imageUrl)
+
+      // Feed event: anunciar creación del torneo
+      await supabase.from('feed_events').insert({
+        user_id: user!.id,
+        type: 'league_create',
+        league_id: league.id,
+      })
+
+      // Notificar a todos los amigos con botón "Solicitar unirse"
+      const { data: friendships } = await supabase
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
+
+      const { data: profile } = await supabase
+        .from('profiles').select('username').eq('id', user!.id).single()
+
+      const friendIds = (friendships ?? []).map(f =>
+        f.requester_id === user!.id ? f.addressee_id : f.requester_id
+      )
+
+      if (friendIds.length > 0) {
+        await Promise.all(friendIds.map(friendId =>
+          supabase.from('notifications').insert({
+            user_id: friendId,
+            from_user_id: user!.id,
+            type: 'league_created',
+            metadata: {
+              league_id: league.id,
+              league_name: league.name,
+              league_code: league.code,
+              competition: 'Mundial 2026',
+              creator_username: profile?.username ?? '',
+            },
+          })
+        ))
+        friendIds.forEach(friendId => sendPushNotification({
+          toUserId: friendId,
+          title: '¡Nuevo torneo creado!',
+          body: `@${profile?.username ?? 'Alguien'} creó el torneo "${league.name}" para el Mundial 2026`,
+          data: { url: `/leagues/${league.id}` },
+        }))
+      }
+
       closeModal()
       router.push(`/leagues/${league.id}`)
     } catch (err: any) {

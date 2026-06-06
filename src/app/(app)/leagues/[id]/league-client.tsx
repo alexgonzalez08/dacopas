@@ -22,6 +22,11 @@ type ModRequest = {
   target_username: string
   league_code: string
 }
+type JoinRequest = {
+  notif_id: string
+  requester_user_id: string
+  requester_username: string
+}
 type LeaderboardEntry = {
   user_id: string
   username: string
@@ -60,6 +65,7 @@ export default function LeagueClient({
   members: initialMembers,
   adminIds,
   modRequests: initialModRequests = [],
+  joinRequests: initialJoinRequests = [],
   leaderboard: initialLeaderboard = [],
 }: {
   leagueId: string
@@ -69,12 +75,14 @@ export default function LeagueClient({
   members: Member[]
   adminIds: string[]
   modRequests?: ModRequest[]
+  joinRequests?: JoinRequest[]
   leaderboard?: LeaderboardEntry[]
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<'gestion' | 'posiciones'>('posiciones')
   const [memberList, setMemberList] = useState(initialMembers)
   const [modRequests, setModRequests] = useState(initialModRequests)
+  const [joinRequests, setJoinRequests] = useState(initialJoinRequests)
   const [leaderboard] = useState(initialLeaderboard)
   const [changingRole, setChangingRole] = useState<string | null>(null)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -182,6 +190,73 @@ export default function LeagueClient({
     setProcessingReq(null)
   }
 
+  async function handleApproveJoinRequest(req: JoinRequest) {
+    setProcessingReq(req.notif_id)
+    const supabase = createClient()
+
+    const { data: existing } = await supabase
+      .from('league_members').select('user_id, left_at')
+      .eq('league_id', leagueId).eq('user_id', req.requester_user_id).maybeSingle()
+
+    if (!existing || existing.left_at) {
+      await supabase.from('league_members').upsert(
+        { league_id: leagueId, user_id: req.requester_user_id, role: 'participant' },
+        { onConflict: 'league_id,user_id', ignoreDuplicates: true }
+      )
+      if (existing?.left_at) {
+        await supabase.from('league_members').update({ left_at: null, role: 'participant' })
+          .eq('league_id', leagueId).eq('user_id', req.requester_user_id)
+      }
+    }
+
+    await supabase.from('notifications').insert({
+      user_id: req.requester_user_id,
+      from_user_id: userId,
+      type: 'league_added',
+      metadata: { league_id: leagueId, league_name: leagueName },
+    })
+    sendPushNotification({
+      toUserId: req.requester_user_id,
+      title: '¡Solicitud aprobada!',
+      body: `Tu solicitud para unirte a "${leagueName}" fue aprobada`,
+      data: { url: `/leagues/${leagueId}` },
+    })
+
+    // Eliminar todas las join_request de este usuario para este torneo
+    const { data: allReqs } = await supabase.from('notifications').select('id')
+      .eq('type', 'join_request').eq('metadata->>league_id', leagueId)
+      .eq('from_user_id', req.requester_user_id)
+    if (allReqs?.length) {
+      await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
+    }
+
+    setJoinRequests(prev => prev.filter(r => r.requester_user_id !== req.requester_user_id))
+    if (!existing || existing.left_at) {
+      setMemberList(prev => [...prev, {
+        user_id: req.requester_user_id,
+        role: 'participant',
+        profiles: { username: req.requester_username, full_name: null, avatar_url: null },
+      }])
+    }
+    setProcessingReq(null)
+  }
+
+  async function handleDeclineJoinRequest(req: JoinRequest) {
+    setProcessingReq(req.notif_id)
+    const supabase = createClient()
+
+    await supabase.from('notifications').insert({
+      user_id: req.requester_user_id,
+      from_user_id: userId,
+      type: 'join_request_declined',
+      metadata: { league_id: leagueId, league_name: leagueName },
+    })
+    await supabase.from('notifications').delete().eq('id', req.notif_id)
+
+    setJoinRequests(prev => prev.filter(r => r.notif_id !== req.notif_id))
+    setProcessingReq(null)
+  }
+
   async function handleLeave() {
     setLeaving(true)
     try {
@@ -209,7 +284,7 @@ export default function LeagueClient({
 
   // Vista con tabs — solo para admins
   if (userRole === 'admin') {
-    const pendingCount = modRequests.length
+    const pendingCount = modRequests.length + joinRequests.length
     return (
       <div className="space-y-4">
         {/* Tabs */}
@@ -295,6 +370,37 @@ export default function LeagueClient({
                         >
                           {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                           Rechazar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Solicitudes directas de unirse */}
+            {joinRequests.length > 0 && (
+              <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
+                <h2 className="font-semibold text-slate-300 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-400" />
+                  Solicitudes para unirse
+                  <span className="ml-auto text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{joinRequests.length}</span>
+                </h2>
+                <div className="space-y-3 divide-y divide-slate-700">
+                  {joinRequests.map(req => (
+                    <div key={req.notif_id} className="pt-3 first:pt-0 space-y-2">
+                      <p className="text-sm text-slate-200">
+                        <Link href={`/profile/${req.requester_username}`} className="font-semibold text-white hover:text-yellow-400">@{req.requester_username}</Link>
+                        <span className="text-slate-400"> quiere unirse al torneo</span>
+                      </p>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApproveJoinRequest(req)} disabled={processingReq === req.notif_id}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
+                          {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Aprobar
+                        </button>
+                        <button onClick={() => handleDeclineJoinRequest(req)} disabled={processingReq === req.notif_id}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition">
+                          {processingReq === req.notif_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Rechazar
                         </button>
                       </div>
                     </div>

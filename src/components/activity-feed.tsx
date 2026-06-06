@@ -6,7 +6,7 @@ import TeamFlag from './team-flag'
 
 type FeedEvent = {
   id: string
-  type: 'prediction' | 'result' | 'league_join'
+  type: 'prediction' | 'result' | 'league_join' | 'league_create'
   created_at: string
   user_id: string | null
   match_id: number | null
@@ -108,6 +108,29 @@ function LeagueJoinEvent({ event }: { event: FeedEvent }) {
   )
 }
 
+function LeagueCreateEvent({ event }: { event: FeedEvent }) {
+  return (
+    <div className="flex gap-3">
+      <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0">
+        <Trophy className="w-4 h-4 text-yellow-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm">
+          <span className="font-semibold text-white">{event.profiles?.username}</span>
+          <span className="text-slate-400"> creó el torneo </span>
+          {event.leagues ? (
+            <Link href={`/leagues/${event.league_id}`} className="text-yellow-400 hover:underline">
+              {event.leagues.name}
+            </Link>
+          ) : 'un torneo'}
+          <span className="text-slate-400"> para el </span>
+          <span className="text-white font-medium">Mundial 2026</span>
+        </p>
+        <p className="text-xs text-slate-500 mt-0.5">{timeAgo(event.created_at)}</p>
+      </div>
+    </div>
+  )
+}
 
 export default function ActivityFeed({ events }: { events: FeedEvent[] }) {
   return (
@@ -124,6 +147,7 @@ export default function ActivityFeed({ events }: { events: FeedEvent[] }) {
               {event.type === 'prediction' && <PredictionEvent event={event} />}
               {event.type === 'result' && <ResultEvent event={event} />}
               {event.type === 'league_join' && <LeagueJoinEvent event={event} />}
+              {event.type === 'league_create' && <LeagueCreateEvent event={event} />}
             </div>
           ))}
         </div>

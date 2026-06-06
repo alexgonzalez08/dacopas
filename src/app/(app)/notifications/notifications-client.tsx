@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserCheck, Check, Loader2, Users, Trash2, X, UserX, Shield, LogOut, ExternalLink } from 'lucide-react'
+import { UserCheck, Check, Loader2, Users, Trash2, X, UserX, Shield, LogOut, ExternalLink, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import UserAvatar from '@/components/user-avatar'
@@ -68,6 +68,16 @@ function NotificationIcon({ type }: { type: string }) {
       <LogOut className="w-4 h-4 text-slate-400" />
     </div>
   )
+  if (type === 'league_created') return (
+    <div className="w-9 h-9 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0">
+      <Trophy className="w-4 h-4 text-yellow-400" />
+    </div>
+  )
+  if (type === 'join_request') return (
+    <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+      <Users className="w-4 h-4 text-purple-400" />
+    </div>
+  )
   return (
     <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
       <WhistleIcon className="w-4 h-4 text-slate-400" />
@@ -77,7 +87,9 @@ function NotificationIcon({ type }: { type: string }) {
 
 function NotificationItem({
   notif, onAccept, onDecline, accepting, declining,
-  onJoin, joining, joinError, onApproveModInvite, onDeclineModInvite, onDelete, deleting,
+  onJoin, joining, joinError, onApproveModInvite, onDeclineModInvite,
+  onRequestJoin, onApproveJoinRequest, onDeclineJoinRequest,
+  onDelete, deleting,
 }: {
   notif: Notification
   onAccept: (notif: Notification) => void
@@ -89,6 +101,9 @@ function NotificationItem({
   joinError: string | null
   onApproveModInvite: (notif: Notification) => void
   onDeclineModInvite: (notif: Notification) => void
+  onRequestJoin: (notif: Notification) => void
+  onApproveJoinRequest: (notif: Notification) => void
+  onDeclineJoinRequest: (notif: Notification) => void
   onDelete: (id: string) => void
   deleting: string | null
 }) {
@@ -246,6 +261,70 @@ function NotificationItem({
             <span className="font-semibold text-white">@{notif.metadata?.target_username}</span>
             <span className="text-slate-400"> al torneo </span>
             <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+            <span className="text-red-400"> fue declinada</span>
+          </p>
+        )}
+
+        {/* Torneo creado — notificación a amigos con botón Solicitar unirse */}
+        {notif.type === 'league_created' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${notif.metadata?.creator_username}`} className="font-semibold text-white hover:text-yellow-400">@{notif.metadata?.creator_username}</Link>
+              <span className="text-slate-400"> creó el torneo </span>
+              <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">"{notif.metadata?.league_name}"</Link>
+              <span className="text-slate-400"> para el </span>
+              <span className="font-medium text-white">{notif.metadata?.competition ?? 'Mundial 2026'}</span>
+            </p>
+            {isAccepted ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-blue-400">
+                <Check className="w-3.5 h-3.5" /> Solicitud enviada
+              </span>
+            ) : (
+              <button onClick={() => onRequestJoin(notif)} disabled={accepting === notif.id}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
+                {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
+                Solicitar unirse
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Solicitud de unirse al torneo — vista del admin */}
+        {notif.type === 'join_request' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${notif.from_user?.username}`} className="font-semibold text-white hover:text-yellow-400">@{name}</Link>
+              <span className="text-slate-400"> quiere unirse al torneo </span>
+              <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">"{notif.metadata?.league_name}"</Link>
+            </p>
+            {isAccepted ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
+                <Check className="w-3.5 h-3.5" /> Aprobado
+              </span>
+            ) : isDeclined ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <X className="w-3.5 h-3.5" /> Declinado
+              </span>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => onApproveJoinRequest(notif)} disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition">
+                  {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Aprobar
+                </button>
+                <button onClick={() => onDeclineJoinRequest(notif)} disabled={accepting === notif.id || declining === notif.id}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 disabled:opacity-50 transition">
+                  {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Declinar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Solicitud de unirse declinada */}
+        {notif.type === 'join_request_declined' && (
+          <p className="text-sm text-slate-200">
+            <span className="text-slate-400">Tu solicitud para unirte al torneo </span>
+            <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">"{notif.metadata?.league_name}"</Link>
             <span className="text-red-400"> fue declinada</span>
           </p>
         )}
@@ -455,6 +534,94 @@ export default function NotificationsClient({
     setDeclining(null)
   }
 
+  async function handleRequestJoin(notif: Notification) {
+    setAccepting(notif.id)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('profiles').select('username').eq('id', user!.id).single()
+
+    // Obtener admins del torneo
+    const { data: admins } = await supabase
+      .from('league_members')
+      .select('user_id')
+      .eq('league_id', notif.metadata?.league_id)
+      .eq('role', 'admin')
+      .is('left_at', null)
+
+    await Promise.all((admins ?? []).map(a =>
+      supabase.from('notifications').insert({
+        user_id: a.user_id,
+        from_user_id: user!.id,
+        type: 'join_request',
+        metadata: {
+          league_id: notif.metadata?.league_id,
+          league_name: notif.metadata?.league_name,
+          requester_username: profile?.username ?? '',
+        },
+      })
+    ))
+
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
+    setAccepting(null)
+  }
+
+  async function handleApproveJoinRequest(notif: Notification) {
+    setAccepting(notif.id)
+    const supabase = createClient()
+    const { league_id, league_name } = notif.metadata ?? {}
+
+    const { data: existing } = await supabase
+      .from('league_members').select('user_id, left_at')
+      .eq('league_id', league_id).eq('user_id', notif.from_user_id!).maybeSingle()
+
+    if (!existing || existing.left_at) {
+      await supabase.from('league_members').upsert(
+        { league_id, user_id: notif.from_user_id!, role: 'participant' },
+        { onConflict: 'league_id,user_id', ignoreDuplicates: true }
+      )
+      if (existing?.left_at) {
+        await supabase.from('league_members').update({ left_at: null, role: 'participant' })
+          .eq('league_id', league_id).eq('user_id', notif.from_user_id!)
+      }
+    }
+
+    // Notificar al solicitante
+    await supabase.from('notifications').insert({
+      user_id: notif.from_user_id!,
+      from_user_id: userId,
+      type: 'league_added',
+      metadata: { league_id, league_name },
+    })
+
+    // Eliminar TODAS las join_request de este usuario para este torneo
+    const { data: allReqs } = await supabase.from('notifications').select('id')
+      .eq('type', 'join_request').eq('metadata->>league_id', league_id)
+      .eq('from_user_id', notif.from_user_id!)
+    if (allReqs?.length) {
+      await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
+    }
+
+    setNotifications(prev => prev.filter(n => n.id !== notif.id))
+    setAccepting(null)
+  }
+
+  async function handleDeclineJoinRequest(notif: Notification) {
+    setDeclining(notif.id)
+    const supabase = createClient()
+
+    // Notificar al solicitante que fue declinado
+    await supabase.from('notifications').insert({
+      user_id: notif.from_user_id!,
+      from_user_id: userId,
+      type: 'join_request_declined',
+      metadata: { league_id: notif.metadata?.league_id, league_name: notif.metadata?.league_name },
+    })
+
+    await supabase.from('notifications').delete().eq('id', notif.id)
+    setNotifications(prev => prev.filter(n => n.id !== notif.id))
+    setDeclining(null)
+  }
+
   async function handleDelete(id: string) {
     setDeleting(id)
     const supabase = createClient()
@@ -507,6 +674,9 @@ export default function NotificationsClient({
               joinError={joinError}
               onApproveModInvite={handleApproveModInvite}
               onDeclineModInvite={handleDeclineModInvite}
+              onRequestJoin={handleRequestJoin}
+              onApproveJoinRequest={handleApproveJoinRequest}
+              onDeclineJoinRequest={handleDeclineJoinRequest}
               onDelete={handleDelete}
               deleting={deleting}
             />

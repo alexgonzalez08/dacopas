@@ -124,12 +124,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   // Solicitudes de moderadores pendientes — solo para admins
   let modRequests: { notif_id: string; mod_user_id: string; mod_username: string; target_user_id: string; target_username: string; league_code: string }[] = []
+  let joinRequests: { notif_id: string; requester_user_id: string; requester_username: string }[] = []
   if (userRole === 'admin') {
-    const { data: pendingReqs } = await supabase
-      .from('notifications')
-      .select('id, from_user_id, metadata')
-      .eq('user_id', user!.id)
-      .eq('type', 'mod_invite_request')
+    const [{ data: pendingReqs }, { data: pendingJoins }] = await Promise.all([
+      supabase.from('notifications').select('id, from_user_id, metadata')
+        .eq('user_id', user!.id).eq('type', 'mod_invite_request'),
+      supabase.from('notifications').select('id, from_user_id, metadata')
+        .eq('user_id', user!.id).eq('type', 'join_request'),
+    ])
     modRequests = (pendingReqs ?? [])
       .filter(n => n.metadata?.league_id === id)
       .map(n => ({
@@ -139,6 +141,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         target_user_id: n.metadata?.target_user_id ?? '',
         target_username: n.metadata?.target_username ?? '',
         league_code: n.metadata?.league_code ?? '',
+      }))
+    joinRequests = (pendingJoins ?? [])
+      .filter(n => n.metadata?.league_id === id)
+      .map(n => ({
+        notif_id: n.id,
+        requester_user_id: n.from_user_id ?? '',
+        requester_username: n.metadata?.requester_username ?? '',
       }))
   }
 
@@ -264,6 +273,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         members={members}
         adminIds={adminIds}
         modRequests={modRequests}
+        joinRequests={joinRequests}
         leaderboard={leaderboard}
       />
     </div>
