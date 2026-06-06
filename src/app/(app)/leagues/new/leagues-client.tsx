@@ -62,10 +62,11 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
         const { error: uploadError } = await supabase.storage
           .from('league-images')
           .upload(path, imageFile, { upsert: true })
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage.from('league-images').getPublicUrl(path)
-          imageUrl = publicUrl
+        if (uploadError) {
+          throw new Error(`Error al subir imagen: ${uploadError.message}`)
         }
+        const { data: { publicUrl } } = supabase.storage.from('league-images').getPublicUrl(path)
+        imageUrl = publicUrl
       }
 
       const league = await createLeague(name, user!.id, imageUrl, description || undefined)
