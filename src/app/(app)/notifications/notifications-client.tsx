@@ -446,64 +446,31 @@ export default function NotificationsClient({
     const supabase = createClient()
     const { league_id, league_name, target_user_id, target_username } = notif.metadata ?? {}
 
-    // Verificar si el usuario ya es miembro (otro admin aprobó antes)
-    const { data: existing } = await supabase
-      .from('league_members')
-      .select('user_id, left_at')
-      .eq('league_id', league_id)
-      .eq('user_id', target_user_id)
-      .maybeSingle()
-
-    const alreadyMember = existing && !existing.left_at
+    const res = await fetch('/api/leagues/approve-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId: league_id, targetUserId: target_user_id }),
+    })
+    const { alreadyMember } = await res.json()
 
     if (!alreadyMember) {
-      // Agregar al usuario al torneo
-      await supabase.from('league_members').upsert(
-        { league_id, user_id: target_user_id, role: 'participant' },
-        { onConflict: 'league_id,user_id', ignoreDuplicates: true }
-      )
-
-      // Notificar al moderador
       if (notif.from_user_id) {
         await supabase.from('notifications').insert({
-          user_id: notif.from_user_id,
-          from_user_id: userId,
-          type: 'mod_invite_approved',
+          user_id: notif.from_user_id, from_user_id: userId, type: 'mod_invite_approved',
           metadata: { league_id, league_name, target_username },
         })
-        sendPushNotification({
-          toUserId: notif.from_user_id,
-          title: 'Solicitud aprobada',
-          body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue aprobada`,
-        })
+        sendPushNotification({ toUserId: notif.from_user_id, title: 'Solicitud aprobada', body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue aprobada` })
       }
-
-      // Notificar al usuario agregado
       await supabase.from('notifications').insert({
-        user_id: target_user_id,
-        from_user_id: userId,
-        type: 'league_added',
+        user_id: target_user_id, from_user_id: userId, type: 'league_added',
         metadata: { league_id, league_name },
       })
-      sendPushNotification({
-        toUserId: target_user_id,
-        title: '¡Te agregaron a un torneo!',
-        body: `Fuiste agregado al torneo "${league_name}" en Dacopas`,
-        data: { url: `/leagues/${league_id}` },
-      })
+      sendPushNotification({ toUserId: target_user_id, title: '¡Te agregaron a un torneo!', body: `Fuiste agregado al torneo "${league_name}" en Dacopas`, data: { url: `/leagues/${league_id}` } })
     }
 
-    // Eliminar TODAS las notificaciones mod_invite_request para este usuario en este torneo
-    // (incluye las de otros admins que aún no procesaron)
-    const { data: allReqs } = await supabase
-      .from('notifications')
-      .select('id')
-      .eq('type', 'mod_invite_request')
-      .eq('metadata->>league_id', league_id)
-      .eq('metadata->>target_user_id', target_user_id)
-    if (allReqs?.length) {
-      await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
-    }
+    const { data: allReqs } = await supabase.from('notifications').select('id')
+      .eq('type', 'mod_invite_request').eq('metadata->>league_id', league_id).eq('metadata->>target_user_id', target_user_id)
+    if (allReqs?.length) await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
 
     setNotifications(prev => prev.filter(n => n.id !== notif.id))
     setAccepting(null)
@@ -553,36 +520,21 @@ export default function NotificationsClient({
     const supabase = createClient()
     const { league_id, league_name } = notif.metadata ?? {}
 
-    const { data: existing } = await supabase
-      .from('league_members').select('user_id, left_at')
-      .eq('league_id', league_id).eq('user_id', notif.from_user_id!).maybeSingle()
-
-    if (!existing || existing.left_at) {
-      await supabase.from('league_members').upsert(
-        { league_id, user_id: notif.from_user_id!, role: 'participant' },
-        { onConflict: 'league_id,user_id', ignoreDuplicates: true }
-      )
-      if (existing?.left_at) {
-        await supabase.from('league_members').update({ left_at: null, role: 'participant' })
-          .eq('league_id', league_id).eq('user_id', notif.from_user_id!)
-      }
-    }
-
-    // Notificar al solicitante
-    await supabase.from('notifications').insert({
-      user_id: notif.from_user_id!,
-      from_user_id: userId,
-      type: 'league_added',
-      metadata: { league_id, league_name },
+    await fetch('/api/leagues/approve-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId: league_id, targetUserId: notif.from_user_id }),
     })
 
-    // Eliminar TODAS las join_request de este usuario para este torneo
+    await supabase.from('notifications').insert({
+      user_id: notif.from_user_id!, from_user_id: userId, type: 'league_added',
+      metadata: { league_id, league_name },
+    })
+    sendPushNotification({ toUserId: notif.from_user_id!, title: '¡Solicitud aprobada!', body: `Tu solicitud para unirte a "${league_name}" fue aprobada`, data: { url: `/leagues/${league_id}` } })
+
     const { data: allReqs } = await supabase.from('notifications').select('id')
-      .eq('type', 'join_request').eq('metadata->>league_id', league_id)
-      .eq('from_user_id', notif.from_user_id!)
-    if (allReqs?.length) {
-      await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
-    }
+      .eq('type', 'join_request').eq('metadata->>league_id', league_id).eq('from_user_id', notif.from_user_id!)
+    if (allReqs?.length) await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
 
     setNotifications(prev => prev.filter(n => n.id !== notif.id))
     setAccepting(null)
