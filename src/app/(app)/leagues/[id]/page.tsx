@@ -23,6 +23,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     .from('league_members')
     .select('user_id, role, profiles(username, full_name, avatar_url)')
     .eq('league_id', id)
+    .is('left_at', null)
 
   const members = (membersData ?? []).map(m => ({
     user_id: m.user_id,

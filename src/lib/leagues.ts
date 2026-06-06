@@ -59,7 +59,7 @@ export async function leaveLeague(leagueId: string, userId: string) {
   const supabase = createClient()
   const { error } = await supabase
     .from('league_members')
-    .delete()
+    .update({ left_at: new Date().toISOString() })
     .eq('league_id', leagueId)
     .eq('user_id', userId)
   if (error) throw error

@@ -7,10 +7,13 @@ export default async function LeaguesPage() {
 
   const { data: memberships } = await supabase
     .from('league_members')
-    .select('leagues(id, name, code)')
+    .select('role, leagues(id, name, code)')
     .eq('user_id', user!.id)
+    .is('left_at', null)
 
-  const leagues = memberships?.map(m => m.leagues).filter(Boolean) ?? []
+  const leagues = (memberships ?? [])
+    .filter(m => m.leagues != null)
+    .map(m => ({ ...(m.leagues as any), role: m.role ?? 'participant' }))
 
-  return <LeaguesClient leagues={leagues as any} />
+  return <LeaguesClient leagues={leagues} />
 }
