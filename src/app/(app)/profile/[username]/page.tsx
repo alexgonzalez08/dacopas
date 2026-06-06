@@ -13,7 +13,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('username', username)
+    .ilike('username', username)
     .single()
 
   if (!profile) notFound()

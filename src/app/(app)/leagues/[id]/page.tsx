@@ -8,13 +8,12 @@ import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import EditLeague from './edit-league'
 
-const adminSupabase = createAdmin(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const adminSupabase = createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -243,31 +242,29 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             <img src={league.image_url} alt={league.name} className="w-full h-full object-cover" />
           </div>
         )}
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/20">
-                🏆 Mundial 2026
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold leading-tight">{league.name}</h1>
-            {league.description && (
-              <p className="text-sm text-slate-400 leading-relaxed">{league.description}</p>
-            )}
+        <div className="space-y-2">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/20">
+            🏆 Mundial 2026
+          </span>
+          <h1 className="text-2xl font-bold leading-tight">{league.name}</h1>
+          {league.description && (
+            <p className="text-sm text-slate-400 leading-relaxed">{league.description}</p>
+          )}
+          <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-slate-500">
               Código: <span className="font-mono font-semibold text-yellow-400">{league.code}</span>
             </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {userRole === 'admin' && (
-              <EditLeague
-                leagueId={id}
-                initialName={league.name}
-                initialDescription={league.description ?? null}
-                initialImageUrl={league.image_url ?? null}
-              />
-            )}
-            <CopyButton code={league.code} />
+            <div className="flex items-center gap-2 shrink-0">
+              {userRole === 'admin' && (
+                <EditLeague
+                  leagueId={id}
+                  initialName={league.name}
+                  initialDescription={league.description ?? null}
+                  initialImageUrl={league.image_url ?? null}
+                />
+              )}
+              <CopyButton code={league.code} />
+            </div>
           </div>
         </div>
       </div>
