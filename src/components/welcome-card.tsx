@@ -8,7 +8,7 @@ const STORAGE_KEY = 'dacopas_welcome_dismissed'
 const STEPS = [
   {
     emoji: '🎉',
-    title: (username: string) => `¡Bienvenido, ${username}!`,
+    title: (username: string) => `¡Hola, ${username}!`,
     text: `Entraste a Dacopas, el lugar donde los pibes se la juegan prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás listo para demostrar quién sabe más de fútbol en tu grupo?`,
   },
   {
