@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { X, Users, ChevronRight } from 'lucide-react'
+import { X, Users, ChevronRight, ChevronLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const STEPS = [
@@ -120,9 +120,9 @@ export default function WelcomeCard({ username, userId }: { username: string; us
           {step > 0 && (
             <button
               onClick={() => setStep(s => s - 1)}
-              className="flex-1 py-2.5 text-sm font-semibold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition"
+              className="py-2.5 px-4 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition flex items-center justify-center"
             >
-              Atrás
+              <ChevronLeft className="w-5 h-5" />
             </button>
           )}
           {isLast ? (
@@ -136,9 +136,9 @@ export default function WelcomeCard({ username, userId }: { username: string; us
           ) : (
             <button
               onClick={() => setStep(s => s + 1)}
-              className="flex-1 py-2.5 text-sm font-semibold text-slate-900 bg-yellow-500 hover:bg-yellow-400 rounded-xl transition flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 text-sm font-semibold text-slate-900 bg-yellow-500 hover:bg-yellow-400 rounded-xl transition flex items-center justify-center"
             >
-              Siguiente <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           )}
         </div>
