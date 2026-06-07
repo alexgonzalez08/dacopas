@@ -6,10 +6,19 @@ import { createLeague, joinLeague, leaveLeague } from '@/lib/leagues'
 import { Trophy, Copy, Check, ChevronRight, LogOut, X, Loader2, Plus, Hash, ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { sendPushNotification } from '@/lib/push'
+import LeaguesInfoModal from '@/components/leagues-info-modal'
 
 type League = { id: string; name: string; code: string; role: string; image_url?: string | null }
 
-export default function LeaguesClient({ leagues: initial }: { leagues: League[] }) {
+export default function LeaguesClient({
+  leagues: initial,
+  userId,
+  leaguesInfoSeen,
+}: {
+  leagues: League[]
+  userId: string
+  leaguesInfoSeen: boolean
+}) {
   const router = useRouter()
 
   const [leagues, setLeagues] = useState<League[]>(initial)
@@ -200,6 +209,9 @@ export default function LeaguesClient({ leagues: initial }: { leagues: League[] 
           </button>
         </div>
       </div>
+
+      {/* Modal informativo de torneos */}
+      <LeaguesInfoModal userId={userId} autoOpen={!leaguesInfoSeen} />
 
       {/* Lista de torneos */}
       {leftMessage && (
