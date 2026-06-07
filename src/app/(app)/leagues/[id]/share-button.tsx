@@ -24,7 +24,7 @@ export default function ShareButton({ leagueId, leagueName }: { leagueId: string
   return (
     <button
       onClick={handleShare}
-      className="flex items-center gap-2 px-3 py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-900 rounded-lg text-sm font-semibold transition"
+      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-slate-900 rounded-xl text-sm font-semibold transition"
     >
       {copied
         ? <><Check className="w-4 h-4" /> Copiado</>

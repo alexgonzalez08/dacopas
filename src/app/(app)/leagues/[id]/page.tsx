@@ -277,18 +277,16 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             <p className="text-xs text-slate-500">
               Código: <span className="font-mono font-semibold text-yellow-400">{league.code}</span>
             </p>
-            <div className="flex items-center gap-2 shrink-0">
-              {userRole === 'admin' && (
-                <EditLeague
-                  leagueId={id}
-                  initialName={league.name}
-                  initialDescription={league.description ?? null}
-                  initialImageUrl={league.image_url ?? null}
-                />
-              )}
-              <ShareButton leagueId={id} leagueName={league.name} />
-            </div>
+            {userRole === 'admin' && (
+              <EditLeague
+                leagueId={id}
+                initialName={league.name}
+                initialDescription={league.description ?? null}
+                initialImageUrl={league.image_url ?? null}
+              />
+            )}
           </div>
+          <ShareButton leagueId={id} leagueName={league.name} />
         </div>
       </div>
 
