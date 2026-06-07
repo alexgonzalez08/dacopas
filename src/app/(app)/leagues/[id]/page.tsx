@@ -64,7 +64,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       .in('type', ['league_invite', 'league_created'])
 
     const invite = invites?.find(n => n.metadata?.league_id === id) ?? null
-    if (!invite) notFound()
+    if (!invite) redirect(`/leagues/${id}/join`)
 
     // Para league_created no hay código de invitación — usamos el código del torneo
     const inviteCode = invite.type === 'league_invite'
