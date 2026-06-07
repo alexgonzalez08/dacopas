@@ -286,11 +286,13 @@ function LeagueCreatePost({ item, userId, now }: { item: ActivityPost; userId: s
 export default function Feed({
   items,
   userId,
+  userAvatarUrl,
   onDeletePost,
   serverNow,
 }: {
   items: FeedItem[]
   userId: string
+  userAvatarUrl?: string | null
   onDeletePost?: (id: string) => void
   serverNow: string
 }) {
@@ -312,6 +314,7 @@ export default function Feed({
             key={item.id}
             post={item as any}
             userId={userId}
+            userAvatarUrl={userAvatarUrl}
             onDelete={onDeletePost ?? (() => {})}
           />
         )

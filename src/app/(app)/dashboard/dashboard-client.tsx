@@ -61,7 +61,7 @@ export default function DashboardClient({
 
       <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
       <SuggestedFriendsCarousel userId={userId} suggestions={suggestedFriends} />
-      <Feed items={feed} userId={userId} onDeletePost={handleDeletePost} serverNow={serverNow} />
+      <Feed items={feed} userId={userId} userAvatarUrl={avatarUrl} onDeletePost={handleDeletePost} serverNow={serverNow} />
     </div>
   )
 }

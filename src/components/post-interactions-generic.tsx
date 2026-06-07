@@ -14,12 +14,13 @@ type Comment = {
   content: string
   user_id: string
   created_at: string
-  profiles?: { username: string }
+  profiles?: { username: string; avatar_url?: string | null }
 }
 
 export default function PostInteractionsGeneric({
   postId,
   userId,
+  userAvatarUrl,
   postOwnerId,
   postOwnerUsername,
   initialReactions,
@@ -28,6 +29,7 @@ export default function PostInteractionsGeneric({
 }: {
   postId: string
   userId: string
+  userAvatarUrl?: string | null
   postOwnerId?: string
   postOwnerUsername?: string
   initialReactions: Reaction[]
@@ -91,7 +93,7 @@ export default function PostInteractionsGeneric({
     const { data } = await supabase
       .from(commentsTable)
       .insert({ [idCol]: postId, user_id: userId, content: comment.trim() })
-      .select('*, profiles(username)')
+      .select('*, profiles(username, avatar_url)')
       .single()
     if (data) {
       setComments(c => [...c, data])
@@ -203,8 +205,11 @@ export default function PostInteractionsGeneric({
         <div className="px-4 pb-4 space-y-3">
           {comments.map(c => (
             <div key={c.id} className="flex gap-2 group">
-              <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center shrink-0 text-xs font-bold text-slate-300 uppercase">
-                {c.profiles?.username?.[0] ?? '?'}
+              <div className="w-6 h-6 rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
+                {c.profiles?.avatar_url
+                  ? <img src={c.profiles.avatar_url} alt={c.profiles.username} className="w-full h-full object-cover" />
+                  : c.profiles?.username?.[0] ?? '?'
+                }
               </div>
               <div className="flex-1 bg-slate-700/50 rounded-xl px-3 py-1.5">
                 <span className="text-xs font-semibold text-slate-300">{c.profiles?.username} </span>
@@ -227,8 +232,11 @@ export default function PostInteractionsGeneric({
           ))}
 
           <form onSubmit={handleComment} className="flex gap-2">
-            <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0 text-xs font-bold text-yellow-400 uppercase">
-              {userId[0]}
+            <div className="w-6 h-6 rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
+              {userAvatarUrl
+                ? <img src={userAvatarUrl} alt="" className="w-full h-full object-cover" />
+                : userId[0]
+              }
             </div>
             <div className="flex-1 flex gap-2">
               <input

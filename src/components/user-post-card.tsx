@@ -21,10 +21,12 @@ type UserPost = {
 export default function UserPostCard({
   post,
   userId,
+  userAvatarUrl,
   onDelete,
 }: {
   post: UserPost
   userId: string
+  userAvatarUrl?: string | null
   onDelete?: (id: string) => void
 }) {
   const [showMenu, setShowMenu] = useState(false)
@@ -91,6 +93,7 @@ export default function UserPostCard({
       <PostInteractionsGeneric
         postId={post.id}
         userId={userId}
+        userAvatarUrl={userAvatarUrl}
         postOwnerId={post.user_id}
         postOwnerUsername={post.profiles?.username ?? ''}
         initialReactions={post.post_reactions ?? []}
