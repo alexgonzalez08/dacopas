@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react'
 import Feed, { FeedItem } from '@/components/feed'
 import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
+import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
 import { initPushNotifications } from '@/lib/push'
 
 type League = { id: string; name: string }
+type SuggestedUser = { id: string; username: string; full_name: string | null; avatar_url: string | null; shared_leagues: string[] }
 
 export default function DashboardClient({
   userId,
@@ -16,6 +18,7 @@ export default function DashboardClient({
   serverNow,
   hasLeagues,
   showWelcome,
+  suggestedFriends,
 }: {
   userId: string
   username: string
@@ -25,6 +28,7 @@ export default function DashboardClient({
   serverNow: string
   hasLeagues: boolean
   showWelcome: boolean
+  suggestedFriends: SuggestedUser[]
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(initialFeed)
 
@@ -56,6 +60,7 @@ export default function DashboardClient({
       {showWelcome && <WelcomeCard username={username} userId={userId} />}
 
       <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
+      <SuggestedFriendsCarousel userId={userId} suggestions={suggestedFriends} />
       <Feed items={feed} userId={userId} onDeletePost={handleDeletePost} serverNow={serverNow} />
     </div>
   )

@@ -5,20 +5,24 @@ import UserAvatar from '@/components/user-avatar'
 import { UserPlus, UserX, Search, Clock, Users, Check, X, Loader2, UserCheck } from 'lucide-react'
 import Link from 'next/link'
 import { sendPushNotification } from '@/lib/push'
+import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
 
 type Profile = { id: string; username: string; full_name: string | null; avatar_url: string | null }
 type Friendship = { id: string; requester?: Profile; addressee?: Profile; status: string }
+type SuggestedUser = { id: string; username: string; full_name: string | null; avatar_url: string | null; shared_leagues: string[] }
 
 export default function FriendsClient({
   userId,
   initialFriends,
   initialPending,
   initialRequests,
+  suggestedFriends = [],
 }: {
   userId: string
   initialFriends: Friendship[]
   initialPending: Friendship[]
   initialRequests: Friendship[]
+  suggestedFriends?: SuggestedUser[]
 }) {
   const [friends, setFriends] = useState(initialFriends)
   const [pending, setPending] = useState(initialPending)
@@ -151,6 +155,9 @@ export default function FriendsClient({
   return (
     <div className="space-y-6 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold">Amistades</h1>
+
+      {/* Sugerencias de amigos */}
+      <SuggestedFriendsCarousel userId={userId} suggestions={suggestedFriends} />
 
       {/* Buscar */}
       <div className="bg-slate-800 rounded-2xl p-4 space-y-4">

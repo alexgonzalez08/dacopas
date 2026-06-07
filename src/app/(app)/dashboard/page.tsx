@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Feed, { FeedItem } from '@/components/feed'
 import { isPredictionLocked } from '@/lib/predictions'
 import DashboardClient from './dashboard-client'
+import { getSuggestedFriends } from '@/lib/suggested-friends'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -40,6 +41,7 @@ export default async function DashboardPage() {
     { data: friendEvents },
     { data: resultEvents },
     { data: userPosts },
+    suggestedFriends,
   ] = await Promise.all([
     supabase
       .from('matches')
@@ -73,6 +75,7 @@ export default async function DashboardPage() {
       .in('user_id', [user!.id, ...friendIds])
       .order('created_at', { ascending: false })
       .limit(30),
+    getSuggestedFriends(supabase, user!.id),
   ])
 
   const predMap = new Map((predictions ?? []).map(p => [p.match_id, p]))
@@ -132,6 +135,7 @@ export default async function DashboardPage() {
       serverNow={serverNow}
       hasLeagues={leagueIds.length > 0}
       showWelcome={!profile?.welcome_seen}
+      suggestedFriends={suggestedFriends}
     />
   )
 }
