@@ -108,47 +108,49 @@ export default function PredictionsClient({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="flex-1 flex justify-end">
-                      <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="lg" showName={false} />
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        disabled={locked}
-                        value={s.home}
-                        onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], home: e.target.value } }))}
-                        className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
-                      />
-                      <span className="text-slate-500 font-bold">-</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        disabled={locked}
-                        value={s.away}
-                        onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], away: e.target.value } }))}
-                        className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
-                      />
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className="flex-1 flex justify-end">
+                        <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="lg" showName={false} />
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          disabled={locked}
+                          value={s.home}
+                          onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], home: e.target.value } }))}
+                          className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
+                        />
+                        <span className="text-slate-500 font-bold">-</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          disabled={locked}
+                          value={s.away}
+                          onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], away: e.target.value } }))}
+                          className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
+                        />
+                      </div>
+                      <span className="flex-1 flex justify-start">
+                        <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="lg" showName={false} />
+                      </span>
                     </div>
-                    <span className="flex-1 flex justify-start">
-                      <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="lg" showName={false} />
-                    </span>
+                    {!locked && (
+                      <div className="mt-3 sm:mt-0 flex flex-col items-stretch sm:items-end gap-1">
+                        {errors[match.id] && <span className="text-xs text-red-400 sm:text-right">{errors[match.id]}</span>}
+                        <button
+                          onClick={() => handleSave(match)}
+                          disabled={saving[match.id]}
+                          className="w-full sm:w-auto px-6 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                        >
+                          {saving[match.id] ? 'Guardando...' : saved[match.id] ? '✓ Guardado' : 'Guardar'}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {!locked && (
-                    <div className="mt-3 flex items-center justify-between sm:justify-end gap-2">
-                      {errors[match.id] && <span className="text-xs text-red-400">{errors[match.id]}</span>}
-                      <button
-                        onClick={() => handleSave(match)}
-                        disabled={saving[match.id]}
-                        className="w-full sm:w-auto px-6 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
-                      >
-                        {saving[match.id] ? 'Guardando...' : saved[match.id] ? '✓ Guardado' : 'Guardar'}
-                      </button>
-                    </div>
-                  )}
                 </div>
               )
             })}
