@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { sendPushToAllUsers } from '@/lib/push-server'
 
 const FOOTBALL_API = 'https://api.football-data.org/v4'
 // World Cup 2026 competition id (will be updated once available)
@@ -75,7 +76,31 @@ async function runSync(request: Request) {
   // Lock predictions 1h before kickoff
   await supabase.rpc('lock_predictions_before_match')
 
-  return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds })
+  // Notificar 45 minutos antes del partido
+  const now = new Date()
+  const windowStart = new Date(now.getTime() + 40 * 60 * 1000)
+  const windowEnd = new Date(now.getTime() + 50 * 60 * 1000)
+
+  const { data: upcomingMatches } = await supabase
+    .from('matches')
+    .select('id, home_team, away_team')
+    .eq('status', 'scheduled')
+    .eq('notified_45min', false)
+    .gte('match_date', windowStart.toISOString())
+    .lte('match_date', windowEnd.toISOString())
+
+  const notifiedIds: number[] = []
+  for (const match of upcomingMatches ?? []) {
+    await sendPushToAllUsers(supabase, {
+      title: '⚽ ¡Partido en 45 minutos!',
+      body: `${match.home_team} vs ${match.away_team} — ¡No olvides enviar tu pronóstico!`,
+      data: { url: `/matches/${match.id}` },
+    })
+    await supabase.from('matches').update({ notified_45min: true }).eq('id', match.id)
+    notifiedIds.push(match.id)
+  }
+
+  return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds, notified: notifiedIds })
 }
 
 export async function GET(request: Request) {
