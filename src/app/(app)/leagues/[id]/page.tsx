@@ -184,9 +184,18 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
 
     const memberUserIds = new Set(members.map(m => m.user_id))
+
+    // Excluir también ex-miembros eliminados por el admin
+    const { data: exMembers } = await adminSupabase
+      .from('league_members')
+      .select('user_id')
+      .eq('league_id', id)
+      .not('left_at', 'is', null)
+    const exMemberIds = new Set((exMembers ?? []).map(m => m.user_id))
+
     friendsNotInLeague = (friendships ?? [])
       .map(f => ((f.requester as any)?.id === user!.id ? f.addressee : f.requester) as any)
-      .filter((p: any) => p != null && !memberUserIds.has(p.id))
+      .filter((p: any) => p != null && !memberUserIds.has(p.id) && !exMemberIds.has(p.id))
 
     const friendIds = friendsNotInLeague.map(f => f.id)
     if (friendIds.length > 0) {
