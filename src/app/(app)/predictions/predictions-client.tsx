@@ -109,8 +109,8 @@ export default function PredictionsClient({
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="flex-1 text-right font-medium text-sm">
-                      <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} />
+                    <span className="flex-1 flex justify-end">
+                      <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="lg" showName={false} />
                     </span>
                     <div className="flex items-center gap-2">
                       <input
@@ -133,17 +133,17 @@ export default function PredictionsClient({
                         className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
                       />
                     </div>
-                    <span className="flex-1 text-left font-medium text-sm">
-                      <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} />
+                    <span className="flex-1 flex justify-start">
+                      <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="lg" showName={false} />
                     </span>
                   </div>
                   {!locked && (
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-xs text-red-400">{errors[match.id]}</span>
+                    <div className="mt-3 flex flex-col items-center gap-1">
+                      {errors[match.id] && <span className="text-xs text-red-400">{errors[match.id]}</span>}
                       <button
                         onClick={() => handleSave(match)}
                         disabled={saving[match.id]}
-                        className="px-4 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                        className="w-full py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
                       >
                         {saving[match.id] ? 'Guardando...' : saved[match.id] ? '✓ Guardado' : 'Guardar'}
                       </button>
