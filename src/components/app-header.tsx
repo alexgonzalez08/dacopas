@@ -1,13 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Trophy, LogOut, LayoutDashboard, Star, Users, UserCircle, UserPlus } from 'lucide-react'
+import { Trophy, LogOut, Star, Users, UserCircle, UserPlus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import WhistleIcon from '@/components/whistle-icon'
 
 const DESKTOP_NAV = [
-  { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Torneos', icon: Users },
   { href: '/friends', label: 'Amistades', icon: UserPlus },
