@@ -6,39 +6,39 @@ import { createClient } from '@/lib/supabase/client'
 
 const STEPS = [
   {
-    emoji: '🎉',
-    title: (username: string) => `¡Hola, ${username}!`,
-    text: `Entraste a Dacopas, el lugar donde la gente se la juega prediciendo los partidos del Mundial 2026. Acá no hay suerte — hay criterio, olfato futbolero y mucho descaro. ¿Estás para demostrar quién sabe más de fútbol en tu grupo?`,
+    emoji: '⚽',
+    title: (username: string) => `Hola, ${username}`,
+    text: `Dacopas es un juego de pronósticos para el Mundial 2026. Predecís los resultados de los partidos, acumulás puntos y competís contra la gente que vos elegís. Simple.`,
   },
   {
     emoji: '👥',
-    title: () => '¡Buscá a tus amigos!',
-    text: `Agregá a tus amigos desde la sección de Amistades. Buscalos por alias o nombre y mandales una solicitud. Porque esto no es un monólogo — quien gana en solitario no tiene a quién echarle en cara que se equivocó.`,
+    title: () => 'Primero, agregá amigos',
+    text: `Buscá a tus amigos por nombre o alias en la sección de Amistades y mandales una solicitud. Sin amigos conectados, el juego no tiene mucha gracia.`,
   },
   {
     emoji: '🏆',
-    title: () => 'Armá tu liga y ponele nombre',
-    text: `Creá una liga, poné el nombre que quieras — "Los Cracks del Laburo", "La Familia del Asado", lo que se les ocurra — e invitá a tus amigos con el código. Quien quede en último lugar paga el asado. O las birras. O los dos.`,
+    title: () => 'Creá un torneo',
+    text: `Podés crear un torneo, ponerle el nombre que quieras e invitar a quien quieras con un código. También podés sumarte a torneos que ya existen si alguien te comparte el link.`,
   },
   {
     emoji: '👑',
-    title: () => 'Torneos con roles',
-    text: `Cada torneo tiene su jerarquía. La persona Admin crea e invita directamente. Las Moderadoras y Moderadores pueden proponer invitados — el Admin aprueba. Y quienes participan, a darle al pronóstico. También podés solicitar unirte a torneos de tus amigos.`,
+    title: () => 'Roles dentro del torneo',
+    text: `El Admin crea e invita directamente. Los Moderadores pueden sugerir invitados, pero el Admin aprueba. El resto participa y pronostica. Cada torneo funciona de forma independiente.`,
   },
   {
     emoji: '🎯',
-    title: () => '¿Cómo se puntúa?',
-    text: `Predecís el resultado exacto → 3 puntos. 🔥 Acertás quién gana → 1 punto. Quien más puntos junte al final del Mundial se lleva la copa y los derechos eternos de joder a todos con que "yo lo sabía".`,
+    title: () => 'Cómo se puntúa',
+    text: `Resultado exacto → 3 puntos. Acertar quién gana → 1 punto. Los empates también cuentan si los predecís. Al final del Mundial gana quien más puntos tenga.`,
   },
   {
     emoji: '⏰',
-    title: () => '¡No te quedés afuera!',
-    text: `Tus predicciones se cierran 15 minutos antes de cada partido. Así que nada de ver el gol y después decir que lo ibas a poner. Quien llega tarde al pique se queda sin poder predecir.`,
+    title: () => 'Límite de tiempo',
+    text: `Las predicciones se cierran 15 minutos antes de cada partido. Después de ese momento ya no podés cargar ni modificar nada para ese partido.`,
   },
   {
-    emoji: '🍺',
-    title: () => '¡A disfrutar del fútbol!',
-    text: `Invitá a tus amigos, armá el grupo, hacé los piques y que quien pierda pague la ronda. El fútbol es mejor con amigos — y aún mejor cuando podés frotarles en la cara que acertaste el marcador exacto. ¡Dale Dacopas! 🏆`,
+    emoji: '✅',
+    title: () => 'Ya está, eso es todo',
+    text: `Creá tu torneo, sumá gente y empezá a pronosticar cuando arranquen los partidos. Si tenés dudas, cada sección tiene su propia ayuda.`,
   },
 ]
 

@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Trophy } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
@@ -14,11 +13,13 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    const supabase = createClient()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback`,
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
     })
-    if (error) { setError(error.message); setLoading(false); return }
+    const data = await res.json()
+    if (!res.ok) { setError(data.error ?? 'Error al enviar email'); setLoading(false); return }
     setSent(true)
     setLoading(false)
   }
@@ -37,10 +38,10 @@ export default function ForgotPasswordPage() {
               <span className="text-2xl">📧</span>
             </div>
             <p className="text-slate-300">
-              Te enviamos un link a <span className="text-yellow-400 font-medium">{email}</span>
+              Si <span className="text-yellow-400 font-medium">{email}</span> tiene una cuenta, te enviamos un link.
             </p>
             <p className="text-slate-400 text-sm">
-              Revisá tu bandeja de entrada y seguí las instrucciones para restablecer tu contraseña.
+              Revisá tu bandeja de entrada. El link expira en 1 hora.
             </p>
             <Link href="/login" className="block mt-4 text-yellow-400 hover:underline text-sm">
               Volver al login

@@ -1,29 +1,23 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Trophy } from 'lucide-react'
+import Link from 'next/link'
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token')
+
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [ready, setReady] = useState(false)
+  const [done, setDone] = useState(false)
 
   useEffect(() => {
-    const supabase = createClient()
-    // PKCE flow: sesión ya establecida por /auth/callback
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
-    })
-    // Fallback para flow legacy con hash
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') setReady(true)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
+    if (!token) router.replace('/forgot-password')
+  }, [token])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,12 +25,76 @@ export default function ResetPasswordPage() {
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
     setLoading(true)
     setError('')
-    const supabase = createClient()
-    const { error } = await supabase.auth.updateUser({ password })
-    if (error) { setError(error.message); setLoading(false); return }
-    router.push('/dashboard')
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    })
+    const data = await res.json()
+    if (!res.ok) { setError(data.error ?? 'Error al actualizar contraseña'); setLoading(false); return }
+    setDone(true)
+    setTimeout(() => router.replace('/login'), 2500)
   }
 
+  if (!token) return null
+
+  return (
+    <>
+      {done ? (
+        <div className="text-center space-y-4 mt-6">
+          <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
+            <span className="text-2xl">✅</span>
+          </div>
+          <p className="text-slate-300">¡Contraseña actualizada! Redirigiendo al login...</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Nueva contraseña</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Confirmar contraseña</label>
+            <input
+              type="password"
+              value={confirm}
+              onChange={e => setConfirm(e.target.value)}
+              required
+              minLength={6}
+              className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500"
+            />
+          </div>
+          {error && (
+            <div className="text-red-400 text-sm space-y-1">
+              <p>{error}</p>
+              {error.includes('expiró') && (
+                <Link href="/forgot-password" className="text-yellow-400 hover:underline">
+                  Solicitar nuevo link
+                </Link>
+              )}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+          >
+            {loading ? 'Guardando...' : 'Guardar contraseña'}
+          </button>
+        </form>
+      )}
+    </>
+  )
+}
+
+export default function ResetPasswordPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm">
@@ -44,43 +102,9 @@ export default function ResetPasswordPage() {
           <Trophy className="w-10 h-10 text-yellow-400" />
         </div>
         <h1 className="text-2xl font-bold text-center mb-6">Nueva contraseña</h1>
-
-        {!ready ? (
-          <p className="text-slate-400 text-sm text-center">Verificando link...</p>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Nueva contraseña</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Confirmar contraseña</label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                required
-                minLength={6}
-                className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500"
-              />
-            </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
-            >
-              {loading ? 'Guardando...' : 'Guardar contraseña'}
-            </button>
-          </form>
-        )}
+        <Suspense fallback={<p className="text-slate-400 text-sm text-center">Cargando...</p>}>
+          <ResetPasswordForm />
+        </Suspense>
       </div>
     </main>
   )
