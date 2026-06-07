@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { X, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -47,6 +47,20 @@ export default function PredictionsInfoModal({
 }) {
   const [open, setOpen] = useState(autoOpen)
   const [step, setStep] = useState(0)
+  const touchStartX = useRef<number | null>(null)
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const delta = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(delta) < 50) return
+    if (delta > 0 && step < STEPS.length - 1) setStep(s => s + 1)
+    if (delta < 0 && step > 0) setStep(s => s - 1)
+    touchStartX.current = null
+  }
 
   function handleOpen() {
     setStep(0)
@@ -68,7 +82,11 @@ export default function PredictionsInfoModal({
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
+          <div
+            className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
