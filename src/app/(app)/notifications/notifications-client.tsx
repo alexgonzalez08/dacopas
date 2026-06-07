@@ -582,9 +582,8 @@ export default function NotificationsClient({
         </h1>
         {notifications.length > 0 && (
           <button onClick={handleClearAll} disabled={clearingAll}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition">
-            {clearingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            Limpiar todo
+            className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition">
+            {clearingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
           </button>
         )}
       </div>
