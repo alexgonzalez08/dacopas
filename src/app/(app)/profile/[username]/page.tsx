@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import UserPostCard from '@/components/user-post-card'
 import Link from 'next/link'
+import FriendshipButton from './friendship-button'
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
@@ -28,6 +29,27 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const displayName = profile.full_name || profile.username
   const joinedYear = new Date(profile.created_at).getFullYear()
 
+  // Estado de amistad
+  let friendshipStatus: 'none' | 'pending_sent' | 'pending_received' | 'accepted' = 'none'
+  let friendshipId: string | null = null
+  if (user && !isOwn) {
+    const { data: friendship } = await supabase
+      .from('friendships')
+      .select('id, status, requester_id')
+      .or(`and(requester_id.eq.${user.id},addressee_id.eq.${profile.id}),and(requester_id.eq.${profile.id},addressee_id.eq.${user.id})`)
+      .maybeSingle()
+    if (friendship) {
+      friendshipId = friendship.id
+      if (friendship.status === 'accepted') {
+        friendshipStatus = 'accepted'
+      } else if (friendship.requester_id === user.id) {
+        friendshipStatus = 'pending_sent'
+      } else {
+        friendshipStatus = 'pending_received'
+      }
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-xl mx-auto">
       {/* Tarjeta de perfil */}
@@ -44,10 +66,18 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 )}
               </div>
             </div>
-            {isOwn && (
+            {isOwn ? (
               <Link href="/profile" className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 text-sm border border-slate-600 text-slate-300 hover:text-white rounded-xl hover:bg-slate-700 transition">
                 Editar perfil
               </Link>
+            ) : user && (
+              <FriendshipButton
+                currentUserId={user.id}
+                targetUserId={profile.id}
+                targetUsername={profile.username}
+                initialStatus={friendshipStatus}
+                friendshipId={friendshipId}
+              />
             )}
           </div>
           <h1 className="text-xl font-bold text-white">{displayName}</h1>
