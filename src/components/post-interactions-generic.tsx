@@ -5,7 +5,7 @@ import { MessageCircle, Send, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-const EMOJIS = ['👍', '🔥', '😂', '😮', '😢', '🎯']
+const EMOJIS = ['❤️', '👍', '🔥', '😂', '😮', '🎯']
 
 type Reaction = { id: string; emoji: string; user_id: string }
 type Comment = {
@@ -36,6 +36,7 @@ export default function PostInteractionsGeneric({
   const [reactions, setReactions] = useState<Reaction[]>(initialReactions)
   const [comments, setComments] = useState<Comment[]>(initialComments)
   const [showComments, setShowComments] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -88,33 +89,64 @@ export default function PostInteractionsGeneric({
 
   return (
     <div className="border-t border-slate-700">
-      {/* Contadores */}
+      {/* Burbujas de reacciones estilo WhatsApp */}
       {(totalReactions > 0 || totalComments > 0) && (
-        <div className="flex items-center justify-between px-4 py-1.5 text-xs text-slate-500">
-          <span>
-            {grouped.filter(g => g.count > 0).map(g => `${g.emoji} ${g.count}`).join('  ')}
-          </span>
+        <div className="flex items-center gap-1.5 px-4 pt-2 pb-1 flex-wrap">
+          {grouped.filter(g => g.count > 0).map(g => (
+            <button
+              key={g.emoji}
+              onClick={() => handleReaction(g.emoji)}
+              className={`flex items-center gap-1 text-sm rounded-full px-2.5 py-0.5 transition ${
+                myReaction?.emoji === g.emoji
+                  ? 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-300'
+                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+              }`}
+            >
+              <span>{g.emoji}</span>
+              <span className="text-xs font-medium">{g.count}</span>
+            </button>
+          ))}
           {totalComments > 0 && (
-            <button onClick={() => setShowComments(v => !v)} className="hover:text-slate-300 transition">
-              {totalComments} {totalComments === 1 ? 'comentario' : 'comentarios'}
+            <button
+              onClick={() => setShowComments(v => !v)}
+              className="ml-auto text-xs text-slate-500 hover:text-slate-300 transition flex items-center gap-1"
+            >
+              <MessageCircle className="w-3 h-3" /> {totalComments}
             </button>
           )}
         </div>
       )}
 
-      {/* Botones emoji */}
-      <div className="flex items-center gap-1 px-3 py-2">
-        {EMOJIS.map(emoji => (
+      {/* Barra de acciones */}
+      <div className="flex items-center px-3 py-2">
+        {/* Picker flotante estilo WhatsApp */}
+        <div className="relative">
+          {showPicker && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)} />
+              <div className="absolute bottom-full left-0 mb-2 z-50 bg-slate-800 border border-slate-700 rounded-full shadow-2xl px-3 py-2 flex items-center gap-1">
+                {EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => { handleReaction(emoji); setShowPicker(false) }}
+                    className={`text-2xl transition-transform hover:scale-125 active:scale-110 ${
+                      myReaction?.emoji === emoji ? 'scale-125' : 'opacity-80 hover:opacity-100'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <button
-            key={emoji}
-            onClick={() => handleReaction(emoji)}
-            className={`text-base px-1.5 py-0.5 rounded-lg transition hover:bg-slate-700 ${
-              myReaction?.emoji === emoji ? 'bg-slate-700 scale-110' : 'opacity-60 hover:opacity-100'
-            }`}
+            onClick={() => setShowPicker(v => !v)}
+            className={`text-xl p-1.5 rounded-full transition hover:bg-slate-700 ${showPicker ? 'bg-slate-700' : ''}`}
           >
-            {emoji}
+            {myReaction ? myReaction.emoji : '🙂'}
           </button>
-        ))}
+        </div>
+
         <button
           onClick={() => setShowComments(v => !v)}
           className="flex items-center gap-1 ml-auto text-xs text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-700"
