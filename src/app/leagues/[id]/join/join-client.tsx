@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Trophy, Users, Medal, Loader2 } from 'lucide-react'
+
 import Link from 'next/link'
 
 type League = { id: string; name: string; description: string | null; image_url: string | null; code: string }
@@ -37,21 +38,13 @@ export default function JoinClient({
     setError('')
     try {
       const supabase = createClient()
-      // Intentar unirse con el código del torneo
-      const res = await fetch('/api/leagues/join-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leagueId: league.id, leagueCode: league.code }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error ?? 'Error al unirse al torneo')
-        setLoading(false)
-        return
-      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+      const { joinLeague } = await import('@/lib/leagues')
+      await joinLeague(league.code, user.id)
       router.push(`/leagues/${league.id}`)
-    } catch {
-      setError('Error al unirse al torneo')
+    } catch (err: any) {
+      setError(err.message ?? 'Error al unirse al torneo')
       setLoading(false)
     }
   }
