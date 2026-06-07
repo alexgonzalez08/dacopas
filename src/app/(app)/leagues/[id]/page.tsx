@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Medal } from 'lucide-react'
 import Link from 'next/link'
 import CopyButton from './copy-button'
@@ -41,6 +41,19 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   }))
 
   const currentMember = members.find(m => m.user_id === user!.id)
+
+  // Si no es miembro activo, verificar si fue eliminado (left_at set)
+  if (!currentMember) {
+    const { data: removedRecord } = await adminSupabase
+      .from('league_members')
+      .select('user_id')
+      .eq('league_id', id)
+      .eq('user_id', user!.id)
+      .not('left_at', 'is', null)
+      .maybeSingle()
+
+    if (removedRecord) redirect('/dashboard')
+  }
 
   // Si no es miembro, verificar si tiene invitación pendiente
   if (!currentMember) {
