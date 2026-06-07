@@ -15,6 +15,7 @@ export default function DashboardClient({
   initialFeed,
   serverNow,
   hasLeagues,
+  showWelcome,
 }: {
   userId: string
   username: string
@@ -23,9 +24,9 @@ export default function DashboardClient({
   initialFeed: FeedItem[]
   serverNow: string
   hasLeagues: boolean
+  showWelcome: boolean
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(initialFeed)
-  const [showWelcome] = useState(true)
 
   useEffect(() => {
     initPushNotifications(userId)
@@ -52,7 +53,7 @@ export default function DashboardClient({
     <div className="space-y-4">
       <h2 className="font-semibold text-lg">Actividad reciente</h2>
 
-      {showWelcome && <WelcomeCard username={username} />}
+      {showWelcome && <WelcomeCard username={username} userId={userId} />}
 
       <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
       <Feed items={feed} userId={userId} onDeletePost={handleDeletePost} serverNow={serverNow} />

@@ -9,7 +9,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, avatar_url')
+    .select('username, avatar_url, welcome_seen')
     .eq('id', user!.id)
     .single()
 
@@ -131,6 +131,7 @@ export default async function DashboardPage() {
       initialFeed={feed}
       serverNow={serverNow}
       hasLeagues={leagueIds.length > 0}
+      showWelcome={!profile?.welcome_seen}
     />
   )
 }

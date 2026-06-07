@@ -2,8 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { X, Users, ChevronRight } from 'lucide-react'
-
-const STORAGE_KEY = 'dacopas_welcome_dismissed'
+import { createClient } from '@/lib/supabase/client'
 
 const STEPS = [
   {
@@ -43,20 +42,17 @@ const STEPS = [
   },
 ]
 
-export default function WelcomeCard({ username }: { username: string }) {
+export default function WelcomeCard({ username, userId }: { username: string; userId: string }) {
   const [step, setStep] = useState(0)
-  const [closed, setClosed] = useState(true)
+  const [closed, setClosed] = useState(false)
   const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      setClosed(false)
-      localStorage.setItem(STORAGE_KEY, '1')
-    }
-  }, [])
+    const supabase = createClient()
+    supabase.from('profiles').update({ welcome_seen: true }).eq('id', userId)
+  }, [userId])
 
   function dismiss() {
-    localStorage.setItem(STORAGE_KEY, '1')
     setClosed(true)
   }
 

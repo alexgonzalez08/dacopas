@@ -2,6 +2,7 @@
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   username text unique not null,
+  welcome_seen boolean default false,
   created_at timestamptz default now()
 );
 
