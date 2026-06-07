@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { leaveLeague } from '@/lib/leagues'
-import { Shield, ChevronDown, LogOut, Loader2, Crown, Users, Check, X, Bell, Medal, Trophy, LayoutList } from 'lucide-react'
+import { Shield, ChevronDown, LogOut, Loader2, Crown, Users, Check, X, Bell, Medal, Trophy, LayoutList, UserMinus } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
 import { sendPushNotification } from '@/lib/push'
 import Link from 'next/link'
@@ -89,6 +89,8 @@ export default function LeagueClient({
   const [processingReq, setProcessingReq] = useState<string | null>(null)
   const [leaving, setLeaving] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState<{ userId: string; username: string } | null>(null)
+  const [removingMember, setRemovingMember] = useState(false)
 
   async function handleRoleChange(memberId: string, newRole: Role) {
     setOpenDropdown(null)
@@ -231,11 +233,50 @@ export default function LeagueClient({
     }
   }
 
+  async function handleRemoveMember() {
+    if (!confirmRemove) return
+    setRemovingMember(true)
+    await fetch('/api/leagues/remove-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId, targetUserId: confirmRemove.userId }),
+    })
+    setMemberList(prev => prev.filter(m => m.user_id !== confirmRemove.userId))
+    setLeaderboard(prev => prev.filter(e => e.user_id !== confirmRemove.userId))
+    setConfirmRemove(null)
+    setRemovingMember(false)
+  }
+
   // Vista con tabs — solo para admins
   if (userRole === 'admin') {
     const pendingCount = modRequests.length + joinRequests.length
     return (
       <div className="space-y-4">
+
+        {/* Modal confirmación eliminar miembro */}
+        {confirmRemove && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
+            <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl p-5 space-y-4">
+              <h3 className="font-semibold text-white">¿Eliminar miembro?</h3>
+              <p className="text-sm text-slate-300">
+                ¿Seguro que querés eliminar a <span className="font-semibold text-white">@{confirmRemove.username}</span> del torneo?
+                Sus puntos actuales se conservarán si vuelve a unirse.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConfirmRemove(null)}
+                  className="px-4 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition">
+                  Cancelar
+                </button>
+                <button onClick={handleRemoveMember} disabled={removingMember}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-red-500 hover:bg-red-400 text-white rounded-xl disabled:opacity-50 transition">
+                  {removingMember ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserMinus className="w-3.5 h-3.5" />}
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex rounded-xl overflow-hidden border border-slate-700">
           <button
@@ -268,7 +309,7 @@ export default function LeagueClient({
                 <span className={`w-6 text-center font-bold ${MEDAL_COLORS[i] ?? 'text-slate-400'}`}>
                   {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
                 </span>
-                <span className="flex-1 font-medium">{entry.username}</span>
+                <Link href={`/profile/${entry.username}`} className="flex-1 font-medium hover:text-yellow-400 transition">{entry.username}</Link>
                 <div className="text-right">
                   <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
                   <span className="text-slate-500 text-sm"> pts</span>
@@ -381,33 +422,42 @@ export default function LeagueClient({
                     {m.user_id === userId ? (
                       <RoleBadge role={m.role} />
                     ) : (
-                      <div className="relative shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="relative">
+                          <button
+                            onClick={() => setOpenDropdown(openDropdown === m.user_id ? null : m.user_id)}
+                            disabled={changingRole === m.user_id}
+                            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${ROLE_COLORS[m.role]} transition`}
+                          >
+                            {changingRole === m.user_id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <>{ROLE_LABELS[m.role]} <ChevronDown className="w-3 h-3" /></>
+                            }
+                          </button>
+                          {openDropdown === m.user_id && (
+                            <div className="absolute right-0 top-full mt-1 bg-slate-700 rounded-xl shadow-xl z-20 overflow-hidden w-36">
+                              {(['admin', 'moderator', 'participant'] as Role[]).map(r => (
+                                <button
+                                  key={r}
+                                  onClick={() => handleRoleChange(m.user_id, r)}
+                                  className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-600 transition ${m.role === r ? 'text-yellow-400' : 'text-slate-200'}`}
+                                >
+                                  {r === 'admin' && <Crown className="w-3.5 h-3.5 shrink-0" />}
+                                  {r === 'moderator' && <Shield className="w-3.5 h-3.5 shrink-0" />}
+                                  {r === 'participant' && <Users className="w-3.5 h-3.5 shrink-0" />}
+                                  {ROLE_LABELS[r]}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <button
-                          onClick={() => setOpenDropdown(openDropdown === m.user_id ? null : m.user_id)}
-                          disabled={changingRole === m.user_id}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${ROLE_COLORS[m.role]} transition`}
+                          onClick={() => setConfirmRemove({ userId: m.user_id, username: m.profiles?.username ?? '' })}
+                          className="p-1 text-slate-500 hover:text-red-400 transition"
+                          title="Eliminar miembro"
                         >
-                          {changingRole === m.user_id
-                            ? <Loader2 className="w-3 h-3 animate-spin" />
-                            : <>{ROLE_LABELS[m.role]} <ChevronDown className="w-3 h-3" /></>
-                          }
+                          <UserMinus className="w-3.5 h-3.5" />
                         </button>
-                        {openDropdown === m.user_id && (
-                          <div className="absolute right-0 top-full mt-1 bg-slate-700 rounded-xl shadow-xl z-20 overflow-hidden w-36">
-                            {(['admin', 'moderator', 'participant'] as Role[]).map(r => (
-                              <button
-                                key={r}
-                                onClick={() => handleRoleChange(m.user_id, r)}
-                                className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-slate-600 transition ${m.role === r ? 'text-yellow-400' : 'text-slate-200'}`}
-                              >
-                                {r === 'admin' && <Crown className="w-3.5 h-3.5 shrink-0" />}
-                                {r === 'moderator' && <Shield className="w-3.5 h-3.5 shrink-0" />}
-                                {r === 'participant' && <Users className="w-3.5 h-3.5 shrink-0" />}
-                                {ROLE_LABELS[r]}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>

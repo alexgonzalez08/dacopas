@@ -164,7 +164,7 @@ begin
   insert into league_points (user_id, league_id, points, exact_results, correct_winner)
   select pp.user_id, lm.league_id, pp.pts, pp.exact, pp.winner_only
   from pred_points pp
-  join league_members lm on lm.user_id = pp.user_id
+  join league_members lm on lm.user_id = pp.user_id and lm.left_at is null
   on conflict (user_id, league_id) do update
     set points = league_points.points + excluded.points,
         exact_results = league_points.exact_results + excluded.exact_results,

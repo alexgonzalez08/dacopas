@@ -123,7 +123,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                 <span className={`w-6 text-center font-bold ${medalColors[i] ?? 'text-slate-400'}`}>
                   {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
                 </span>
-                <span className="flex-1 font-medium">{entry.username}</span>
+                <Link href={`/profile/${entry.username}`} className="flex-1 font-medium hover:text-yellow-400 transition">{entry.username}</Link>
                 <div className="text-right">
                   <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
                   <span className="text-slate-500 text-sm"> pts</span>
@@ -295,7 +295,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                 <span className={`w-6 text-center font-bold ${medalColors[i] ?? 'text-slate-400'}`}>
                   {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
                 </span>
-                <span className="flex-1 font-medium">{entry.username}</span>
+                <Link href={`/profile/${entry.username}`} className="flex-1 font-medium hover:text-yellow-400 transition">{entry.username}</Link>
                 <div className="text-right">
                   <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
                   <span className="text-slate-500 text-sm"> pts</span>
