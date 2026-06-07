@@ -37,7 +37,10 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/reset-password') ||
     request.nextUrl.pathname.startsWith('/auth/callback')
 
-  if (!user && !isAuthPage && request.nextUrl.pathname !== '/') {
+  const isPublicPage = request.nextUrl.pathname === '/' ||
+    /^\/leagues\/[^/]+\/join/.test(request.nextUrl.pathname)
+
+  if (!user && !isAuthPage && !isPublicPage) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

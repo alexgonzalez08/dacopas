@@ -1,12 +1,14 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Trophy } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -19,7 +21,7 @@ export default function LoginPage() {
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
-    router.push('/dashboard')
+    router.push(next ?? '/dashboard')
     router.refresh()
   }
 
@@ -67,7 +69,7 @@ export default function LoginPage() {
         </form>
         <p className="text-center text-slate-400 mt-4 text-sm">
           ¿No tenés cuenta?{' '}
-          <Link href="/register" className="text-yellow-400 hover:underline">Registrarse</Link>
+          <Link href={next ? `/register?next=${encodeURIComponent(next)}` : '/register'} className="text-yellow-400 hover:underline">Registrarse</Link>
         </p>
       </div>
     </main>

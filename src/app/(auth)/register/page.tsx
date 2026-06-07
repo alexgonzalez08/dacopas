@@ -1,12 +1,14 @@
 'use client'
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Trophy, Camera, Loader2 } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next')
   const [alias, setAlias] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -67,7 +69,7 @@ export default function RegisterPage() {
       }
     }
 
-    router.push('/dashboard')
+    router.push(next ?? '/dashboard')
     router.refresh()
   }
 
