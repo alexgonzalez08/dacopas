@@ -5,9 +5,13 @@ const FOOTBALL_API = 'https://api.football-data.org/v4'
 // World Cup 2026 competition id (will be updated once available)
 const COMPETITION_ID = 2000
 
-export async function POST(request: Request) {
+async function runSync(request: Request) {
   const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const validTokens = [
+    `Bearer ${process.env.CRON_SECRET}`,
+    `Bearer ${process.env.VERCEL_CRON_SECRET}`,
+  ].filter(Boolean)
+  if (!validTokens.includes(authHeader ?? '')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -76,6 +80,14 @@ export async function POST(request: Request) {
   await supabase.rpc('lock_predictions_before_match')
 
   return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds })
+}
+
+export async function GET(request: Request) {
+  return runSync(request)
+}
+
+export async function POST(request: Request) {
+  return runSync(request)
 }
 
 function mapStage(stage: string): string {
