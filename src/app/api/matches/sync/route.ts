@@ -7,11 +7,7 @@ const COMPETITION_ID = 2000
 
 async function runSync(request: Request) {
   const authHeader = request.headers.get('authorization')
-  const validTokens = [
-    `Bearer ${process.env.CRON_SECRET}`,
-    `Bearer ${process.env.VERCEL_CRON_SECRET}`,
-  ].filter(Boolean)
-  if (!validTokens.includes(authHeader ?? '')) {
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
