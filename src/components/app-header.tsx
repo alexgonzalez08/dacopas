@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Trophy, LogOut, Star, Users, UserCircle, UserPlus } from 'lucide-react'
+import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import WhistleIcon from '@/components/whistle-icon'
@@ -21,6 +21,9 @@ const BOTTOM_NAV = [
 
 export default function AppHeader({ username, avatarUrl, userId }: { username: string; avatarUrl?: string | null; userId: string }) {
   const [unread, setUnread] = useState(0)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -56,10 +59,32 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
     if (pathname === '/notifications') setUnread(0)
   }, [pathname])
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   async function signOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  async function handleShare() {
+    const url = 'https://dacopas.com'
+    const text = '⚽ ¡Jugá con tus amigos en Dacopas! Predecí los resultados del Mundial 2026 y competí en torneos privados.'
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Dacopas', text, url }) } catch {}
+      return
+    }
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -70,9 +95,9 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
           Dacopas
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Desktop nav */}
-          <nav className="hidden md:flex gap-1">
+          <nav className="hidden md:flex gap-1 mr-1">
             {DESKTOP_NAV.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
@@ -90,6 +115,16 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
             ))}
           </nav>
 
+          {/* Compartir app */}
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold bg-yellow-500 hover:bg-yellow-400 text-slate-900 rounded-lg transition"
+            title="Compartir Dacopas"
+          >
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{copied ? 'Copiado' : 'Compartir'}</span>
+          </button>
+
           {/* Notificaciones */}
           <Link href="/notifications" className="relative p-1.5 text-slate-400 hover:text-white transition">
             <WhistleIcon className="w-5 h-5" />
@@ -100,21 +135,40 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
             )}
           </Link>
 
-          {/* Avatar / perfil */}
-          <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition">
-            <div style={{ width: 32, height: 32 }} className="rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
-              {avatarUrl
-                ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-                : username[0]
-              }
-            </div>
-            <span className="hidden md:block text-sm text-slate-400">{username}</span>
-          </Link>
+          {/* Avatar con dropdown (perfil + logout) */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className="flex items-center gap-2 hover:opacity-80 transition"
+            >
+              <div style={{ width: 32, height: 32 }} className="rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
+                {avatarUrl
+                  ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+                  : username[0]
+                }
+              </div>
+              <span className="hidden md:block text-sm text-slate-400">{username}</span>
+            </button>
 
-          {/* Logout */}
-          <button onClick={signOut} className="text-slate-400 hover:text-white transition">
-            <LogOut className="w-4 h-4" />
-          </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-10 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 min-w-40 overflow-hidden">
+                <Link
+                  href="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                >
+                  <UserCircle className="w-4 h-4" /> Mi perfil
+                </Link>
+                <div className="border-t border-slate-700" />
+                <button
+                  onClick={() => { setMenuOpen(false); signOut() }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-slate-700 w-full transition"
+                >
+                  <LogOut className="w-4 h-4" /> Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
