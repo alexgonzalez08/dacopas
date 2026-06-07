@@ -15,7 +15,7 @@ const DESKTOP_NAV = [
 
 const BOTTOM_NAV = [
   { href: '/predictions', label: 'Pronósticos', icon: Star },
-  { href: '/leagues', label: 'Ligas', icon: Trophy },
+  { href: '/leagues', label: 'Torneos', icon: Trophy },
   { href: '/friends', label: 'Amistades', icon: UserPlus },
 ]
 
