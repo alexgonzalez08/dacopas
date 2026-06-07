@@ -49,7 +49,10 @@ export default function WelcomeCard({ username }: { username: string }) {
   const touchStartX = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) setClosed(false)
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      setClosed(false)
+      localStorage.setItem(STORAGE_KEY, '1')
+    }
   }, [])
 
   function dismiss() {
