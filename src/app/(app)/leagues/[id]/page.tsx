@@ -190,7 +190,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     const friendIds = friendsNotInLeague.map(f => f.id)
     if (friendIds.length > 0) {
       if (userRole === 'admin') {
-        const { data: adminPending } = await supabase
+        const { data: adminPending } = await adminSupabase
           .from('notifications')
           .select('user_id')
           .eq('from_user_id', user!.id)
@@ -199,7 +199,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           .in('user_id', friendIds)
         pendingInvites = (adminPending ?? []).map(n => n.user_id)
       } else {
-        const { data: modPending } = await supabase
+        const { data: modPending } = await adminSupabase
           .from('notifications')
           .select('metadata')
           .eq('from_user_id', user!.id)
