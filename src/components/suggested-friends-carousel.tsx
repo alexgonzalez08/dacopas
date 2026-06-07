@@ -52,7 +52,7 @@ export default function SuggestedFriendsCarousel({
 
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-semibold text-slate-400">Personas que quizás conozcas</h2>
+      <h2 className="text-sm font-semibold text-slate-400">⚽ Rivales que podrían ser aliados</h2>
       <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {suggestions.map(user => (
           <div
