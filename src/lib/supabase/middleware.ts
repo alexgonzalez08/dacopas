@@ -41,7 +41,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && isAuthPage && !request.nextUrl.pathname.startsWith('/reset-password')) {
+  if (user && isAuthPage &&
+    !request.nextUrl.pathname.startsWith('/reset-password') &&
+    !request.nextUrl.pathname.startsWith('/auth/callback')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
