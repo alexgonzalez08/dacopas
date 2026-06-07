@@ -103,7 +103,7 @@ export default function CreatePost({
         <textarea
           value={content}
           onChange={e => setContent(e.target.value)}
-          placeholder="¿Qué estás pensando?"
+          placeholder="¿Qué frase histórica tenés?"
           maxLength={500}
           rows={2}
           className="flex-1 min-w-0 bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none focus:outline-none pt-1"
