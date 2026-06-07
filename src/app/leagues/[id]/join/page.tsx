@@ -96,6 +96,14 @@ export default async function JoinPage({ params }: Props) {
     if (isMember) redirect(`/leagues/${id}`)
   }
 
+  // Detectar si es usuario nuevo (creado en los últimos 5 minutos)
+  let isNewUser = false
+  if (user) {
+    const createdAt = new Date(user.created_at)
+    const diffMs = Date.now() - createdAt.getTime()
+    isNewUser = diffMs < 5 * 60 * 1000
+  }
+
   return (
     <JoinClient
       league={league}
@@ -103,6 +111,7 @@ export default async function JoinPage({ params }: Props) {
       top3={top3}
       isLoggedIn={!!user}
       userId={user?.id ?? null}
+      isNewUser={isNewUser}
     />
   )
 }
