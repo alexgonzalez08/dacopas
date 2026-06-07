@@ -91,6 +91,8 @@ export default function UserPostCard({
       <PostInteractionsGeneric
         postId={post.id}
         userId={userId}
+        postOwnerId={post.user_id}
+        postOwnerUsername={post.profiles?.username ?? ''}
         initialReactions={post.post_reactions ?? []}
         initialComments={post.post_comments ?? []}
         table="post"

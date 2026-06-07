@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserCheck, Check, Loader2, Users, Trash2, X, UserX, Shield, LogOut, ExternalLink, Trophy } from 'lucide-react'
+import { UserCheck, Check, Loader2, Users, Trash2, X, UserX, Shield, LogOut, ExternalLink, Trophy, MessageCircle, Heart, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import UserAvatar from '@/components/user-avatar'
@@ -76,6 +76,21 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'join_request') return (
     <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
       <Users className="w-4 h-4 text-purple-400" />
+    </div>
+  )
+  if (type === 'friend_post') return (
+    <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+      <FileText className="w-4 h-4 text-blue-400" />
+    </div>
+  )
+  if (type === 'post_reaction') return (
+    <div className="w-9 h-9 rounded-full bg-pink-500/20 flex items-center justify-center shrink-0">
+      <Heart className="w-4 h-4 text-pink-400" />
+    </div>
+  )
+  if (type === 'post_comment') return (
+    <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+      <MessageCircle className="w-4 h-4 text-green-400" />
     </div>
   )
   return (
@@ -327,6 +342,62 @@ function NotificationItem({
             <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">"{notif.metadata?.league_name}"</Link>
             <span className="text-red-400"> fue declinada</span>
           </p>
+        )}
+
+        {/* Amigo hizo una publicación */}
+        {notif.type === 'friend_post' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${notif.metadata?.author_username}`} className="font-semibold text-white hover:text-yellow-400">@{notif.metadata?.author_username}</Link>
+              <span className="text-slate-400"> hizo una nueva publicación</span>
+            </p>
+            {notif.metadata?.preview && (
+              <p className="text-xs text-slate-400 italic line-clamp-2">"{notif.metadata.preview}"</p>
+            )}
+            <Link
+              href={`/posts/${notif.metadata?.post_id}`}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500/20 text-blue-300 font-semibold rounded-lg hover:bg-blue-500/30 transition"
+            >
+              <ExternalLink className="w-3 h-3" /> Ver publicación
+            </Link>
+          </div>
+        )}
+
+        {/* Reacción en un post propio */}
+        {notif.type === 'post_reaction' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${notif.metadata?.reactor_username}`} className="font-semibold text-white hover:text-yellow-400">@{notif.metadata?.reactor_username}</Link>
+              <span className="text-slate-400"> reaccionó </span>
+              <span>{notif.metadata?.emoji}</span>
+              <span className="text-slate-400"> a tu publicación</span>
+            </p>
+            <Link
+              href={`/posts/${notif.metadata?.post_id}`}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-pink-500/20 text-pink-300 font-semibold rounded-lg hover:bg-pink-500/30 transition"
+            >
+              <ExternalLink className="w-3 h-3" /> Ver publicación
+            </Link>
+          </div>
+        )}
+
+        {/* Comentario en un post propio */}
+        {notif.type === 'post_comment' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${notif.metadata?.commenter_username}`} className="font-semibold text-white hover:text-yellow-400">@{notif.metadata?.commenter_username}</Link>
+              <span className="text-slate-400"> comentó tu publicación</span>
+            </p>
+            {notif.metadata?.comment && (
+              <p className="text-xs text-slate-400 italic line-clamp-2">"{notif.metadata.comment}"</p>
+            )}
+            <Link
+              href={`/posts/${notif.metadata?.post_id}`}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition"
+            >
+              <ExternalLink className="w-3 h-3" /> Ver publicación
+            </Link>
+          </div>
         )}
 
         {/* Alguien abandonó el torneo — vista del admin */}

@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ImageIcon, X, Send, Loader2 } from 'lucide-react'
+import { sendPushNotification } from '@/lib/push'
 
 type League = { id: string; name: string }
 
@@ -74,6 +75,34 @@ export default function CreatePost({
         .single()
 
       if (insertError) throw insertError
+
+      // Notificar a amigos del nuevo post
+      const { data: friendships } = await supabase
+        .from('friendships')
+        .select('requester_id, addressee_id')
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+
+      const friendIds = (friendships ?? []).map(f =>
+        f.requester_id === userId ? f.addressee_id : f.requester_id
+      )
+
+      if (friendIds.length > 0) {
+        await Promise.all(friendIds.map(friendId =>
+          supabase.from('notifications').insert({
+            user_id: friendId,
+            from_user_id: userId,
+            type: 'friend_post',
+            metadata: { post_id: data.id, author_username: username, preview: content.trim().slice(0, 80) || null },
+          })
+        ))
+        friendIds.forEach(friendId => sendPushNotification({
+          toUserId: friendId,
+          title: `📝 @${username} publicó algo`,
+          body: content.trim() ? content.trim().slice(0, 80) : '📷 Compartió una foto',
+          data: { url: `/posts/${data.id}` },
+        }))
+      }
 
       onPost(data)
       setContent('')

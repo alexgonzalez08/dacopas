@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { MessageCircle, Send, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { sendPushNotification } from '@/lib/push'
 
 const EMOJIS = ['❤️', '👍', '🔥', '😂', '😮', '🎯']
 
@@ -19,12 +20,16 @@ type Comment = {
 export default function PostInteractionsGeneric({
   postId,
   userId,
+  postOwnerId,
+  postOwnerUsername,
   initialReactions,
   initialComments,
-  table, // 'post' | 'feed'
+  table,
 }: {
   postId: string
   userId: string
+  postOwnerId?: string
+  postOwnerUsername?: string
   initialReactions: Reaction[]
   initialComments: Comment[]
   table: 'post' | 'feed'
@@ -56,7 +61,26 @@ export default function PostInteractionsGeneric({
       .insert({ [idCol]: postId, user_id: userId, emoji })
       .select()
       .single()
-    if (data) setReactions(r => [...r.filter(x => x.id !== myReaction?.id), data])
+    if (data) {
+      setReactions(r => [...r.filter(x => x.id !== myReaction?.id), data])
+      // Notificar al dueño del post (no a uno mismo)
+      if (postOwnerId && postOwnerId !== userId && table === 'post') {
+        const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single()
+        const username = profile?.username ?? 'Alguien'
+        await supabase.from('notifications').insert({
+          user_id: postOwnerId,
+          from_user_id: userId,
+          type: 'post_reaction',
+          metadata: { post_id: postId, emoji, reactor_username: username },
+        })
+        sendPushNotification({
+          toUserId: postOwnerId,
+          title: `${emoji} Nueva reacción`,
+          body: `@${username} reaccionó a tu publicación`,
+          data: { url: `/posts/${postId}` },
+        })
+      }
+    }
   }
 
   async function handleComment(e: React.FormEvent) {
@@ -69,7 +93,26 @@ export default function PostInteractionsGeneric({
       .insert({ [idCol]: postId, user_id: userId, content: comment.trim() })
       .select('*, profiles(username)')
       .single()
-    if (data) { setComments(c => [...c, data]); setComment('') }
+    if (data) {
+      setComments(c => [...c, data])
+      setComment('')
+      // Notificar al dueño del post (no a uno mismo)
+      if (postOwnerId && postOwnerId !== userId && table === 'post') {
+        const username = data.profiles?.username ?? 'Alguien'
+        await supabase.from('notifications').insert({
+          user_id: postOwnerId,
+          from_user_id: userId,
+          type: 'post_comment',
+          metadata: { post_id: postId, comment: comment.trim().slice(0, 80), commenter_username: username },
+        })
+        sendPushNotification({
+          toUserId: postOwnerId,
+          title: '💬 Nuevo comentario',
+          body: `@${username}: ${comment.trim().slice(0, 60)}`,
+          data: { url: `/posts/${postId}` },
+        })
+      }
+    }
     setSubmitting(false)
   }
 
