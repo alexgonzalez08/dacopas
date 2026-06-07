@@ -17,6 +17,7 @@ export type Match = {
   status: 'scheduled' | 'live' | 'finished'
   home_score: number | null
   away_score: number | null
+  tournament: string | null
 }
 
 export type League = {

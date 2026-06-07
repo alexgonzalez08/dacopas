@@ -46,6 +46,7 @@ export async function POST(request: Request) {
         status,
         home_score: homeScore,
         away_score: awayScore,
+        tournament: m.competition?.name ?? null,
         updated_at: new Date().toISOString(),
       }).eq('id', existing.id)
 
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
         status,
         home_score: homeScore,
         away_score: awayScore,
+        tournament: m.competition?.name ?? null,
       })
     }
   }

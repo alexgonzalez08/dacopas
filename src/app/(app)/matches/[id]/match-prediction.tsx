@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Match, Prediction } from '@/types'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { Lock } from 'lucide-react'
@@ -18,6 +18,11 @@ export default function MatchPrediction({
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60_000)
+    return () => clearInterval(interval)
+  }, [])
   const locked = isPredictionLocked(match)
 
   async function handleSave() {
@@ -44,56 +49,56 @@ export default function MatchPrediction({
     <div className="bg-slate-800 rounded-2xl p-5">
       <h2 className="font-semibold mb-4 text-slate-300">Tu predicción</h2>
 
-      {locked ? (
-        <div className="flex items-center gap-2 text-amber-400 text-sm">
-          <Lock className="w-4 h-4" />
-          {match.status === 'finished'
-            ? 'El partido ya terminó'
-            : 'Las predicciones están bloqueadas (15 min antes del partido)'}
-          {prediction && (
-            <span className="ml-2 text-slate-300">
-              — Tu pronóstico: <span className="font-bold text-yellow-400">{prediction.home_score} - {prediction.away_score}</span>
-            </span>
-          )}
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-slate-400 flex-1 text-right">{match.home_team}</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            max="20"
+            disabled={locked}
+            value={home}
+            onChange={e => setHome(e.target.value)}
+            className="w-14 text-center bg-slate-700 border border-slate-600 rounded-xl py-2 text-2xl font-black focus:outline-none focus:border-yellow-500 disabled:opacity-50"
+          />
+          <span className="text-slate-500 font-bold text-xl">-</span>
+          <input
+            type="number"
+            min="0"
+            max="20"
+            disabled={locked}
+            value={away}
+            onChange={e => setAway(e.target.value)}
+            className="w-14 text-center bg-slate-700 border border-slate-600 rounded-xl py-2 text-2xl font-black focus:outline-none focus:border-yellow-500 disabled:opacity-50"
+          />
         </div>
-      ) : (
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400 flex-1 text-right">{match.home_team}</span>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="0"
-              max="20"
-              value={home}
-              onChange={e => setHome(e.target.value)}
-              className="w-14 text-center bg-slate-700 border border-slate-600 rounded-xl py-2 text-2xl font-black focus:outline-none focus:border-yellow-500"
-            />
-            <span className="text-slate-500 font-bold text-xl">-</span>
-            <input
-              type="number"
-              min="0"
-              max="20"
-              value={away}
-              onChange={e => setAway(e.target.value)}
-              className="w-14 text-center bg-slate-700 border border-slate-600 rounded-xl py-2 text-2xl font-black focus:outline-none focus:border-yellow-500"
-            />
-          </div>
-          <span className="text-sm text-slate-400 flex-1">{match.away_team}</span>
-        </div>
-      )}
+        <span className="text-sm text-slate-400 flex-1">{match.away_team}</span>
+      </div>
 
-      {!locked && (
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-xs text-red-400">{error}</span>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-2 bg-yellow-500 text-slate-900 font-semibold rounded-xl hover:bg-yellow-400 disabled:opacity-50 transition"
-          >
-            {saving ? 'Guardando...' : saved ? '✓ Guardado' : prediction ? 'Actualizar' : 'Guardar predicción'}
-          </button>
-        </div>
-      )}
+      <div className="mt-4 flex items-center justify-between">
+        {!locked && <span className="text-xs text-red-400">{error}</span>}
+        {locked && (
+          <span className="text-xs text-amber-400 flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            {match.status === 'finished' ? 'El partido ya terminó' : 'Bloqueado (15 min antes)'}
+          </span>
+        )}
+        <button
+          onClick={!locked ? handleSave : undefined}
+          disabled={locked || saving}
+          className={`px-6 py-2 font-semibold rounded-xl transition ${locked ? 'bg-slate-600 text-slate-400 cursor-default' : 'bg-yellow-500 text-slate-900 hover:bg-yellow-400 disabled:opacity-50'}`}
+        >
+          {locked
+            ? 'Enviado'
+            : saving
+            ? 'Guardando...'
+            : saved
+            ? '✓ Guardado'
+            : prediction
+            ? 'Modificar'
+            : 'Guardar predicción'}
+        </button>
+      </div>
     </div>
   )
 }
