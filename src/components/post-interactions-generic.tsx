@@ -77,7 +77,7 @@ export default function PostInteractionsGeneric({
           toUserId: postOwnerId,
           title: `${emoji} Nueva reacción`,
           body: `@${username} reaccionó a tu publicación`,
-          data: { url: `/posts/${postId}` },
+          data: { url: `/profile/${postOwnerUsername}` },
         })
       }
     }
@@ -109,7 +109,7 @@ export default function PostInteractionsGeneric({
           toUserId: postOwnerId,
           title: '💬 Nuevo comentario',
           body: `@${username}: ${comment.trim().slice(0, 60)}`,
-          data: { url: `/posts/${postId}` },
+          data: { url: `/profile/${postOwnerUsername}` },
         })
       }
     }

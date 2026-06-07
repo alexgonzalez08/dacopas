@@ -355,7 +355,7 @@ function NotificationItem({
               <p className="text-xs text-slate-400 italic line-clamp-2">"{notif.metadata.preview}"</p>
             )}
             <Link
-              href={`/posts/${notif.metadata?.post_id}`}
+              href={`/profile/${notif.metadata?.author_username}`}
               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500/20 text-blue-300 font-semibold rounded-lg hover:bg-blue-500/30 transition"
             >
               <ExternalLink className="w-3 h-3" /> Ver publicación
@@ -373,7 +373,7 @@ function NotificationItem({
               <span className="text-slate-400"> a tu publicación</span>
             </p>
             <Link
-              href={`/posts/${notif.metadata?.post_id}`}
+              href={`/profile/${notif.from_user?.username}`}
               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-pink-500/20 text-pink-300 font-semibold rounded-lg hover:bg-pink-500/30 transition"
             >
               <ExternalLink className="w-3 h-3" /> Ver publicación
@@ -392,7 +392,7 @@ function NotificationItem({
               <p className="text-xs text-slate-400 italic line-clamp-2">"{notif.metadata.comment}"</p>
             )}
             <Link
-              href={`/posts/${notif.metadata?.post_id}`}
+              href={`/profile/${notif.from_user?.username}`}
               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition"
             >
               <ExternalLink className="w-3 h-3" /> Ver publicación
