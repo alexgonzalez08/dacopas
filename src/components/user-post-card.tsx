@@ -39,7 +39,7 @@ export default function UserPostCard({
   const isOwner = post.user_id === userId
 
   return (
-    <div className="bg-slate-800 rounded-2xl overflow-hidden">
+    <div id={`post-${post.id}`} className="bg-slate-800 rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-3">
