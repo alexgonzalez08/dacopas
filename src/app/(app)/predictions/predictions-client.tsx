@@ -138,12 +138,12 @@ export default function PredictionsClient({
                     </span>
                   </div>
                   {!locked && (
-                    <div className="mt-3 flex flex-col items-center gap-1">
+                    <div className="mt-3 flex items-center justify-between sm:justify-end gap-2">
                       {errors[match.id] && <span className="text-xs text-red-400">{errors[match.id]}</span>}
                       <button
                         onClick={() => handleSave(match)}
                         disabled={saving[match.id]}
-                        className="w-full py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+                        className="w-full sm:w-auto px-6 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
                       >
                         {saving[match.id] ? 'Guardando...' : saved[match.id] ? '✓ Guardado' : 'Guardar'}
                       </button>
