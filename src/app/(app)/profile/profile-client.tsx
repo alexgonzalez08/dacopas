@@ -160,6 +160,9 @@ export default function ProfileClient({
             </div>
           </div>
 
+          {/* Error — entre botones y campos */}
+          {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+
           {/* Datos */}
           {editing ? (
             <div className="space-y-3">
@@ -193,7 +196,6 @@ export default function ProfileClient({
                   className="w-full bg-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500 text-white resize-none"
                 />
               </div>
-              {error && <p className="text-xs text-red-400">{error}</p>}
             </div>
           ) : (
             <div>
