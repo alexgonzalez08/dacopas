@@ -3,7 +3,7 @@ import { createClient as createAdmin } from '@supabase/supabase-js'
 import { notFound, redirect } from 'next/navigation'
 import { Medal } from 'lucide-react'
 import Link from 'next/link'
-import CopyButton from './copy-button'
+import ShareButton from './share-button'
 import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
@@ -286,7 +286,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   initialImageUrl={league.image_url ?? null}
                 />
               )}
-              <CopyButton code={league.code} />
+              <ShareButton leagueId={id} leagueName={league.name} />
             </div>
           </div>
         </div>
