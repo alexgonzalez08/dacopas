@@ -49,7 +49,7 @@ export default function WelcomeCard({ username, userId }: { username: string; us
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.from('profiles').update({ welcome_seen: true }).eq('id', userId)
+    supabase.from('profiles').update({ welcome_seen: true }).eq('id', userId).then()
   }, [userId])
 
   function dismiss() {
