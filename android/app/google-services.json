@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "25329595497",
+    "project_id": "dacopas-20c45",
+    "storage_bucket": "dacopas-20c45.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:25329595497:android:b33f4737ec470745df9ef8",
+        "android_client_info": {
+          "package_name": "com.dacopas.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJlPga-wYiM3pqThxtxonedG9NfiXYWRE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

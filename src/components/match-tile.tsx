@@ -1,3 +1,4 @@
+'use client'
 import Link from 'next/link'
 import { formatDistanceToNow, differenceInHours, differenceInMinutes } from 'date-fns'
 import { es } from 'date-fns/locale'

@@ -15,6 +15,13 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
   },
   plugins: {
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_notification',
+      iconColor: '#facc15',
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: '#0a0f1e',

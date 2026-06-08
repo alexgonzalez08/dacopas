@@ -116,7 +116,7 @@ export default function DashboardMatches({
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {format(new Date(match.match_date), "HH:mm", { locale: es })}
+                        {new Date(match.match_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {match.group_name && (
                         <span className="text-xs text-slate-500">

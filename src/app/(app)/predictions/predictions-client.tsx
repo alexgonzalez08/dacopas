@@ -174,7 +174,7 @@ export default function PredictionsClient({
                               <div className="flex items-center justify-between mb-3">
                                 <span className="text-xs text-slate-400 flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
-                                  {format(new Date(match.match_date), "d 'de' MMM · HH:mm", { locale: es })}
+                                  {format(new Date(match.match_date), "d 'de' MMM", { locale: es })} · {new Date(match.match_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                                 {locked && <span className="flex items-center gap-1 text-xs text-amber-400"><Lock className="w-3 h-3" /> Bloqueado</span>}
                                 {match.status === 'finished' && (

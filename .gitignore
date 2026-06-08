@@ -1,9 +1,13 @@
 # Dependencies
 node_modules/
 
-# Capacitor — no subir builds nativos al repo
-android/
-ios/
+# Capacitor — subir código fuente nativo pero no los builds
+android/build/
+android/.gradle/
+android/app/build/
+ios/build/
+ios/Pods/
+ios/.xcode.env.local
 
 # Build outputs
 .next/

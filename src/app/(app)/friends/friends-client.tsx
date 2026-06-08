@@ -33,6 +33,8 @@ export default function FriendsClient({
   const [showDropdown, setShowDropdown] = useState(false)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [tab, setTab] = useState<'friends' | 'requests'>('friends')
+  const [friendsPage, setFriendsPage] = useState(0)
+  const FRIENDS_PER_PAGE = 10
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapperRef = useRef<HTMLFormElement>(null)
 
@@ -143,7 +145,12 @@ export default function FriendsClient({
     setLoadingId(friendshipId)
     const supabase = createClient()
     await supabase.from('friendships').delete().eq('id', friendshipId)
-    setFriends(f => f.filter(fr => fr.id !== friendshipId))
+    setFriends(prev => {
+      const next = prev.filter(fr => fr.id !== friendshipId)
+      const maxPage = Math.max(0, Math.ceil(next.length / FRIENDS_PER_PAGE) - 1)
+      setFriendsPage(p => Math.min(p, maxPage))
+      return next
+    })
     setLoadingId(null)
   }
 
@@ -233,36 +240,63 @@ export default function FriendsClient({
       </div>
 
       {/* Mis Amigos */}
-      {tab === 'friends' && (
-        <div className="space-y-2">
-          {friends.length === 0 ? (
-            <div className="text-center py-10 text-slate-500">
-              <p className="text-3xl mb-2">👥</p>
-              <p className="text-sm">Todavía no tenés amigos. ¡Buscá por alias arriba!</p>
-            </div>
-          ) : (
-            friends.map(f => {
-              const profile = getFriendProfile(f)
-              if (!profile) return null
-              return (
-                <div key={f.id} className="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3">
-                  <Link href={`/profile/${profile.username}`}>
-                    <UserAvatar username={profile.username} fullName={profile.full_name} avatarUrl={profile.avatar_url} size="md" showName showAlias linkable={false} />
-                  </Link>
-                  <button
-                    onClick={() => removeFriend(f.id)}
-                    disabled={loadingId === f.id}
-                    className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-slate-700"
-                    title="Eliminar amigo"
-                  >
-                    {loadingId === f.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
-                  </button>
-                </div>
-              )
-            })
-          )}
-        </div>
-      )}
+      {tab === 'friends' && (() => {
+        const totalPages = Math.ceil(friends.length / FRIENDS_PER_PAGE)
+        const pageFriends = friends.slice(friendsPage * FRIENDS_PER_PAGE, (friendsPage + 1) * FRIENDS_PER_PAGE)
+        return (
+          <div className="space-y-2">
+            {friends.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">
+                <p className="text-3xl mb-2">👥</p>
+                <p className="text-sm">Todavía no tenés amigos. ¡Buscá por alias arriba!</p>
+              </div>
+            ) : (
+              <>
+                {pageFriends.map(f => {
+                  const profile = getFriendProfile(f)
+                  if (!profile) return null
+                  return (
+                    <div key={f.id} className="flex items-center justify-between bg-slate-800 rounded-xl px-4 py-3">
+                      <Link href={`/profile/${profile.username}`}>
+                        <UserAvatar username={profile.username} fullName={profile.full_name} avatarUrl={profile.avatar_url} size="md" showName showAlias linkable={false} />
+                      </Link>
+                      <button
+                        onClick={() => removeFriend(f.id)}
+                        disabled={loadingId === f.id}
+                        className="text-slate-500 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-slate-700"
+                        title="Eliminar amigo"
+                      >
+                        {loadingId === f.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )
+                })}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      onClick={() => setFriendsPage(p => Math.max(0, p - 1))}
+                      disabled={friendsPage === 0}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40 transition"
+                    >
+                      Anterior
+                    </button>
+                    <span className="text-xs text-slate-500">
+                      {friendsPage + 1} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setFriendsPage(p => Math.min(totalPages - 1, p + 1))}
+                      disabled={friendsPage === totalPages - 1}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40 transition"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Solicitudes */}
       {tab === 'requests' && (

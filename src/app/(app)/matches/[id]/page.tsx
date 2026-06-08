@@ -7,6 +7,7 @@ import MatchPrediction from './match-prediction'
 import GroupStandings from './group-standings'
 import Lineups from './lineups'
 import { Calendar, Clock } from 'lucide-react'
+import MatchTime from '@/components/match-time'
 
 const STAGE_LABELS: Record<string, string> = {
   group: 'Fase de Grupos',
@@ -63,7 +64,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <span>{format(matchDate, "d 'de' MMMM yyyy", { locale: es })}</span>
           <span>·</span>
           <Clock className="w-3 h-3" />
-          <span>{format(matchDate, 'HH:mm')}</span>
+          <MatchTime matchDate={match.match_date} />
         </div>
 
         <div className="flex items-center justify-between gap-4">
