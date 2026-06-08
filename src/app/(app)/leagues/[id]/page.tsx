@@ -193,7 +193,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   if (userRole === 'admin' || userRole === 'moderator') {
     const { data: friendships } = await supabase
       .from('friendships')
-      .select('requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url), updated_at')
+      .select('requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url)')
       .eq('status', 'accepted')
       .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
 
