@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { Trophy } from 'lucide-react'
+
 
 export default function Home() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
       <div className="mb-6 flex items-center justify-center w-20 h-20 rounded-full bg-yellow-500/20">
-        <Trophy className="w-10 h-10 text-yellow-400" />
+        <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />
       </div>
       <h1 className="text-4xl font-bold mb-2">Dacopas</h1>
       <p className="text-lg text-slate-400 mb-8">

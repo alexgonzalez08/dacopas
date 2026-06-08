@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Trophy } from 'lucide-react'
+
 import Link from 'next/link'
 
 function ResetPasswordForm() {
@@ -99,7 +99,7 @@ export default function ResetPasswordPage() {
     <main className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
-          <Trophy className="w-10 h-10 text-yellow-400" />
+          <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />
         </div>
         <h1 className="text-2xl font-bold text-center mb-6">Nueva contraseña</h1>
         <Suspense fallback={<p className="text-slate-400 text-sm text-center">Cargando...</p>}>

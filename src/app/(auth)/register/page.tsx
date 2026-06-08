@@ -3,7 +3,7 @@ import { useState, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Trophy, Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2 } from 'lucide-react'
 
 function RegisterForm() {
   const router = useRouter()
@@ -136,7 +136,7 @@ export default function RegisterPage() {
     <main className="flex flex-col items-center justify-center min-h-screen px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
-          <Trophy className="w-10 h-10 text-yellow-400" />
+          <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />
         </div>
         <h1 className="text-2xl font-bold text-center mb-6">Crear cuenta</h1>
         <Suspense fallback={null}>

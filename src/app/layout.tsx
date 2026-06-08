@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Dacopas",
   description: "Predecí los resultados del Mundial 2026 con tus amigos",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/logo.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
