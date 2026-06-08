@@ -7,17 +7,18 @@ import { useRouter, usePathname } from 'next/navigation'
 import WhistleIcon from '@/components/whistle-icon'
 import FriendsIcon from '@/components/friends-icon'
 import ProfileIcon from '@/components/profile-icon'
+import TorneosIcon from '@/components/torneos-icon'
 
 const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
-  { href: '/leagues/new', label: 'Torneos', icon: Users },
+  { href: '/leagues/new', label: 'Torneos', icon: TorneosIcon },
   { href: '/friends', label: 'Amistades', icon: FriendsIcon },
   { href: '/profile', label: 'Mi Perfil', icon: ProfileIcon },
 ]
 
 const BOTTOM_NAV = [
   { href: '/predictions', label: 'Pronósticos', icon: Star },
-  { href: '/leagues', label: 'Torneos', icon: Trophy },
+  { href: '/leagues', label: 'Torneos', icon: TorneosIcon },
   { href: '/friends', label: 'Amistades', icon: FriendsIcon },
 ]
 
