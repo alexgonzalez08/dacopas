@@ -196,7 +196,6 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       .select('requester:requester_id(id, username, full_name, avatar_url), addressee:addressee_id(id, username, full_name, avatar_url), updated_at')
       .eq('status', 'accepted')
       .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`)
-      .order('created_at', { ascending: false })
 
     const memberUserIds = new Set(members.map(m => m.user_id))
 
