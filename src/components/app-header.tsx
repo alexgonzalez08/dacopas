@@ -6,12 +6,13 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import WhistleIcon from '@/components/whistle-icon'
 import FriendsIcon from '@/components/friends-icon'
+import ProfileIcon from '@/components/profile-icon'
 
 const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Torneos', icon: Users },
   { href: '/friends', label: 'Amistades', icon: FriendsIcon },
-  { href: '/profile', label: 'Mi Perfil', icon: UserCircle },
+  { href: '/profile', label: 'Mi Perfil', icon: ProfileIcon },
 ]
 
 const BOTTOM_NAV = [
