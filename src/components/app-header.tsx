@@ -8,6 +8,7 @@ import WhistleIcon from '@/components/whistle-icon'
 import FriendsIcon from '@/components/friends-icon'
 import ProfileIcon from '@/components/profile-icon'
 import TorneosIcon from '@/components/torneos-icon'
+import NotificationsPanel from '@/components/notifications-panel'
 
 const TORNEOS_TYPES = new Set([
   'league_invite', 'league_added', 'league_created', 'join_request',
@@ -46,8 +47,10 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   const [amistаdesUnread, setAmistаdesUnread] = useState(0)
   const [chatUnread, setChatUnread] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const notifRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -113,20 +116,19 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   }, [unread, chatUnread])
 
   useEffect(() => {
-    if (pathname === '/notifications') {
+    if (pathname === '/notifications' || notifOpen) {
       setUnread(0)
       setTorneosUnread(0)
       setAmistаdesUnread(0)
     }
     if (pathname.startsWith('/leagues')) setChatUnread(0)
     if (pathname.startsWith('/friends')) setAmistаdesUnread(0)
-  }, [pathname])
+  }, [pathname, notifOpen])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -199,15 +201,38 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
             <span className="hidden sm:inline">{copied ? 'Copiado' : 'Compartir'}</span>
           </button>
 
-          {/* Notificaciones */}
-          <Link href="/notifications" className="relative p-1.5 text-slate-400 hover:text-white transition">
-            <WhistleIcon className="w-5 h-5" />
-            {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
-                {unread > 99 ? '99+' : unread}
-              </span>
+          {/* Notificaciones — dropdown en desktop, link en mobile */}
+          <div className="relative" ref={notifRef}>
+            {/* Desktop: botón con dropdown */}
+            <button
+              onClick={() => { setNotifOpen(v => !v); setUnread(0) }}
+              className="hidden md:flex relative p-1.5 text-slate-400 hover:text-white transition"
+            >
+              <WhistleIcon className="w-5 h-5" />
+              {unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
+            </button>
+
+            {/* Mobile: link directo */}
+            <Link href="/notifications" className="md:hidden relative p-1.5 text-slate-400 hover:text-white transition flex">
+              <WhistleIcon className="w-5 h-5" />
+              {unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
+            </Link>
+
+            {/* Dropdown panel */}
+            {notifOpen && (
+              <div className="absolute right-0 top-10 w-96 max-h-[75vh] overflow-y-auto bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 p-3">
+                <NotificationsPanel userId={userId} />
+              </div>
             )}
-          </Link>
+          </div>
 
           {/* Avatar con dropdown (perfil + logout) */}
           <div className="relative" ref={menuRef}>
