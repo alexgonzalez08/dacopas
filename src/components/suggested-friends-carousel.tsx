@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserPlus, Check, Loader2 } from 'lucide-react'
+import { UserPlus, Check, Loader2, X } from 'lucide-react'
 import Link from 'next/link'
 import { sendPushNotification } from '@/lib/push'
 
@@ -22,8 +22,9 @@ export default function SuggestedFriendsCarousel({
 }) {
   const [sent, setSent] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState<string | null>(null)
+  const [dismissed, setDismissed] = useState(false)
 
-  if (suggestions.length === 0) return null
+  if (suggestions.length === 0 || dismissed) return null
 
   async function handleAdd(target: SuggestedUser) {
     setLoading(target.id)
@@ -52,7 +53,16 @@ export default function SuggestedFriendsCarousel({
 
   return (
     <div className="space-y-3">
-      <h2 className="text-sm font-semibold text-slate-400">⚽ Rivales que podrían ser aliados</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-400">⚽ Rivales que podrían ser aliados</h2>
+        <button
+          onClick={() => setDismissed(true)}
+          className="p-1 text-slate-600 hover:text-slate-400 transition"
+          aria-label="Cerrar sugerencias"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {suggestions.map(user => (
           <div
