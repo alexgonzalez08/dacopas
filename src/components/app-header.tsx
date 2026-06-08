@@ -9,6 +9,15 @@ import FriendsIcon from '@/components/friends-icon'
 import ProfileIcon from '@/components/profile-icon'
 import TorneosIcon from '@/components/torneos-icon'
 
+const TORNEOS_TYPES = new Set([
+  'league_invite', 'league_added', 'league_created', 'join_request',
+  'mod_invite_request', 'mod_invite_approved', 'mod_invite_declined',
+  'member_left', 'join_request_declined',
+])
+const AMISTADES_TYPES = new Set([
+  'follow_request', 'follow_accepted', 'friend_post', 'post_reaction', 'post_comment',
+])
+
 const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Torneos', icon: TorneosIcon },
@@ -22,8 +31,19 @@ const BOTTOM_NAV = [
   { href: '/friends', label: 'Amistades', icon: FriendsIcon },
 ]
 
+function Badge({ count }: { count: number }) {
+  if (count === 0) return null
+  return (
+    <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+
 export default function AppHeader({ username, avatarUrl, userId }: { username: string; avatarUrl?: string | null; userId: string }) {
   const [unread, setUnread] = useState(0)
+  const [torneosUnread, setTorneosUnread] = useState(0)
+  const [amistаdesUnread, setAmistаdesUnread] = useState(0)
   const [chatUnread, setChatUnread] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -37,18 +57,22 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
     async function fetchUnread() {
       const { data } = await supabase
         .from('notifications')
-        .select('id')
+        .select('id, type')
         .eq('user_id', userId)
         .eq('read', false)
-      setUnread(data?.length ?? 0)
+
+      const notifs = data ?? []
+      setUnread(notifs.length)
+      setTorneosUnread(notifs.filter(n => TORNEOS_TYPES.has(n.type)).length)
+      setAmistаdesUnread(notifs.filter(n => AMISTADES_TYPES.has(n.type)).length)
     }
 
     fetchUnread()
 
     const channel = supabase
       .channel('notifications-badge')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => fetchUnread())
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => fetchUnread())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetchUnread)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetchUnread)
       .subscribe()
 
     const interval = setInterval(fetchUnread, 15000)
@@ -82,9 +106,20 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
     }
   }, [userId])
 
+  // Actualizar título de la pestaña del navegador
   useEffect(() => {
-    if (pathname === '/notifications') setUnread(0)
+    const total = unread + chatUnread
+    document.title = total > 0 ? `(${total > 99 ? '99+' : total}) Dacopas` : 'Dacopas'
+  }, [unread, chatUnread])
+
+  useEffect(() => {
+    if (pathname === '/notifications') {
+      setUnread(0)
+      setTorneosUnread(0)
+      setAmistаdesUnread(0)
+    }
     if (pathname.startsWith('/leagues')) setChatUnread(0)
+    if (pathname.startsWith('/friends')) setAmistаdesUnread(0)
   }, [pathname])
 
   useEffect(() => {
@@ -115,6 +150,8 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const torneosTotal = torneosUnread + chatUnread
+
   return (
     <>
       <header className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
@@ -128,6 +165,8 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
           <nav className="hidden md:flex gap-1 mr-1">
             {DESKTOP_NAV.map(({ href, label, icon: Icon }) => {
               const isTorneos = href === '/leagues/new'
+              const isAmistades = href === '/friends'
+              const badgeCount = isTorneos ? torneosTotal : isAmistades ? amistаdesUnread : 0
               return (
                 <Link
                   key={href}
@@ -142,9 +181,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
                 >
                   <span className="relative">
                     <Icon className="w-4 h-4" />
-                    {isTorneos && chatUnread > 0 && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
-                    )}
+                    <Badge count={badgeCount} />
                   </span>
                   {label}
                 </Link>
@@ -214,6 +251,8 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
         {BOTTOM_NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href)
           const isTorneos = href === '/leagues'
+          const isAmistades = href === '/friends'
+          const badgeCount = isTorneos ? torneosTotal : isAmistades ? amistаdesUnread : 0
           return (
             <Link
               key={href}
@@ -224,9 +263,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
             >
               <span className="relative">
                 <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5px]' : ''}`} />
-                {isTorneos && chatUnread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500" />
-                )}
+                <Badge count={badgeCount} />
               </span>
               {label}
             </Link>
