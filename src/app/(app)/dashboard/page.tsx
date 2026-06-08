@@ -95,10 +95,13 @@ export default async function DashboardPage() {
     sortDate: new Date(m.match_date),
   }))
 
+  const leagueIdSet = new Set(leagueIds)
   const seen = new Set<string>()
   const feedEvents = [...(friendEvents ?? []), ...(resultEvents ?? [])].filter((e: any) => {
     if (seen.has(e.id)) return false
     seen.add(e.id)
+    // No mostrar eventos de torneos de los que el usuario no es miembro
+    if ((e.type === 'league_join' || e.type === 'league_create') && e.league_id && !leagueIdSet.has(e.league_id)) return false
     // No mostrar "se unió al torneo" si el usuario es el creador del torneo
     if (e.type === 'league_join' && e.leagues?.created_by === e.user_id) return false
     return true
