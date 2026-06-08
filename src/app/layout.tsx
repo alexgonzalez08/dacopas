@@ -5,8 +5,21 @@ export const metadata: Metadata = {
   title: "Dacopas",
   description: "Predecí los resultados del Mundial 2026 con tus amigos",
   icons: {
-    icon: "/favicon.png",
+    icon: "/logo.png",
     apple: "/logo.png",
+  },
+  openGraph: {
+    title: "Dacopas",
+    description: "Predecí los resultados del Mundial 2026 con tus amigos",
+    images: [{ url: "https://dacopas.com/logo.png", width: 512, height: 512 }],
+    siteName: "Dacopas",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Dacopas",
+    description: "Predecí los resultados del Mundial 2026 con tus amigos",
+    images: ["https://dacopas.com/logo.png"],
   },
   appleWebApp: {
     capable: true,
