@@ -149,7 +149,7 @@ export default function LeagueChat({
         className="fixed bottom-24 right-4 z-40 w-14 h-14 rounded-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 shadow-lg flex items-center justify-center transition"
         aria-label="Abrir chat del torneo"
       >
-        <img src="/chat-icon.jpg" alt="Chat" className="w-10 h-10 object-contain" />
+        <img src="/chat-icon.png" alt="Chat" className="w-10 h-10 object-contain" />
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
             {unread > 9 ? '9+' : unread}
