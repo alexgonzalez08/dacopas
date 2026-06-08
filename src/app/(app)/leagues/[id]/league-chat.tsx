@@ -178,10 +178,10 @@ export default function LeagueChat({
 
       {/* Bottom sheet */}
       <div
-        className={`fixed left-2 right-2 bottom-0 z-50 flex flex-col bg-slate-900 border border-slate-700 border-b-0 rounded-t-2xl shadow-2xl transition-transform duration-300 ${
-          open ? 'translate-y-0' : 'translate-y-full'
-        }`}
-        style={{ maxHeight: '50vh' }}
+        className={`fixed bottom-0 z-50 flex flex-col bg-slate-900 border border-slate-700 border-b-0 rounded-t-2xl shadow-2xl transition-transform duration-300
+          left-2 right-2 md:left-auto md:right-4 md:w-80
+          ${open ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{ maxHeight: '50vh', height: open ? '50vh' : 'auto' }}
       >
         {/* Handle + header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
