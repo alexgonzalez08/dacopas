@@ -24,6 +24,7 @@ const BOTTOM_NAV = [
 
 export default function AppHeader({ username, avatarUrl, userId }: { username: string; avatarUrl?: string | null; userId: string }) {
   const [unread, setUnread] = useState(0)
+  const [chatUnread, setChatUnread] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -59,7 +60,31 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   }, [userId])
 
   useEffect(() => {
+    async function fetchChatUnread() {
+      const res = await fetch('/api/leagues/chat/unread')
+      if (res.ok) {
+        const { total } = await res.json()
+        setChatUnread(total ?? 0)
+      }
+    }
+
+    fetchChatUnread()
+    const supabase = createClient()
+    const channel = supabase
+      .channel('chat-unread-badge')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'league_chat_messages' }, fetchChatUnread)
+      .subscribe()
+    const interval = setInterval(fetchChatUnread, 30000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(interval)
+    }
+  }, [userId])
+
+  useEffect(() => {
     if (pathname === '/notifications') setUnread(0)
+    if (pathname.startsWith('/leagues')) setChatUnread(0)
   }, [pathname])
 
   useEffect(() => {
@@ -101,21 +126,30 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
         <div className="flex items-center gap-2">
           {/* Desktop nav */}
           <nav className="hidden md:flex gap-1 mr-1">
-            {DESKTOP_NAV.map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition ${
-                  pathname.startsWith(href) && href !== '/dashboard'
-                    ? 'bg-slate-800 text-white'
-                    : pathname === href && href === '/dashboard'
-                    ? 'bg-slate-800 text-white'
-                    : 'hover:bg-slate-800 text-slate-300 hover:text-white'
-                }`}
-              >
-                <Icon className="w-4 h-4" /> {label}
-              </Link>
-            ))}
+            {DESKTOP_NAV.map(({ href, label, icon: Icon }) => {
+              const isTorneos = href === '/leagues/new'
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition ${
+                    pathname.startsWith(href) && href !== '/dashboard'
+                      ? 'bg-slate-800 text-white'
+                      : pathname === href && href === '/dashboard'
+                      ? 'bg-slate-800 text-white'
+                      : 'hover:bg-slate-800 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <span className="relative">
+                    <Icon className="w-4 h-4" />
+                    {isTorneos && chatUnread > 0 && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
+                    )}
+                  </span>
+                  {label}
+                </Link>
+              )
+            })}
           </nav>
 
           {/* Compartir app */}
@@ -179,6 +213,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900 border-t border-slate-800 flex">
         {BOTTOM_NAV.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href)
+          const isTorneos = href === '/leagues'
           return (
             <Link
               key={href}
@@ -187,7 +222,12 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
                 active ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'
               }`}
             >
-              <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5px]' : ''}`} />
+              <span className="relative">
+                <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5px]' : ''}`} />
+                {isTorneos && chatUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500" />
+                )}
+              </span>
               {label}
             </Link>
           )

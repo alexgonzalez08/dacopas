@@ -56,6 +56,12 @@ export default function LeagueChat({
         setMessages(msgs ?? [])
         setUnread(0)
         setTimeout(() => scrollToBottom('instant'), 50)
+        // Marcar como leído en servidor
+        fetch('/api/leagues/chat/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leagueId }),
+        })
       })
       .finally(() => setLoading(false))
   }, [open, leagueId, scrollToBottom])
@@ -135,6 +141,11 @@ export default function LeagueChat({
   function handleOpen() {
     setOpen(true)
     setUnread(0)
+    fetch('/api/leagues/chat/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leagueId }),
+    })
   }
 
   function handleClose() {

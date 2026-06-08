@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createLeague, joinLeague, leaveLeague } from '@/lib/leagues'
@@ -14,15 +14,34 @@ export default function LeaguesClient({
   leagues: initial,
   userId,
   leaguesInfoSeen,
+  chatUnread: initialChatUnread = {},
 }: {
   leagues: League[]
   userId: string
   leaguesInfoSeen: boolean
+  chatUnread?: Record<string, number>
 }) {
   const router = useRouter()
 
   const [leagues, setLeagues] = useState<League[]>(initial)
+  const [chatUnread, setChatUnread] = useState<Record<string, number>>(initialChatUnread)
   const [modal, setModal] = useState<'create' | 'join' | null>(null)
+
+  useEffect(() => {
+    async function refreshUnread() {
+      const res = await fetch('/api/leagues/chat/unread')
+      if (res.ok) {
+        const { counts } = await res.json()
+        setChatUnread(counts ?? {})
+      }
+    }
+    const supabase = createClient()
+    const channel = supabase
+      .channel('leagues-chat-unread')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'league_chat_messages' }, refreshUnread)
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
   // Crear torneo
   const [name, setName] = useState('')
@@ -241,6 +260,11 @@ export default function LeaguesClient({
                 >
                   <span className="font-medium truncate">{league.name}</span>
                   <div className="flex items-center gap-2 shrink-0">
+                    {chatUnread[league.id] > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {chatUnread[league.id] > 9 ? '9+' : chatUnread[league.id]}
+                      </span>
+                    )}
                     <span className="text-xs font-mono text-slate-400">{league.code}</span>
                     <ChevronRight className="w-4 h-4 text-slate-500" />
                   </div>
