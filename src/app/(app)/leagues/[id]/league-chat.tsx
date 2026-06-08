@@ -157,20 +157,20 @@ export default function LeagueChat({
         )}
       </button>
 
-      {/* Backdrop */}
+      {/* Backdrop ligero */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-40"
           onClick={handleClose}
         />
       )}
 
       {/* Bottom sheet */}
       <div
-        className={`fixed left-0 right-0 bottom-0 z-50 flex flex-col bg-slate-900 border-t border-slate-700 rounded-t-2xl shadow-2xl transition-transform duration-300 ${
+        className={`fixed left-2 right-2 bottom-0 z-50 flex flex-col bg-slate-900 border border-slate-700 border-b-0 rounded-t-2xl shadow-2xl transition-transform duration-300 ${
           open ? 'translate-y-0' : 'translate-y-full'
         }`}
-        style={{ maxHeight: '75vh' }}
+        style={{ maxHeight: '50vh' }}
       >
         {/* Handle + header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
@@ -253,10 +253,10 @@ export default function LeagueChat({
         </div>
 
         {/* Botón cerrar abajo */}
-        <div className="shrink-0 px-4 pb-6">
+        <div className="shrink-0 px-4 pb-4">
           <button
             onClick={handleClose}
-            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 text-sm font-medium transition"
+            className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-500 text-xs font-medium transition"
           >
             Cerrar chat
           </button>
