@@ -18,6 +18,6 @@ if [ -z "$CRON_SECRET" ]; then
 fi
 
 echo "Disparando sync en $BASE_URL ..."
-curl -s -X POST "$BASE_URL/api/matches/sync" \
+curl -sL -X POST "$BASE_URL/api/matches/sync" \
   -H "Authorization: Bearer $CRON_SECRET" \
   -H "Content-Type: application/json"

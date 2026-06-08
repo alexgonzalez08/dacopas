@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Trophy, Users, Medal, Loader2, X, ShieldCheck } from 'lucide-react'
@@ -45,6 +45,7 @@ export default function JoinClient({
   isLoggedIn,
   userId,
   isNewUser,
+  hasPendingRequest,
 }: {
   league: League
   members: Member[]
@@ -52,11 +53,20 @@ export default function JoinClient({
   isLoggedIn: boolean
   userId: string | null
   isNewUser?: boolean
+  hasPendingRequest?: boolean
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
+
+  // Si el usuario está logueado y no tiene solicitud pendiente, enviar automáticamente
+  useEffect(() => {
+    if (isLoggedIn && !hasPendingRequest) {
+      handleJoin()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleJoin() {
     if (!isLoggedIn) {
@@ -164,14 +174,21 @@ export default function JoinClient({
           {/* CTA */}
           <div className="space-y-3">
             {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-            <button
-              onClick={handleJoin}
-              disabled={loading}
-              className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold rounded-2xl transition flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡'}
-              {isLoggedIn ? 'Solicitar unirme al torneo' : 'Crear cuenta y unirme'}
-            </button>
+            {hasPendingRequest ? (
+              <div className="w-full py-3.5 bg-slate-700 text-slate-300 font-bold rounded-2xl flex items-center justify-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-yellow-400" />
+                Solicitud pendiente de aprobación
+              </div>
+            ) : (
+              <button
+                onClick={handleJoin}
+                disabled={loading}
+                className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold rounded-2xl transition flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡'}
+                {isLoggedIn ? 'Solicitar unirme al torneo' : 'Crear cuenta y unirme'}
+              </button>
+            )}
             {isLoggedIn ? (
               <p className="text-center text-xs text-slate-500">
                 <Link href="/dashboard" className="hover:text-slate-300 transition">Ir al inicio</Link>

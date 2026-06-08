@@ -104,6 +104,19 @@ export default async function JoinPage({ params }: Props) {
     isNewUser = diffMs < 5 * 60 * 1000
   }
 
+  // Verificar si ya tiene una solicitud pendiente para este torneo
+  let hasPendingRequest = false
+  if (user) {
+    const { data: existing } = await adminSupabase
+      .from('notifications')
+      .select('id')
+      .eq('from_user_id', user.id)
+      .eq('type', 'join_request')
+      .contains('metadata', { league_id: id })
+      .limit(1)
+    hasPendingRequest = (existing?.length ?? 0) > 0
+  }
+
   return (
     <JoinClient
       league={league}
@@ -112,6 +125,7 @@ export default async function JoinPage({ params }: Props) {
       isLoggedIn={!!user}
       userId={user?.id ?? null}
       isNewUser={isNewUser}
+      hasPendingRequest={hasPendingRequest}
     />
   )
 }
