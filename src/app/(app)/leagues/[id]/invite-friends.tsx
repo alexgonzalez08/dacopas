@@ -1,12 +1,29 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import UserAvatar from '@/components/user-avatar'
-import { UserPlus, Check, Loader2, Clock } from 'lucide-react'
+import { UserPlus, Check, Loader2, Clock, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { sendPushNotification } from '@/lib/push'
 
 type Friend = { id: string; username: string; full_name: string | null; avatar_url: string | null }
 type Role = 'admin' | 'moderator' | 'participant'
+
+function dismissedKey(leagueId: string) {
+  return `league-invite-dismissed-${leagueId}`
+}
+
+function getDismissed(leagueId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(dismissedKey(leagueId))
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch { return new Set() }
+}
+
+function saveDismissed(leagueId: string, ids: Set<string>) {
+  try {
+    localStorage.setItem(dismissedKey(leagueId), JSON.stringify([...ids]))
+  } catch {}
+}
 
 export default function InviteFriends({
   leagueId,
@@ -29,13 +46,25 @@ export default function InviteFriends({
 }) {
   const [invited, setInvited] = useState<Set<string>>(new Set(pendingInvites))
   const [loading, setLoading] = useState<string | null>(null)
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    setDismissed(getDismissed(leagueId))
+  }, [leagueId])
+
+  const visible = friends.filter(f => !dismissed.has(f.id))
+
+  function dismiss(friendId: string) {
+    const next = new Set(dismissed).add(friendId)
+    setDismissed(next)
+    saveDismissed(leagueId, next)
+  }
 
   async function invite(friend: Friend) {
     setLoading(friend.id)
     const supabase = createClient()
 
     if (userRole === 'admin') {
-      // Admin invita directamente
       await supabase.from('notifications').insert({
         user_id: friend.id,
         from_user_id: userId,
@@ -49,7 +78,6 @@ export default function InviteFriends({
         data: { url: `/leagues/new?join=1&code=${leagueCode}` },
       })
     } else {
-      // Moderador solicita aprobación al admin
       const me = await supabase.from('profiles').select('username').eq('id', userId).single()
       await Promise.all(adminIds.map(adminId =>
         supabase.from('notifications').insert({
@@ -77,6 +105,8 @@ export default function InviteFriends({
     setLoading(null)
   }
 
+  if (visible.length === 0) return null
+
   const isMod = userRole === 'moderator'
 
   return (
@@ -91,14 +121,23 @@ export default function InviteFriends({
         )}
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        {friends.map(friend => {
+        {visible.map(friend => {
           const isInvited = invited.has(friend.id)
           const isLoading = loading === friend.id
           return (
             <div
               key={friend.id}
-              className="flex flex-col items-center gap-2 bg-slate-800 rounded-2xl p-3 min-w-[96px] shrink-0"
+              className="relative flex flex-col items-center gap-2 bg-slate-800 rounded-2xl p-3 min-w-[96px] shrink-0"
             >
+              {/* Botón eliminar */}
+              <button
+                onClick={() => dismiss(friend.id)}
+                className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center transition"
+                aria-label="Quitar sugerencia"
+              >
+                <X className="w-3 h-3 text-slate-400" />
+              </button>
+
               <UserAvatar
                 username={friend.username}
                 fullName={friend.full_name}
