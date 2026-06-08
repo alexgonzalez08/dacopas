@@ -8,6 +8,7 @@ import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import EditLeague from './edit-league'
+import LeagueChat from './league-chat'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -340,6 +341,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         modRequests={modRequests}
         joinRequests={joinRequests}
         leaderboard={leaderboard}
+      />
+
+      <LeagueChat
+        leagueId={id}
+        userId={user!.id}
+        username={currentMember?.profiles?.username ?? ''}
+        avatarUrl={currentMember?.profiles?.avatar_url}
       />
     </div>
   )
