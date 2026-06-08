@@ -5,18 +5,19 @@ import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check } from
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import WhistleIcon from '@/components/whistle-icon'
+import FriendsIcon from '@/components/friends-icon'
 
 const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Torneos', icon: Users },
-  { href: '/friends', label: 'Amistades', icon: UserPlus },
+  { href: '/friends', label: 'Amistades', icon: FriendsIcon },
   { href: '/profile', label: 'Mi Perfil', icon: UserCircle },
 ]
 
 const BOTTOM_NAV = [
   { href: '/predictions', label: 'Pronósticos', icon: Star },
   { href: '/leagues', label: 'Torneos', icon: Trophy },
-  { href: '/friends', label: 'Amistades', icon: UserPlus },
+  { href: '/friends', label: 'Amistades', icon: FriendsIcon },
 ]
 
 export default function AppHeader({ username, avatarUrl, userId }: { username: string; avatarUrl?: string | null; userId: string }) {
