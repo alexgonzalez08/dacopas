@@ -221,7 +221,7 @@ export default function PostInteractionsGeneric({
                   {c.user_id === userId && (
                     <button
                       onClick={() => handleDeleteComment(c.id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition"
+                      className="text-slate-500 hover:text-red-400 transition"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
