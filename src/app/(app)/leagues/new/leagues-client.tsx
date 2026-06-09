@@ -120,23 +120,6 @@ export default function LeaguesClient({
         f.requester_id === user!.id ? f.addressee_id : f.requester_id
       )
 
-      if (friendIds.length > 0) {
-        await Promise.all(friendIds.map(friendId =>
-          supabase.from('notifications').insert({
-            user_id: friendId,
-            from_user_id: user!.id,
-            type: 'league_created',
-            metadata: {
-              league_id: league.id,
-              league_name: league.name,
-              league_code: league.code,
-              competition: 'Mundial 2026',
-              creator_username: profile?.username ?? '',
-            },
-          })
-        ))
-        // No enviamos push por creación de torneo — solo queda la notificación in-app
-      }
 
       closeModal()
       router.push(`/leagues/${league.id}`)
