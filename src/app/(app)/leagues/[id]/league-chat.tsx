@@ -184,7 +184,7 @@ export default function LeagueChat({
       <button
         onClick={handleOpen}
         style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
-        className="fixed right-4 z-40 flex items-center gap-2 px-4 py-2.5 md:gap-3 md:px-7 md:py-4 md:text-base md:rounded-2xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold rounded-xl shadow-lg transition"
+        className="fixed right-4 z-40 flex items-center gap-2 px-5 py-3.5 md:gap-3 md:px-7 md:py-4 md:text-base md:rounded-2xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold rounded-xl shadow-lg transition"
         aria-label="Abrir chat del torneo"
       >
         <img src="/chat-icon.png" alt="Chat" className="w-7 h-7 object-contain md:w-8 md:h-8" />
