@@ -23,7 +23,7 @@ const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Torneos', icon: TorneosIcon },
   { href: '/friends', label: 'Amistades', icon: FriendsIcon },
-  { href: '/profile', label: 'Mi Perfil', icon: ProfileIcon },
+  { href: '/account', label: 'Gestión de Cuenta', icon: ProfileIcon },
 ]
 
 const BOTTOM_NAV = [
@@ -258,11 +258,11 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
             {menuOpen && (
               <div className="absolute right-0 top-10 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 min-w-40 overflow-hidden">
                 <Link
-                  href="/profile"
+                  href="/account"
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition"
                 >
-                  <UserCircle className="w-4 h-4" /> Mi perfil
+                  <UserCircle className="w-4 h-4" /> Gestión de Cuenta
                 </Link>
                 <div className="border-t border-slate-700" />
                 <button
