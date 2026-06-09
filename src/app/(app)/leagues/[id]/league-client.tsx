@@ -482,31 +482,5 @@ export default function LeagueClient({
   }
 
   // Vista sin tabs — moderadores y participantes
-  return (
-    <div className="space-y-4">
-      <div>
-          {showConfirm ? (
-            <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
-              <p className="text-sm text-slate-300">¿Seguro que querés abandonar <span className="font-semibold text-white">"{leagueName}"</span>?</p>
-              <div className="flex gap-2">
-                <button onClick={handleLeave} disabled={leaving}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 disabled:opacity-50 transition">
-                  {leaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
-                  Sí, abandonar
-                </button>
-                <button onClick={() => setShowConfirm(false)}
-                  className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition">
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button onClick={() => setShowConfirm(true)}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-400 transition">
-              <LogOut className="w-3.5 h-3.5" /> Abandonar torneo
-            </button>
-          )}
-        </div>
-    </div>
-  )
+  return null
 }
