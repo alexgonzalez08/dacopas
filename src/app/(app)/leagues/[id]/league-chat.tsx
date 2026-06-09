@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
@@ -182,22 +181,19 @@ export default function LeagueChat({
 
   return (
     <>
-      {/* FAB — portal al body para evitar stacking context del árbol */}
-      {typeof document !== 'undefined' && createPortal(
-        <button
-          onClick={handleOpen}
-          className="fixed bottom-20 md:bottom-6 right-4 z-40 w-14 h-14 rounded-full bg-sky-400 hover:bg-sky-300 text-white shadow-lg flex items-center justify-center transition relative"
-          aria-label="Abrir chat del torneo"
-        >
-          <img src="/chat-icon.png" alt="Chat" className="w-10 h-10 object-contain" />
-          {unread > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
-              {unread > 9 ? '9+' : unread}
-            </span>
-          )}
-        </button>,
-        document.body
-      )}
+      {/* FAB */}
+      <button
+        onClick={handleOpen}
+        className="fixed bottom-20 md:bottom-6 right-4 z-40 w-14 h-14 rounded-full bg-sky-400 hover:bg-sky-300 text-white shadow-lg flex items-center justify-center transition relative"
+        aria-label="Abrir chat del torneo"
+      >
+        <img src="/chat-icon.png" alt="Chat" className="w-10 h-10 object-contain" />
+        {unread > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
 
       {/* Backdrop ligero */}
       {open && (
