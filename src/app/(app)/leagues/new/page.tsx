@@ -54,12 +54,31 @@ export default async function LeaguesPage() {
     }
   }
 
+  // Notificaciones pendientes por torneo (join_request para admins)
+  let leagueNotifs: Record<string, number> = {}
+  if (leagueIds.length > 0) {
+    const { data: notifs } = await supabase
+      .from('notifications')
+      .select('metadata')
+      .eq('user_id', user!.id)
+      .eq('type', 'join_request')
+      .is('read_at', null)
+
+    for (const n of notifs ?? []) {
+      const lid = n.metadata?.league_id
+      if (lid && leagueIds.includes(lid)) {
+        leagueNotifs[lid] = (leagueNotifs[lid] ?? 0) + 1
+      }
+    }
+  }
+
   return (
     <LeaguesClient
       leagues={leagues}
       userId={user!.id}
       leaguesInfoSeen={profile?.leagues_info_seen ?? false}
       chatUnread={chatUnread}
+      leagueNotifs={leagueNotifs}
     />
   )
 }

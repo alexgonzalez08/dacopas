@@ -15,11 +15,13 @@ export default function LeaguesClient({
   userId,
   leaguesInfoSeen,
   chatUnread: initialChatUnread = {},
+  leagueNotifs = {},
 }: {
   leagues: League[]
   userId: string
   leaguesInfoSeen: boolean
   chatUnread?: Record<string, number>
+  leagueNotifs?: Record<string, number>
 }) {
   const router = useRouter()
 
@@ -238,9 +240,11 @@ export default function LeaguesClient({
                 >
                   <span className="font-medium truncate">{league.name}</span>
                   <div className="flex items-center gap-2 shrink-0">
-                    {chatUnread[league.id] > 0 && (
+                    {(chatUnread[league.id] > 0 || leagueNotifs[league.id] > 0) && (
                       <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                        {chatUnread[league.id] > 9 ? '9+' : chatUnread[league.id]}
+                        {Math.min((chatUnread[league.id] ?? 0) + (leagueNotifs[league.id] ?? 0), 99) > 9
+                          ? '9+'
+                          : (chatUnread[league.id] ?? 0) + (leagueNotifs[league.id] ?? 0)}
                       </span>
                     )}
                     <span className="text-xs font-mono text-slate-400">{league.code}</span>
