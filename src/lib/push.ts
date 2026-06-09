@@ -11,36 +11,39 @@ export async function initPushNotifications(userId: string) {
 
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
+    const { Device } = await import('@capacitor/device')
+    const info = await Device.getInfo()
+    const platform = info.platform // 'android' | 'ios'
 
-    // Verificar estado actual antes de pedir
+    // Agregar listeners ANTES de register() para no perder el evento
+    await PushNotifications.addListener('registration', async (token) => {
+      await savePushToken(userId, token.value, platform)
+    })
+
+    await PushNotifications.addListener('registrationError', (err) => {
+      console.error('Error registrando push token:', err)
+    })
+
+    await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      console.log('Push recibida:', notification)
+    })
+
+    await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+      const url = action.notification.data?.url
+      if (url) window.location.href = url
+    })
+
+    // Verificar y pedir permiso
     let status = await PushNotifications.checkPermissions()
 
     if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale') {
       status = await PushNotifications.requestPermissions()
     }
 
-    if (status.receive === 'denied') return
-
     if (status.receive !== 'granted') return
 
     // Registrar para recibir el token
     await PushNotifications.register()
-
-    // Guardar token cuando llega
-    PushNotifications.addListener('registration', async (token) => {
-      await savePushToken(userId, token.value, 'android')
-    })
-
-    // Manejar notificación recibida con app abierta
-    PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      console.log('Push recibida:', notification)
-    })
-
-    // Manejar tap en notificación
-    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-      const url = action.notification.data?.url
-      if (url) window.location.href = url
-    })
 
   } catch (err) {
     console.error('Error inicializando push:', err)
