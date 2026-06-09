@@ -255,7 +255,7 @@ export default function LeagueChat({
                         {msg.profiles?.username ?? 'Usuario'}
                       </span>
                     )}
-                    <div className="group relative">
+                    <div className="flex items-center gap-1.5">
                       <div className={`px-3 py-2 rounded-2xl text-sm leading-snug ${
                         isOwn
                           ? 'bg-yellow-500 text-slate-900 font-medium rounded-br-sm'
@@ -266,9 +266,9 @@ export default function LeagueChat({
                       {!isOwn && (
                         <button
                           onClick={() => setReportMsgId(msg.id)}
-                          className="absolute -right-6 top-1 opacity-0 group-hover:opacity-100 transition text-slate-500 hover:text-red-400"
+                          className="text-slate-600 hover:text-red-400 transition shrink-0"
                         >
-                          <Flag className="w-3.5 h-3.5" />
+                          <Flag className="w-3 h-3" />
                         </button>
                       )}
                     </div>
