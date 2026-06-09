@@ -55,6 +55,12 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   const pathname = usePathname()
 
   useEffect(() => {
+    import('@/lib/push').then(({ initPushNotifications }) => {
+      initPushNotifications(userId)
+    })
+  }, [userId])
+
+  useEffect(() => {
     const supabase = createClient()
 
     async function fetchUnread() {

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         toUserId: notif.from_user_id,
         title: '¡Solicitud aceptada!',
         body: 'Tu solicitud de amistad fue aceptada en Dacopas',
-        data: { url: '/friends', type: 'follow_accepted' },
+        data: { url: '/notifications', type: 'follow_accepted' },
       })
     } else {
       await adminSupabase.from('friendships').delete().eq('id', friendship.id)

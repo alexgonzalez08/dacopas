@@ -404,7 +404,7 @@ export default function NotificationsPanel({
     if (!alreadyMember) {
       if (notif.from_user_id) {
         await supabase.from('notifications').insert({ user_id: notif.from_user_id, from_user_id: userId, type: 'mod_invite_approved', metadata: { league_id, league_name, target_username } })
-        sendPushNotification({ toUserId: notif.from_user_id, title: 'Solicitud aprobada', body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue aprobada` })
+        sendPushNotification({ toUserId: notif.from_user_id, title: 'Solicitud aprobada', body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue aprobada`, data: { url: '/notifications' } })
       }
       await supabase.from('notifications').insert({ user_id: target_user_id, from_user_id: userId, type: 'league_added', metadata: { league_id, league_name } })
       sendPushNotification({ toUserId: target_user_id, title: '¡Te agregaron a un torneo!', body: `Fuiste agregado al torneo "${league_name}" en Dacopas`, data: { url: `/leagues/${league_id}` } })
@@ -421,7 +421,7 @@ export default function NotificationsPanel({
     const { league_id, league_name, target_username } = notif.metadata ?? {}
     if (notif.from_user_id) {
       await supabase.from('notifications').insert({ user_id: notif.from_user_id, from_user_id: userId, type: 'mod_invite_declined', metadata: { league_id, league_name, target_username } })
-      sendPushNotification({ toUserId: notif.from_user_id, title: 'Solicitud declinada', body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue declinada` })
+      sendPushNotification({ toUserId: notif.from_user_id, title: 'Solicitud declinada', body: `Tu solicitud para invitar a @${target_username} al torneo "${league_name}" fue declinada`, data: { url: '/notifications' } })
     }
     await supabase.from('notifications').delete().eq('id', notif.id)
     setNotifications(prev => prev.filter(n => n.id !== notif.id))
@@ -441,7 +441,7 @@ export default function NotificationsPanel({
     const { league_id, league_name } = notif.metadata ?? {}
     await fetch('/api/leagues/approve-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leagueId: league_id, targetUserId: notif.from_user_id }) })
     await supabase.from('notifications').insert({ user_id: notif.from_user_id!, from_user_id: userId, type: 'league_added', metadata: { league_id, league_name } })
-    sendPushNotification({ toUserId: notif.from_user_id!, title: '¡Solicitud aprobada!', body: `Tu solicitud para unirte a "${league_name}" fue aprobada`, data: { url: `/leagues/${league_id}` } })
+    sendPushNotification({ toUserId: notif.from_user_id!, title: '¡Solicitud aprobada!', body: `Tu solicitud para unirte a "${league_name}" fue aprobada`, data: { url: '/notifications' } })
     const { data: allReqs } = await supabase.from('notifications').select('id').eq('type', 'join_request').eq('metadata->>league_id', league_id).eq('from_user_id', notif.from_user_id!)
     if (allReqs?.length) await supabase.from('notifications').delete().in('id', allReqs.map(r => r.id))
     setNotifications(prev => prev.filter(n => n.id !== notif.id))

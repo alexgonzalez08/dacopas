@@ -95,7 +95,7 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
               aps: { alert: { title: `💬 ${leagueName}`, body: `@${senderUsername}: ${preview}` }, sound: 'default', badge: 1 },
             },
           },
-          data: { url: `/leagues/${leagueId}`, type: 'chat_message', image_url: league?.image_url ?? '' },
+          data: { url: `/leagues/${leagueId}?chat=open`, type: 'chat_message', image_url: league?.image_url ?? '' },
         },
       }),
     })

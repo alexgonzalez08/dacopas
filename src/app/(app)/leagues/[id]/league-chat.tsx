@@ -5,6 +5,7 @@ import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
 import { format, isToday, isYesterday } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useSearchParams } from 'next/navigation'
 
 type Message = {
   id: string
@@ -32,7 +33,8 @@ export default function LeagueChat({
   username: string
   avatarUrl?: string | null
 }) {
-  const [open, setOpen] = useState(false)
+  const searchParams = useSearchParams()
+  const [open, setOpen] = useState(searchParams.get('chat') === 'open')
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
