@@ -170,7 +170,7 @@ export default function LeagueChat({
       {/* FAB */}
       <button
         onClick={handleOpen}
-        className="fixed top-1/2 -translate-y-1/2 right-4 z-40 w-14 h-14 rounded-full bg-sky-400 hover:bg-sky-300 text-white shadow-lg flex items-center justify-center transition relative"
+        className="fixed top-1/2 -translate-y-1/2 left-2 z-40 w-14 h-14 rounded-full bg-sky-400 hover:bg-sky-300 text-white shadow-lg flex items-center justify-center transition relative"
         aria-label="Abrir chat del torneo"
       >
         <img src="/chat-icon.png" alt="Chat" className="w-10 h-10 object-contain" />
@@ -192,7 +192,7 @@ export default function LeagueChat({
       {/* Bottom sheet */}
       <div
         className={`fixed bottom-0 z-50 flex flex-col bg-slate-900 border border-slate-700 border-b-0 rounded-t-2xl shadow-2xl transition-transform duration-300
-          left-2 right-2 md:left-auto md:right-4 md:w-80
+          left-2 right-2 md:right-auto md:left-0 md:w-80
           ${open ? 'translate-y-0' : 'translate-y-full'}`}
         style={{ maxHeight: '50vh', height: open ? '50vh' : 'auto' }}
       >
