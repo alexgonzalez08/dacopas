@@ -3,7 +3,30 @@ import { useState, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2, Eye, EyeOff, Check, X } from 'lucide-react'
+
+function PasswordStrength({ password }: { password: string }) {
+  const rules = [
+    { label: 'Mínimo 8 caracteres', ok: password.length >= 8 },
+    { label: 'Al menos una mayúscula', ok: /[A-Z]/.test(password) },
+    { label: 'Al menos un número', ok: /[0-9]/.test(password) },
+  ]
+  if (!password) return null
+  return (
+    <ul className="mt-2 space-y-1">
+      {rules.map(r => (
+        <li key={r.label} className={`flex items-center gap-1.5 text-xs ${r.ok ? 'text-green-400' : 'text-slate-500'}`}>
+          {r.ok ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+          {r.label}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function isPasswordValid(p: string) {
+  return p.length >= 8 && /[A-Z]/.test(p) && /[0-9]/.test(p)
+}
 
 function RegisterForm() {
   const router = useRouter()
@@ -13,6 +36,7 @@ function RegisterForm() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -30,6 +54,13 @@ function RegisterForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    if (!isPasswordValid(password)) {
+      setError('La contraseña no cumple los requisitos mínimos.')
+      setLoading(false)
+      return
+    }
+
     const supabase = createClient()
 
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -112,11 +143,31 @@ function RegisterForm() {
 
       <div>
         <label className="block text-sm text-slate-400 mb-1">Contraseña</label>
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
-          className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500" />
+        <div className="relative">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            placeholder="Mín. 8 caracteres"
+            className="w-full px-4 py-2 pr-10 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 placeholder-slate-600"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+          >
+            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+        <PasswordStrength password={password} />
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
 
       <button type="submit" disabled={loading}
         className="w-full py-3 bg-yellow-500 text-slate-900 font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition flex items-center justify-center gap-2">
