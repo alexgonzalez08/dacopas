@@ -6,9 +6,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Map;
 
 public class DacopasFirebaseMessagingService extends FirebaseMessagingService {
@@ -34,12 +43,39 @@ public class DacopasFirebaseMessagingService extends FirebaseMessagingService {
         String notificationId = data.getOrDefault("notification_id", "");
         String cookie         = data.getOrDefault("cookie", "");
         String url            = data.getOrDefault("url", "/dashboard");
+        String imageUrl       = data.getOrDefault("image_url", "");
 
-        showNotification(title, body, type, notificationId, cookie, url);
+        showNotification(title, body, type, notificationId, cookie, url, imageUrl);
+    }
+
+    private Bitmap downloadBitmap(String imageUrl) {
+        try {
+            URL url = new URL(imageUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setDoInput(true);
+            conn.connect();
+            InputStream input = conn.getInputStream();
+            Bitmap raw = BitmapFactory.decodeStream(input);
+            if (raw == null) return null;
+            // Recortar en círculo
+            int size = Math.min(raw.getWidth(), raw.getHeight());
+            Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(output);
+            Paint paint = new Paint();
+            paint.setAntiAlias(true);
+            Rect src = new Rect(0, 0, size, size);
+            RectF dst = new RectF(0, 0, size, size);
+            canvas.drawOval(dst, paint);
+            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+            canvas.drawBitmap(raw, src, dst, paint);
+            return output;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void showNotification(String title, String body, String type,
-                                   String notificationId, String cookie, String url) {
+                                   String notificationId, String cookie, String url, String imageUrl) {
         Context ctx    = getApplicationContext();
         int notifId    = (int) System.currentTimeMillis();
 
@@ -52,8 +88,14 @@ public class DacopasFirebaseMessagingService extends FirebaseMessagingService {
             PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        // Logo como large icon
-        Bitmap largeIcon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+        // Intentar usar imagen del torneo, sino fallback al logo
+        Bitmap largeIcon = null;
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            largeIcon = downloadBitmap(imageUrl);
+        }
+        if (largeIcon == null) {
+            largeIcon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+        }
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(ctx, "dacopas_default")
             .setSmallIcon(R.drawable.ic_stat_notification)

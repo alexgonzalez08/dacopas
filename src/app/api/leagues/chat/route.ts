@@ -35,10 +35,10 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Obtener nombre del torneo
+  // Obtener nombre e imagen del torneo
   const { data: league } = await adminSupabase
     .from('leagues')
-    .select('name')
+    .select('name, image_url')
     .eq('id', leagueId)
     .single()
 
@@ -89,7 +89,7 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
             priority: 'high',
             notification: { channel_id: 'dacopas_default', sound: 'default', icon: 'ic_stat_notification' },
           },
-          data: { url: `/leagues/${leagueId}`, type: 'chat_message' },
+          data: { url: `/leagues/${leagueId}`, type: 'chat_message', image_url: league?.image_url ?? '' },
         },
       }),
     })
