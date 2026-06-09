@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { leaveLeague } from '@/lib/leagues'
@@ -85,6 +85,24 @@ export default function LeagueClient({
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<'gestion' | 'posiciones'>('posiciones')
+
+  // Swipe derecha → volver a lista de torneos
+  const touchStartX = useRef<number | null>(null)
+  useEffect(() => {
+    function onTouchStart(e: TouchEvent) { touchStartX.current = e.touches[0].clientX }
+    function onTouchEnd(e: TouchEvent) {
+      if (touchStartX.current === null) return
+      const dx = e.changedTouches[0].clientX - touchStartX.current
+      if (dx > 80 && touchStartX.current < 40) router.push('/leagues/new')
+      touchStartX.current = null
+    }
+    document.addEventListener('touchstart', onTouchStart)
+    document.addEventListener('touchend', onTouchEnd)
+    return () => {
+      document.removeEventListener('touchstart', onTouchStart)
+      document.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [router])
   const [memberList, setMemberList] = useState(initialMembers)
   const [modRequests, setModRequests] = useState(initialModRequests)
   const [joinRequests, setJoinRequests] = useState(initialJoinRequests)

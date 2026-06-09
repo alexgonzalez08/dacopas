@@ -35,11 +35,15 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     .eq('league_id', id)
     .is('left_at', null)
 
-  const members = (membersData ?? []).map(m => ({
-    user_id: m.user_id,
-    role: (m.role ?? 'participant') as 'admin' | 'moderator' | 'participant',
-    profiles: (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { username: string; full_name: string | null; avatar_url: string | null } | null,
-  }))
+  const members = Array.from(
+    new Map(
+      (membersData ?? []).map(m => [m.user_id, {
+        user_id: m.user_id,
+        role: (m.role ?? 'participant') as 'admin' | 'moderator' | 'participant',
+        profiles: (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { username: string; full_name: string | null; avatar_url: string | null } | null,
+      }])
+    ).values()
+  )
 
   const currentMember = members.find(m => m.user_id === user!.id)
 
