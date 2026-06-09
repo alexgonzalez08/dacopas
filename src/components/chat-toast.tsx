@@ -105,7 +105,7 @@ export default function ChatToast({
           <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-slate-700 flex items-center justify-center">
             {toast.leagueImage
               ? <img src={toast.leagueImage} alt={toast.leagueName} className="w-full h-full object-cover" />
-              : <span className="text-lg">🏆</span>
+              : <span className="text-lg font-bold text-yellow-400">{toast.leagueName[0]?.toUpperCase()}</span>
             }
           </div>
 

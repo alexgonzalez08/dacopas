@@ -87,7 +87,7 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
           notification: { title: `💬 ${leagueName}`, body: `@${senderUsername}: ${preview}` },
           android: {
             priority: 'high',
-            notification: { channel_id: 'dacopas_default', sound: 'default', icon: 'ic_stat_notification' },
+            notification: { channel_id: 'dacopas_default', sound: 'default', icon: 'ic_stat_notification', image: 'https://dacopas.com/logo.png' },
           },
           apns: {
             headers: { 'apns-priority': '10' },

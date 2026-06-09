@@ -63,9 +63,16 @@ export async function POST(req: NextRequest) {
                 channel_id: 'dacopas_default',
                 sound: 'default',
                 icon: 'ic_stat_notification',
+                image: 'https://dacopas.com/logo.png',
               },
             },
-            data: data ?? {},
+            apns: {
+              headers: { 'apns-priority': '10' },
+              payload: {
+                aps: { alert: { title, body }, sound: 'default', badge: 1 },
+              },
+            },
+            data: { url: '/notifications', ...(data ?? {}) },
           },
         }),
       })
