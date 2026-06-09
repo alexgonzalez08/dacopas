@@ -51,16 +51,16 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           message: {
             token,
+            notification: { title, body },
             android: {
               priority: 'high',
+              notification: {
+                channel_id: 'dacopas_default',
+                sound: 'default',
+                icon: 'ic_stat_notification',
+              },
             },
-            // Solo data — fuerza que pase siempre por onMessageReceived
-            // incluso con el app en background o cerrada
-            data: {
-              title,
-              body,
-              ...(data ?? {}),
-            },
+            data: data ?? {},
           },
         }),
       })
