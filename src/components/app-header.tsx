@@ -23,7 +23,6 @@ const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Pronósticos', icon: Star },
   { href: '/leagues/new', label: 'Torneos', icon: TorneosIcon },
   { href: '/friends', label: 'Amistades', icon: FriendsIcon },
-  { href: '/account', label: 'Gestión de Cuenta', icon: ProfileIcon },
 ]
 
 const BOTTOM_NAV = [
