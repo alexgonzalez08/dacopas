@@ -89,6 +89,12 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
             priority: 'high',
             notification: { channel_id: 'dacopas_default', sound: 'default', icon: 'ic_stat_notification' },
           },
+          apns: {
+            headers: { 'apns-priority': '10' },
+            payload: {
+              aps: { alert: { title: `💬 ${leagueName}`, body: `@${senderUsername}: ${preview}` }, sound: 'default', badge: 1 },
+            },
+          },
           data: { url: `/leagues/${leagueId}`, type: 'chat_message', image_url: league?.image_url ?? '' },
         },
       }),

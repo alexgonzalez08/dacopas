@@ -49,12 +49,15 @@ export default function ChatToast({
           const league = leagueMap.get(row.league_id)
           if (!league) return
 
-          // Traer username del remitente
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', row.user_id)
-            .single()
+          // Traer username del remitente y desencriptar contenido en paralelo
+          const [{ data: profile }, decryptRes] = await Promise.all([
+            supabase.from('profiles').select('username').eq('id', row.user_id).single(),
+            fetch('/api/leagues/chat/decrypt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: row.content }),
+            }).then(r => r.ok ? r.json() : null).catch(() => null),
+          ])
 
           const toast: Toast = {
             id: `${row.id}-${Date.now()}`,
@@ -62,7 +65,7 @@ export default function ChatToast({
             leagueName: league.name,
             leagueImage: league.image_url,
             senderUsername: profile?.username ?? 'Usuario',
-            content: row.content,
+            content: decryptRes?.content ?? row.content,
           }
 
           setToasts(prev => [...prev.slice(-2), toast])
