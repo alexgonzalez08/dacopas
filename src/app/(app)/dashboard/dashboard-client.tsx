@@ -55,7 +55,7 @@ export default function DashboardClient({
 
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold text-lg">Actividad reciente</h2>
+      <h2 className="font-semibold text-lg">Los Temas Actuales</h2>
 
       {showWelcome && <WelcomeCard username={username} userId={userId} />}
 

@@ -136,7 +136,7 @@ export default function ActivityFeed({ events }: { events: FeedEvent[] }) {
   return (
     <div>
       <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
-        Actividad reciente
+        Los Temas Actuales
       </h3>
       {events.length === 0 ? (
         <p className="text-slate-500 text-sm">No hay actividad reciente de tus seguidores.</p>
