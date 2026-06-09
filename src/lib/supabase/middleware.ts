@@ -38,6 +38,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/auth/callback')
 
   const isPublicPage = request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname === '/privacy' ||
     /^\/leagues\/[^/]+\/join/.test(request.nextUrl.pathname)
 
   if (!user && !isAuthPage && !isPublicPage) {
