@@ -9,14 +9,17 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { timezone } = await req.json().catch(() => ({}))
+
   const userAgent = req.headers.get('user-agent') ?? 'Desconocido'
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     ?? req.headers.get('x-real-ip')
     ?? 'Desconocida'
 
+  const tz = timezone ?? 'UTC'
   const now = new Date()
-  const fecha = now.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-  const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' })
+  const fecha = now.toLocaleDateString('es', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
+  const hora = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', timeZone: tz })
 
   // Detectar dispositivo/navegador básico
   let dispositivo = 'Navegador de escritorio'
@@ -45,7 +48,7 @@ export async function POST(req: NextRequest) {
           </tr>
           <tr>
             <td style="padding:10px 0;color:#64748b;border-bottom:1px solid #1e293b">Hora</td>
-            <td style="padding:10px 0;color:#e2e8f0;border-bottom:1px solid #1e293b;text-align:right">${hora} (ARG)</td>
+            <td style="padding:10px 0;color:#e2e8f0;border-bottom:1px solid #1e293b;text-align:right">${hora} (${tz})</td>
           </tr>
           <tr>
             <td style="padding:10px 0;color:#64748b;border-bottom:1px solid #1e293b">Dispositivo</td>

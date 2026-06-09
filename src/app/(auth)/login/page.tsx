@@ -22,7 +22,12 @@ function LoginForm() {
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (!error) {
-      fetch('/api/auth/login-notification', { method: 'POST' }).catch(() => {})
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      fetch('/api/auth/login-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone }),
+      }).catch(() => {})
     }
     if (error) {
       const msg = error.message.includes('Invalid login credentials')
