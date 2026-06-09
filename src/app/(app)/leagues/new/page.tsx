@@ -8,7 +8,7 @@ export default async function LeaguesPage() {
   const [{ data: memberships }, { data: profile }] = await Promise.all([
     supabase
       .from('league_members')
-      .select('role, leagues(id, name, code, image_url)')
+      .select('role, leagues(id, name, code, image_url, ended_at)')
       .eq('user_id', user!.id)
       .is('left_at', null),
     supabase
@@ -19,7 +19,7 @@ export default async function LeaguesPage() {
   ])
 
   const leagues = (memberships ?? [])
-    .filter(m => m.leagues != null)
+    .filter(m => m.leagues != null && !(m.leagues as any).ended_at)
     .map(m => ({ ...(m.leagues as any), role: m.role ?? 'participant' }))
 
   const leagueIds = leagues.map(l => l.id)

@@ -44,6 +44,7 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'mod_invite_declined') return wrap('bg-red-500/20', <X className="w-4 h-4 text-red-400" />)
   if (type === 'member_left') return wrap('bg-slate-700', <LogOut className="w-4 h-4 text-slate-400" />)
   if (type === 'league_created') return wrap('bg-yellow-500/20', <Trophy className="w-4 h-4 text-yellow-400" />)
+  if (type === 'league_ended') return wrap('bg-yellow-500/30', <Trophy className="w-4 h-4 text-yellow-300" />)
   if (type === 'join_request') return wrap('bg-purple-500/20', <Users className="w-4 h-4 text-purple-400" />)
   if (type === 'friend_post') return wrap('bg-blue-500/20', <FileText className="w-4 h-4 text-blue-400" />)
   if (type === 'post_reaction') return wrap('bg-pink-500/20', <Heart className="w-4 h-4 text-pink-400" />)
@@ -204,6 +205,22 @@ function NotificationItem({
               : <button onClick={() => onRequestJoin(notif)} disabled={accepting === notif.id} className={btnYellow}>
                   {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />} Solicitar unirse
                 </button>}
+          </div>
+        )}
+
+        {notif.type === 'league_ended' && (
+          <div className="space-y-1">
+            <p className="text-sm text-slate-200">
+              🏆 El torneo <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">"{notif.metadata?.league_name}"</Link> ha finalizado.
+            </p>
+            {notif.metadata?.top3?.[0] && (
+              <p className="text-xs text-slate-400">
+                Ganador: <span className="text-yellow-400 font-semibold">@{notif.metadata.top3[0].username}</span> con {notif.metadata.top3[0].points} puntos
+              </p>
+            )}
+            <Link href={`/leagues/${notif.metadata?.league_id}`} className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-yellow-400 transition">
+              Ver tabla final →
+            </Link>
           </div>
         )}
 

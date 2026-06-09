@@ -22,7 +22,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   // Usar adminClient para leer el torneo — el usuario puede ser invitado (no miembro aún)
   const { data: league } = await adminSupabase
     .from('leagues')
-    .select('id, name, code, image_url, description, created_by, created_at')
+    .select('id, name, code, image_url, description, created_by, created_at, ended_at')
     .eq('id', id)
     .single()
 
@@ -256,6 +256,50 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     .sort((a, b) => b.points - a.points)
 
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
+  const RANK_STYLES = [
+    { medal: '🥇', text: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30' },
+    { medal: '🥈', text: 'text-slate-300', bg: 'bg-slate-700/50 border-slate-600/30' },
+    { medal: '🥉', text: 'text-amber-500', bg: 'bg-amber-700/10 border-amber-600/30' },
+  ]
+
+  // Modo solo lectura — torneo finalizado
+  if ((league as any).ended_at) {
+    return (
+      <div className="space-y-6">
+        {league.image_url && (
+          <div className="w-full h-40 rounded-2xl overflow-hidden">
+            <img src={league.image_url} alt={league.name} className="w-full h-full object-cover" />
+          </div>
+        )}
+        <div className="text-center space-y-1 py-2">
+          <p className="text-3xl">🏆</p>
+          <h1 className="text-2xl font-bold">{league.name}</h1>
+          <span className="inline-block text-xs px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-semibold">
+            Torneo Finalizado
+          </span>
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider px-1">Tabla final</p>
+          {leaderboard.map((entry, i) => {
+            const style = RANK_STYLES[i] ?? { medal: `${i + 1}`, text: 'text-slate-400', bg: 'bg-slate-800 border-slate-700/30' }
+            return (
+              <div key={entry.user_id} className={`flex items-center gap-4 rounded-xl px-4 py-3 border ${style.bg}`}>
+                <span className="text-xl w-6 text-center">{i < 3 ? style.medal : <span className={`font-bold ${style.text}`}>{i + 1}</span>}</span>
+                <Link href={`/profile/${entry.username}`} className={`flex-1 font-medium hover:underline ${style.text}`}>{entry.username}</Link>
+                <div className="text-right">
+                  <span className={`text-lg font-bold ${style.text}`}>{entry.points}</span>
+                  <span className="text-slate-500 text-sm"> pts</span>
+                </div>
+                <div className="text-xs text-slate-500 hidden sm:block">
+                  {entry.exact_results} exactos · {entry.correct_winner} ganador
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

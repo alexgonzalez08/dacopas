@@ -27,7 +27,7 @@ type MatchPost = {
 type ActivityPost = {
   kind: 'activity'
   id: string
-  type: 'prediction' | 'result' | 'league_join' | 'league_create'
+  type: 'prediction' | 'result' | 'league_join' | 'league_create' | 'league_ended'
   created_at: string
   user_id: string | null
   match_id: number | null
@@ -263,6 +263,61 @@ function LeagueJoinPost({ item, userId, now }: { item: ActivityPost; userId: str
   )
 }
 
+const RANK_STYLES = [
+  { bg: 'from-yellow-500/30 to-yellow-600/10', border: 'border-yellow-500/40', medal: '🥇', text: 'text-yellow-400' },
+  { bg: 'from-slate-400/20 to-slate-500/10', border: 'border-slate-400/40', medal: '🥈', text: 'text-slate-300' },
+  { bg: 'from-amber-700/20 to-amber-800/10', border: 'border-amber-600/40', medal: '🥉', text: 'text-amber-500' },
+]
+
+function LeagueEndedPost({ item }: { item: ActivityPost }) {
+  const leagueName = item.metadata?.league_name ?? 'el torneo'
+  const top3: { rank: number; username: string; points: number; exact_results: number }[] = item.metadata?.top3 ?? []
+
+  return (
+    <div className="rounded-2xl overflow-hidden border border-yellow-500/20 bg-gradient-to-b from-slate-800 to-slate-900">
+      {/* Banner */}
+      <div className="bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-slate-800 px-4 py-4 flex items-center gap-3 border-b border-yellow-500/20">
+        <div className="text-3xl">🏆</div>
+        <div>
+          <p className="text-xs text-yellow-400 font-semibold uppercase tracking-wider">Torneo Finalizado</p>
+          <p className="font-bold text-white text-lg leading-tight">{leagueName}</p>
+        </div>
+      </div>
+
+      {/* Top 3 */}
+      {top3.length > 0 && (
+        <div className="px-4 py-4 space-y-2">
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Podio final</p>
+          {top3.map((entry, i) => {
+            const style = RANK_STYLES[i]
+            return (
+              <div key={entry.username} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r ${style.bg} border ${style.border}`}>
+                <span className="text-xl">{style.medal}</span>
+                <Link href={`/profile/${entry.username}`} className={`flex-1 font-bold hover:underline ${style.text}`}>
+                  @{entry.username}
+                </Link>
+                <div className="text-right">
+                  <p className={`font-bold text-sm ${style.text}`}>{entry.points} pts</p>
+                  <p className="text-xs text-slate-500">{entry.exact_results} exactos</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="px-4 pb-4">
+        <Link
+          href={`/leagues/${item.league_id}`}
+          className="block text-center text-xs text-slate-500 hover:text-yellow-400 transition"
+        >
+          Ver tabla final →
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 function LeagueCreatePost({ item, userId, now }: { item: ActivityPost; userId: string; now: string }) {
   return (
     <div className="bg-slate-800 rounded-2xl p-4">
@@ -324,6 +379,7 @@ export default function Feed({
           if (a.type === 'result') return <ResultPost key={a.id} item={a} userId={userId} now={serverNow} />
           if (a.type === 'league_join') return <LeagueJoinPost key={a.id} item={a} userId={userId} now={serverNow} />
           if (a.type === 'league_create') return <LeagueCreatePost key={a.id} item={a} userId={userId} now={serverNow} />
+          if (a.type === 'league_ended') return <LeagueEndedPost key={a.id} item={a} />
         }
         return null
       })}
