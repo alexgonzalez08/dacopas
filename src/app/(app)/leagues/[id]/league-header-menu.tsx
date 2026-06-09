@@ -1,25 +1,33 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreVertical, Flag, LogOut, Loader2, X } from 'lucide-react'
+import { MoreVertical, Flag, LogOut, Loader2, X, Pencil } from 'lucide-react'
 import { leaveLeague } from '@/lib/leagues'
 import ReportModal from '@/components/report-modal'
+import EditLeague from './edit-league'
 
 export default function LeagueHeaderMenu({
   leagueId,
   leagueName,
   userId,
   userRole,
+  initialName,
+  initialDescription,
+  initialImageUrl,
 }: {
   leagueId: string
   leagueName: string
   userId: string
   userRole: string
+  initialName: string
+  initialDescription: string | null
+  initialImageUrl: string | null
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [showLeave, setShowLeave] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState('')
 
@@ -50,6 +58,14 @@ export default function LeagueHeaderMenu({
           <>
             <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
             <div className="absolute right-0 top-8 bg-slate-700 rounded-xl shadow-xl z-40 overflow-hidden min-w-44">
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => { setShowEdit(true); setOpen(false) }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 w-full transition"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-yellow-400" /> Editar torneo
+                </button>
+              )}
               <button
                 onClick={() => { setShowReport(true); setOpen(false) }}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 w-full transition"
@@ -68,6 +84,16 @@ export default function LeagueHeaderMenu({
           </>
         )}
       </div>
+
+      {/* Modal editar — controlado externamente */}
+      <EditLeague
+        leagueId={leagueId}
+        initialName={initialName}
+        initialDescription={initialDescription}
+        initialImageUrl={initialImageUrl}
+        externalOpen={showEdit}
+        onExternalClose={() => setShowEdit(false)}
+      />
 
       {/* Modal abandonar */}
       {showLeave && (

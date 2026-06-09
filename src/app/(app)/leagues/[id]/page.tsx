@@ -7,7 +7,6 @@ import ShareButton from './share-button'
 import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
-import EditLeague from './edit-league'
 import LeagueHeaderMenu from './league-header-menu'
 import CopyCodeButton from './copy-code-button'
 
@@ -276,19 +275,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               <h1 className="text-2xl font-bold leading-tight">{league.name}</h1>
             </div>
             <div className="flex items-center gap-1 shrink-0 mt-1">
-              {userRole === 'admin' && (
-                <EditLeague
-                  leagueId={id}
-                  initialName={league.name}
-                  initialDescription={league.description ?? null}
-                  initialImageUrl={league.image_url ?? null}
-                />
-              )}
               <LeagueHeaderMenu
                 leagueId={id}
                 leagueName={league.name}
                 userId={user!.id}
                 userRole={userRole}
+                initialName={league.name}
+                initialDescription={league.description ?? null}
+                initialImageUrl={league.image_url ?? null}
               />
             </div>
           </div>

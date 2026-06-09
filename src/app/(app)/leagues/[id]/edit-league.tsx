@@ -8,13 +8,19 @@ export default function EditLeague({
   initialName,
   initialDescription,
   initialImageUrl,
+  externalOpen,
+  onExternalClose,
 }: {
   leagueId: string
   initialName: string
   initialDescription: string | null
   initialImageUrl: string | null
+  externalOpen?: boolean
+  onExternalClose?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const isOpen = externalOpen !== undefined ? externalOpen : open
+  const closeModal = () => { setOpen(false); onExternalClose?.() }
   const [name, setName] = useState(initialName)
   const [description, setDescription] = useState(initialDescription ?? '')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -65,7 +71,7 @@ export default function EditLeague({
 
       setSaved(true)
       setTimeout(() => {
-        setOpen(false)
+        closeModal()
         setSaved(false)
         // Recargar la página para reflejar los cambios
         window.location.reload()
@@ -78,7 +84,7 @@ export default function EditLeague({
   }
 
   function handleClose() {
-    setOpen(false)
+    closeModal()
     setName(initialName)
     setDescription(initialDescription ?? '')
     setImageFile(null)
@@ -88,14 +94,7 @@ export default function EditLeague({
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700 font-medium rounded-lg transition"
-      >
-        <Pencil className="w-3.5 h-3.5" /> Editar
-      </button>
-
-      {open && (
+      {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm" onClick={handleClose}>
           <div className="w-full max-w-sm bg-slate-900 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">

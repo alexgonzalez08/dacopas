@@ -135,12 +135,7 @@ export default function LeaguesClient({
             },
           })
         ))
-        friendIds.forEach(friendId => sendPushNotification({
-          toUserId: friendId,
-          title: '¡Nuevo torneo creado!',
-          body: `@${profile?.username ?? 'Alguien'} creó el torneo "${league.name}" para el Mundial 2026`,
-          data: { url: `/leagues/${league.id}` },
-        }))
+        // No enviamos push por creación de torneo — solo queda la notificación in-app
       }
 
       closeModal()

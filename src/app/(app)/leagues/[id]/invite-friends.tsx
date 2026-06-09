@@ -75,7 +75,7 @@ export default function InviteFriends({
         toUserId: friend.id,
         title: '¡Te invitaron a un torneo!',
         body: `Te invitaron al torneo "${leagueName}" en Dacopas`,
-        data: { url: `/leagues/new?join=1&code=${leagueCode}` },
+        data: { url: '/notifications' },
       })
     } else {
       const me = await supabase.from('profiles').select('username').eq('id', userId).single()
