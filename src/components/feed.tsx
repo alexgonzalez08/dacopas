@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { formatDistance, differenceInHours, differenceInMinutes, format } from 'date-fns'
+import { formatDistance, differenceInHours, differenceInMinutes, format, isToday, isTomorrow, startOfDay, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight } from 'lucide-react'
 import PostInteractions from './post-interactions'
@@ -82,13 +82,15 @@ const STAGE_LABELS: Record<string, string> = {
 }
 
 function getUrgencyLabel(matchDate: Date, now: string): { label: string; accent: string } {
-  const mins = differenceInMinutes(matchDate, new Date(now))
-  const hours = differenceInHours(matchDate, new Date(now))
+  const nowDate = new Date(now)
+  const mins = differenceInMinutes(matchDate, nowDate)
   if (mins <= 60) return { label: '⚠️ ¡Cierra en menos de 1 hora!', accent: 'text-red-400' }
-  if (hours <= 24) return { label: '🔔 El partido es hoy', accent: 'text-orange-400' }
-  if (hours <= 48) return { label: '📅 El partido es mañana', accent: 'text-yellow-400' }
+  if (isToday(matchDate)) return { label: '🔔 El partido es hoy', accent: 'text-orange-400' }
+  if (isTomorrow(matchDate)) return { label: '📅 El partido es mañana', accent: 'text-yellow-400' }
+  const dayName = format(matchDate, 'EEEE', { locale: es })
+  const daysUntil = Math.ceil(differenceInHours(startOfDay(matchDate), startOfDay(nowDate)) / 24)
   return {
-    label: `📅 En ${formatDistance(matchDate, new Date(now), { locale: es })}`,
+    label: `📅 El partido es el ${dayName}${daysUntil <= 7 ? '' : ` (en ${formatDistance(matchDate, nowDate, { locale: es })})`}`,
     accent: 'text-slate-400',
   }
 }
