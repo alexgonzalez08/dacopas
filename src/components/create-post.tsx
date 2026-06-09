@@ -100,7 +100,7 @@ export default function CreatePost({
           toUserId: friendId,
           title: `📝 @${username} publicó algo`,
           body: content.trim() ? content.trim().slice(0, 80) : '📷 Compartió una foto',
-          data: { url: `/posts/${data.id}` },
+          data: { url: '/dashboard' },
         }))
       }
 
