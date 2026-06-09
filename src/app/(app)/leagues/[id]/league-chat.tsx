@@ -1,12 +1,15 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MessageCircle, X, Send, Loader2, Flag } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, Flag, Smile } from 'lucide-react'
 import ReportModal from '@/components/report-modal'
 import UserAvatar from '@/components/user-avatar'
 import { format, isToday, isYesterday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
 type Message = {
   id: string
@@ -42,8 +45,8 @@ export default function LeagueChat({
   const [sending, setSending] = useState(false)
   const [unread, setUnread] = useState(0)
   const [reportMsgId, setReportMsgId] = useState<string | null>(null)
+  const [showEmoji, setShowEmoji] = useState(false)
 
-  // Cargar unread inicial desde el servidor
   useEffect(() => {
     if (open) return
     fetch('/api/leagues/chat/unread')
@@ -54,6 +57,7 @@ export default function LeagueChat({
       })
       .catch(() => {})
   }, [leagueId, open])
+
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
@@ -62,7 +66,6 @@ export default function LeagueChat({
     bottomRef.current?.scrollIntoView({ behavior })
   }, [])
 
-  // Cargar mensajes iniciales
   useEffect(() => {
     if (!open) return
     setLoading(true)
@@ -72,7 +75,6 @@ export default function LeagueChat({
         setMessages(msgs ?? [])
         setUnread(0)
         setTimeout(() => scrollToBottom('instant'), 50)
-        // Marcar como leído en servidor
         fetch('/api/leagues/chat/read', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -82,7 +84,6 @@ export default function LeagueChat({
       .finally(() => setLoading(false))
   }, [open, leagueId, scrollToBottom])
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel(`league-chat-${leagueId}`)
@@ -91,13 +92,11 @@ export default function LeagueChat({
         { event: 'INSERT', schema: 'public', table: 'league_chat_messages', filter: `league_id=eq.${leagueId}` },
         async (payload) => {
           const row = payload.new as any
-          // Traer perfil del emisor
           const { data: profile } = await supabase
             .from('profiles')
             .select('username, avatar_url')
             .eq('id', row.user_id)
             .single()
-          // Desencriptar via API (el content llega encriptado desde Supabase)
           let decryptedContent = row.content
           try {
             const res = await fetch(`/api/leagues/chat/decrypt`, {
@@ -112,7 +111,6 @@ export default function LeagueChat({
           } catch {}
           const msg: Message = { ...row, content: decryptedContent, profiles: profile }
           setMessages(prev => {
-            // Evitar duplicados si el mensaje ya fue agregado optimistamente
             if (prev.some(m => m.id === msg.id)) return prev
             return [...prev, msg]
           })
@@ -133,8 +131,8 @@ export default function LeagueChat({
     if (!text || sending) return
     setSending(true)
     setInput('')
+    setShowEmoji(false)
 
-    // Optimistic insert
     const tempId = `tmp-${Date.now()}`
     const optimistic: Message = {
       id: tempId,
@@ -154,11 +152,9 @@ export default function LeagueChat({
       })
       const { message } = await res.json()
       if (message) {
-        // Reemplazar optimistic con el real
         setMessages(prev => prev.map(m => m.id === tempId ? message : m))
       }
     } catch {
-      // Revertir si falla
       setMessages(prev => prev.filter(m => m.id !== tempId))
       setInput(text)
     } finally {
@@ -179,6 +175,7 @@ export default function LeagueChat({
 
   function handleClose() {
     setOpen(false)
+    setShowEmoji(false)
   }
 
   return (
@@ -198,12 +195,8 @@ export default function LeagueChat({
         )}
       </button>
 
-      {/* Backdrop ligero */}
       {open && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={handleClose}
-        />
+        <div className="fixed inset-0 z-40" onClick={handleClose} />
       )}
 
       {/* Bottom sheet */}
@@ -213,7 +206,7 @@ export default function LeagueChat({
           ${open ? 'translate-y-0' : 'translate-y-full'}`}
         style={{ maxHeight: '50vh', height: open ? '50vh' : 'auto' }}
       >
-        {/* Handle + header */}
+        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4 text-yellow-400" />
@@ -283,8 +276,32 @@ export default function LeagueChat({
           <div ref={bottomRef} />
         </div>
 
+        {/* Emoji picker */}
+        {showEmoji && (
+          <div className="shrink-0 border-t border-slate-700">
+            <EmojiPicker
+              onEmojiClick={(e) => {
+                setInput(prev => prev + e.emoji)
+                inputRef.current?.focus()
+              }}
+              theme={'dark' as any}
+              skinTonesDisabled
+              searchDisabled={false}
+              height={280}
+              width="100%"
+              lazyLoadEmojis
+            />
+          </div>
+        )}
+
         {/* Input */}
-        <div className="shrink-0 px-4 py-3 border-t border-slate-700 flex gap-2">
+        <div className="shrink-0 px-3 py-3 border-t border-slate-700 flex items-center gap-2">
+          <button
+            onClick={() => setShowEmoji(v => !v)}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition shrink-0 ${showEmoji ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-400 hover:text-yellow-400'}`}
+          >
+            <Smile className="w-5 h-5" />
+          </button>
           <input
             ref={inputRef}
             value={input}
@@ -297,14 +314,13 @@ export default function LeagueChat({
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="w-10 h-10 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center transition disabled:opacity-40 shrink-0"
+            className="w-9 h-9 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-slate-900 flex items-center justify-center transition disabled:opacity-40 shrink-0"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
-
-
       </div>
+
       {reportMsgId && (
         <ReportModal type="message" targetId={reportMsgId} onClose={() => setReportMsgId(null)} />
       )}
