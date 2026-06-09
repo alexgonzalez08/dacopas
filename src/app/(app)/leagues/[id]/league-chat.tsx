@@ -183,10 +183,11 @@ export default function LeagueChat({
 
   return (
     <>
-      {/* Botón inline */}
+      {/* Botón fijo inferior derecha */}
       <button
         onClick={handleOpen}
-        className="relative flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold rounded-xl shadow transition"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)' }}
+        className="fixed right-4 z-40 flex items-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold rounded-xl shadow-lg transition relative"
         aria-label="Abrir chat del torneo"
       >
         <img src="/chat-icon.png" alt="Chat" className="w-5 h-5 object-contain" />

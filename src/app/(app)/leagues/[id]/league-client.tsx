@@ -327,14 +327,12 @@ export default function LeagueClient({
             {leaderboard.length === 0 && (
               <p className="text-sm text-slate-500 text-center py-6">Aún no hay puntos registrados.</p>
             )}
-            <div className="flex justify-end mt-2">
-              <LeagueChat
-                leagueId={leagueId}
-                userId={userId}
-                username={username}
-                avatarUrl={avatarUrl}
-              />
-            </div>
+            <LeagueChat
+              leagueId={leagueId}
+              userId={userId}
+              username={username}
+              avatarUrl={avatarUrl}
+            />
           </div>
         )}
 
