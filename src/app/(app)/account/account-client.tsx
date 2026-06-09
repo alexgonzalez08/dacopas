@@ -2,10 +2,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { User, Shield, FileText, Trash2, Check, X, Eye, EyeOff, Loader2, ChevronRight } from 'lucide-react'
+import { User, Shield, FileText, Trash2, Check, X, Eye, EyeOff, Loader2, ChevronRight, ShieldAlert } from 'lucide-react'
 import Link from 'next/link'
 
-type Section = 'perfil' | 'seguridad' | 'privacidad' | 'administracion'
+type Section = 'perfil' | 'seguridad' | 'privacidad' | 'seguridad_datos' | 'administracion'
 
 function PasswordStrength({ password }: { password: string }) {
   const rules = [
@@ -88,6 +88,7 @@ export default function AccountClient({
     { id: 'perfil' as Section, label: 'Mi Perfil', description: 'Editá tu nombre, alias y foto', icon: User, href: '/profile' },
     { id: 'seguridad' as Section, label: 'Contraseña y Seguridad', description: 'Cambiá tu contraseña', icon: Shield },
     { id: 'privacidad' as Section, label: 'Privacidad', description: 'Política de privacidad de Dacopas', icon: FileText, href: '/privacy' },
+    { id: 'seguridad_datos' as Section, label: 'Seguridad y Datos', description: 'Cómo solicitamos eliminar tu cuenta y tus datos', icon: ShieldAlert, href: '/security' },
     { id: 'administracion' as Section, label: 'Administración de Cuenta', description: 'Eliminá tu cuenta permanentemente', icon: Trash2 },
   ]
 
