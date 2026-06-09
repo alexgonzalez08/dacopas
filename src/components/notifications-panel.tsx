@@ -39,6 +39,7 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'follow_request') return wrap('bg-yellow-500/20', <WhistleIcon className="w-4 h-4 text-yellow-400" />)
   if (type === 'follow_accepted') return wrap('bg-green-500/20', <UserCheck className="w-4 h-4 text-green-400" />)
   if (type === 'league_invite' || type === 'league_added') return wrap('bg-blue-500/20', <Users className="w-4 h-4 text-blue-400" />)
+  if (type === 'league_invite_accepted') return wrap('bg-green-500/20', <Check className="w-4 h-4 text-green-400" />)
   if (type === 'mod_invite_request') return wrap('bg-purple-500/20', <Shield className="w-4 h-4 text-purple-400" />)
   if (type === 'mod_invite_approved') return wrap('bg-green-500/20', <Check className="w-4 h-4 text-green-400" />)
   if (type === 'mod_invite_declined') return wrap('bg-red-500/20', <X className="w-4 h-4 text-red-400" />)
@@ -134,6 +135,16 @@ function NotificationItem({
                   </button>
                   {joinError && joining !== notif.id && <p className="text-xs text-red-400">{joinError}</p>}
                 </div>}
+          </div>
+        )}
+
+        {notif.type === 'league_invite_accepted' && (
+          <div className="space-y-1">
+            <p className="text-sm text-slate-200">
+              <Link href={`/profile/${notif.metadata?.username}`} className="font-semibold text-white hover:text-yellow-400">@{notif.metadata?.username}</Link>
+              <span className="text-slate-400"> aceptó tu invitación y se unió a </span>
+              <Link href={`/leagues/${notif.metadata?.league_id}`} className="font-semibold text-yellow-400 hover:underline">"{notif.metadata?.league_name}"</Link>
+            </p>
           </div>
         )}
 
@@ -395,6 +406,28 @@ export default function NotificationsPanel({
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       const league = await joinLeague(notif.metadata.league_code, user!.id)
+
+      // Notificar a quien hizo la invitación
+      if (notif.from_user_id) {
+        const { data: profile } = await supabase.from('profiles').select('username').eq('id', user!.id).single()
+        await supabase.from('notifications').insert({
+          user_id: notif.from_user_id,
+          from_user_id: user!.id,
+          type: 'league_invite_accepted',
+          metadata: {
+            league_id: league.id,
+            league_name: notif.metadata?.league_name,
+            username: profile?.username ?? '',
+          },
+        })
+        sendPushNotification({
+          toUserId: notif.from_user_id,
+          title: '¡Invitación aceptada!',
+          body: `@${profile?.username ?? 'Alguien'} se unió al torneo "${notif.metadata?.league_name}"`,
+          data: { url: '/notifications' },
+        })
+      }
+
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, joined: true, alreadyJoined: true } : n))
       setTimeout(() => router.push(`/leagues/${league.id}`), 1200)
     } catch (err: any) { setJoinError(err.message) }
