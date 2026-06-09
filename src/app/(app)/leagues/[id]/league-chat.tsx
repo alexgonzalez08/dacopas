@@ -291,15 +291,7 @@ export default function LeagueChat({
           </button>
         </div>
 
-        {/* Botón cerrar abajo */}
-        <div className="shrink-0 px-4 pb-4">
-          <button
-            onClick={handleClose}
-            className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-500 text-xs font-medium transition"
-          >
-            Cerrar chat
-          </button>
-        </div>
+
       </div>
     </>
   )
