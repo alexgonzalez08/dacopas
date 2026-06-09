@@ -33,15 +33,16 @@ export default function FriendshipButton({
       .single()
     if (data) {
       setFId(data.id)
-      await supabase.from('notifications').insert({
+      const { data: notif } = await supabase.from('notifications').insert({
         user_id: targetUserId,
         from_user_id: currentUserId,
         type: 'follow_request',
-      })
+      }).select('id').single()
       sendPushNotification({
         toUserId: targetUserId,
         title: '¡Nueva solicitud de amistad!',
         body: `@${targetUsername} te envió una solicitud de amistad`,
+        data: { url: '/friends', type: 'follow_request', notification_id: notif?.id ?? '' },
       })
       setStatus('pending_sent')
     }

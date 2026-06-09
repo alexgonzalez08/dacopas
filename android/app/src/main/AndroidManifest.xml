@@ -36,6 +36,16 @@
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/ic_launcher_background" />
 
+        <!-- Receiver para botones de acción en notificaciones -->
+        <receiver
+            android:name=".NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.dacopas.app.ACTION_ACCEPT" />
+                <action android:name="com.dacopas.app.ACTION_DECLINE" />
+            </intent-filter>
+        </receiver>
+
         <!-- Firebase Messaging Service para notificaciones en background -->
         <service
             android:name=".DacopasFirebaseMessagingService"

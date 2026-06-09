@@ -91,16 +91,16 @@ export default function FriendsClient({
       setPending(p => [...p, data])
       setSearchResults(r => r.filter(u => u.id !== addresseeId))
       setShowDropdown(false)
-      await supabase.from('notifications').insert({
+      const { data: notif } = await supabase.from('notifications').insert({
         user_id: addresseeId,
         from_user_id: userId,
         type: 'follow_request',
-      })
+      }).select('id').single()
       sendPushNotification({
         toUserId: addresseeId,
         title: '¡Nueva solicitud de amistad!',
         body: `Alguien quiere ser tu amigo en Dacopas`,
-        data: { url: '/friends' },
+        data: { url: '/friends', type: 'follow_request', notification_id: notif?.id ?? '' },
       })
     }
     setLoadingId(null)
