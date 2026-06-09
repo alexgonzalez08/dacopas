@@ -307,7 +307,7 @@ export default function LeagueChat({
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-            placeholder="Escribí un mensaje..."
+            placeholder="¿Qué opinás?"
             maxLength={500}
             className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500 transition"
           />
