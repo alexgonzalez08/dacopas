@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdmin } from '@supabase/supabase-js'
 import { GoogleAuth } from 'google-auth-library'
 
 const FCM_URL = `https://fcm.googleapis.com/v1/projects/${process.env.FIREBASE_PROJECT_ID}/messages:send`
@@ -27,8 +28,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
-  // Obtener tokens del usuario destino
-  const { data: tokens } = await supabase
+  // Obtener tokens del usuario destino — usar admin para bypassear RLS
+  const adminSupabase = createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { data: tokens } = await adminSupabase
     .from('push_tokens')
     .select('token, platform')
     .eq('user_id', toUserId)
