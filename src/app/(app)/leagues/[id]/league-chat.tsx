@@ -190,8 +190,7 @@ export default function LeagueChat({
         className="fixed right-4 z-40 flex items-center gap-2 px-4 py-2.5 md:gap-3 md:px-7 md:py-4 md:text-base md:rounded-2xl bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold rounded-xl shadow-lg transition"
         aria-label="Abrir chat del torneo"
       >
-        <img src="/chat-icon.png" alt="Chat" className="w-5 h-5 object-contain" />
-        Chat
+        <img src="/chat-icon.png" alt="Chat" className="w-7 h-7 object-contain md:w-8 md:h-8" />
         {unread > 0 && (
           <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
             {unread > 9 ? '9+' : unread}
@@ -218,7 +217,7 @@ export default function LeagueChat({
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4 text-yellow-400" />
-            <span className="font-semibold text-sm">Chat del torneo</span>
+            <span className="font-semibold text-sm">Mesa de Discusión</span>
           </div>
           <button
             onClick={handleClose}
