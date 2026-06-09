@@ -7,6 +7,7 @@ import { Shield, ChevronDown, LogOut, Loader2, Crown, Users, Check, X, Bell, Med
 import UserAvatar from '@/components/user-avatar'
 import { sendPushNotification } from '@/lib/push'
 import Link from 'next/link'
+import LeagueChat from './league-chat'
 
 type Role = 'admin' | 'moderator' | 'participant'
 type Member = {
@@ -67,6 +68,8 @@ export default function LeagueClient({
   modRequests: initialModRequests = [],
   joinRequests: initialJoinRequests = [],
   leaderboard: initialLeaderboard = [],
+  username,
+  avatarUrl,
 }: {
   leagueId: string
   leagueName: string
@@ -77,6 +80,8 @@ export default function LeagueClient({
   modRequests?: ModRequest[]
   joinRequests?: JoinRequest[]
   leaderboard?: LeaderboardEntry[]
+  username: string
+  avatarUrl?: string | null
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<'gestion' | 'posiciones'>('posiciones')
@@ -322,6 +327,14 @@ export default function LeagueClient({
             {leaderboard.length === 0 && (
               <p className="text-sm text-slate-500 text-center py-6">Aún no hay puntos registrados.</p>
             )}
+            <div className="flex justify-end mt-2">
+              <LeagueChat
+                leagueId={leagueId}
+                userId={userId}
+                username={username}
+                avatarUrl={avatarUrl}
+              />
+            </div>
           </div>
         )}
 
