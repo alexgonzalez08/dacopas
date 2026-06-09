@@ -8,6 +8,8 @@ import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import EditLeague from './edit-league'
+import LeagueHeaderMenu from './league-header-menu'
+import CopyCodeButton from './copy-code-button'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -265,28 +267,45 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             <img src={league.image_url} alt={league.name} className="w-full h-full object-cover" />
           </div>
         )}
-        <div className="space-y-2">
-          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/20">
-            🏆 Mundial 2026
-          </span>
-          <h1 className="text-2xl font-bold leading-tight">{league.name}</h1>
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/20">
+                🏆 Mundial 2026
+              </span>
+              <h1 className="text-2xl font-bold leading-tight">{league.name}</h1>
+            </div>
+            <div className="flex items-center gap-1 shrink-0 mt-1">
+              {userRole === 'admin' && (
+                <EditLeague
+                  leagueId={id}
+                  initialName={league.name}
+                  initialDescription={league.description ?? null}
+                  initialImageUrl={league.image_url ?? null}
+                />
+              )}
+              <LeagueHeaderMenu
+                leagueId={id}
+                leagueName={league.name}
+                userId={user!.id}
+                userRole={userRole}
+              />
+            </div>
+          </div>
+
           {league.description && (
             <p className="text-sm text-slate-400 leading-relaxed">{league.description}</p>
           )}
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-slate-500">
-              Código: <span className="font-mono font-semibold text-yellow-400">{league.code}</span>
-            </p>
-            {userRole === 'admin' && (
-              <EditLeague
-                leagueId={id}
-                initialName={league.name}
-                initialDescription={league.description ?? null}
-                initialImageUrl={league.image_url ?? null}
-              />
-            )}
+
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-slate-500">
+                Código: <span className="font-mono font-semibold text-yellow-400">{league.code}</span>
+              </p>
+              <CopyCodeButton code={league.code} />
+            </div>
+            <ShareButton leagueId={id} leagueName={league.name} />
           </div>
-          <ShareButton leagueId={id} leagueName={league.name} />
         </div>
       </div>
 

@@ -269,42 +269,7 @@ export default function LeaguesClient({
                     <ChevronRight className="w-4 h-4 text-slate-500" />
                   </div>
                 </Link>
-                {league.role !== 'admin' && (
-                  <button
-                    onClick={() => { setConfirmLeave(league.id); setLeaveError(null) }}
-                    className="px-3 py-3 text-slate-600 hover:text-red-400 hover:bg-slate-700 transition border-l border-slate-700 shrink-0"
-                    title="Abandonar torneo"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                )}
               </div>
-
-              {confirmLeave === league.id && (
-                <div className="mt-1 bg-slate-800 border border-red-500/30 rounded-xl px-4 py-3 space-y-3">
-                  <p className="text-sm text-slate-300">
-                    ¿Seguro que querés abandonar <span className="font-semibold text-white">"{league.name}"</span>?
-                    <span className="block text-xs text-slate-500 mt-1">No seguirás acumulando puntos en este torneo.</span>
-                  </p>
-                  {leaveError && <p className="text-xs text-red-400">{leaveError}</p>}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleLeave(league)}
-                      disabled={leaving === league.id}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 disabled:opacity-50 transition"
-                    >
-                      {leaving === league.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
-                      Sí, abandonar
-                    </button>
-                    <button
-                      onClick={() => { setConfirmLeave(null); setLeaveError(null) }}
-                      className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 font-semibold rounded-lg hover:bg-slate-600 transition"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
