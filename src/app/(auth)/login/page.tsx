@@ -21,6 +21,9 @@ function LoginForm() {
     setError('')
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (!error) {
+      fetch('/api/auth/login-notification', { method: 'POST' }).catch(() => {})
+    }
     if (error) {
       const msg = error.message.includes('Invalid login credentials')
         ? 'Email o contraseña incorrectos.'
