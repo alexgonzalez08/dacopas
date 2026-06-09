@@ -84,7 +84,7 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
       body: JSON.stringify({
         message: {
           token,
-          notification: { title: `💬 ${leagueName}`, body: `@${senderUsername}: ${preview}` },
+          notification: { title: `🔥 La mesa está caliente — ${leagueName}`, body: `@${senderUsername}: ${preview}` },
           android: {
             priority: 'high',
             notification: { channel_id: 'dacopas_default', sound: 'default', icon: 'ic_stat_notification', image: 'https://dacopas.com/logo.png' },
