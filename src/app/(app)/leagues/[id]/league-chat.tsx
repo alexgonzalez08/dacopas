@@ -81,7 +81,20 @@ export default function LeagueChat({
             .select('username, avatar_url')
             .eq('id', row.user_id)
             .single()
-          const msg: Message = { ...row, profiles: profile }
+          // Desencriptar via API (el content llega encriptado desde Supabase)
+          let decryptedContent = row.content
+          try {
+            const res = await fetch(`/api/leagues/chat/decrypt`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: row.content }),
+            })
+            if (res.ok) {
+              const { content } = await res.json()
+              decryptedContent = content
+            }
+          } catch {}
+          const msg: Message = { ...row, content: decryptedContent, profiles: profile }
           setMessages(prev => {
             // Evitar duplicados si el mensaje ya fue agregado optimistamente
             if (prev.some(m => m.id === msg.id)) return prev

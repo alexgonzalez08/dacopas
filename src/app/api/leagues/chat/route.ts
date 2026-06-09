@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { encryptMessage, decryptMessage } from '@/lib/crypto'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -17,7 +18,14 @@ export async function GET(req: NextRequest) {
     .limit(100)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ messages: data })
+
+  // Desencriptar contenido de cada mensaje
+  const messages = (data ?? []).map(m => ({
+    ...m,
+    content: decryptMessage(m.content),
+  }))
+
+  return NextResponse.json({ messages })
 }
 
 export async function POST(req: NextRequest) {
@@ -28,12 +36,17 @@ export async function POST(req: NextRequest) {
   const { leagueId, content } = await req.json()
   if (!leagueId || !content?.trim()) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
+  const encrypted = encryptMessage(content.trim())
+
   const { data, error } = await supabase
     .from('league_chat_messages')
-    .insert({ league_id: leagueId, user_id: user.id, content: content.trim() })
+    .insert({ league_id: leagueId, user_id: user.id, content: encrypted })
     .select('id, content, created_at, user_id, profiles(username, avatar_url)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ message: data })
+
+  // Devolver con contenido desencriptado para el optimistic update
+  const message = data ? { ...data, content: content.trim() } : null
+  return NextResponse.json({ message })
 }
