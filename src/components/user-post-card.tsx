@@ -2,10 +2,11 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Trash2, MoreHorizontal } from 'lucide-react'
+import { Trash2, MoreHorizontal, Flag } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import PostInteractionsGeneric from './post-interactions-generic'
 import UserAvatar from './user-avatar'
+import ReportModal from './report-modal'
 
 type UserPost = {
   id: string
@@ -30,6 +31,7 @@ export default function UserPostCard({
   onDelete?: (id: string) => void
 }) {
   const [showMenu, setShowMenu] = useState(false)
+  const [reportTarget, setReportTarget] = useState<{ type: 'post' | 'user'; id: string } | null>(null)
 
   async function handleDelete() {
     if (!onDelete) return
@@ -41,6 +43,10 @@ export default function UserPostCard({
   const isOwner = post.user_id === userId
 
   return (
+    <>
+    {reportTarget && (
+      <ReportModal type={reportTarget.type} targetId={reportTarget.id} onClose={() => setReportTarget(null)} />
+    )}
     <div id={`post-${post.id}`} className="bg-slate-800 rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
@@ -57,26 +63,42 @@ export default function UserPostCard({
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}
           </p>
         </div>
-        {isOwner && onDelete && (
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(v => !v)}
-              className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-            {showMenu && (
-              <div className="absolute right-0 top-8 bg-slate-700 rounded-xl shadow-xl z-10 overflow-hidden min-w-32">
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(v => !v)}
+            className="text-slate-500 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-8 bg-slate-700 rounded-xl shadow-xl z-10 overflow-hidden min-w-36">
+              {isOwner && onDelete && (
                 <button
-                  onClick={handleDelete}
+                  onClick={() => { handleDelete(); setShowMenu(false) }}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-slate-600 w-full transition"
                 >
-                  <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                  <Trash2 className="w-3.5 h-3.5" /> Eliminar post
                 </button>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+              {!isOwner && (
+                <>
+                  <button
+                    onClick={() => { setReportTarget({ type: 'post', id: post.id }); setShowMenu(false) }}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 w-full transition"
+                  >
+                    <Flag className="w-3.5 h-3.5 text-red-400" /> Reportar post
+                  </button>
+                  <button
+                    onClick={() => { setReportTarget({ type: 'user', id: post.user_id }); setShowMenu(false) }}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 w-full transition"
+                  >
+                    <Flag className="w-3.5 h-3.5 text-red-400" /> Reportar usuario
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Contenido */}
@@ -101,5 +123,6 @@ export default function UserPostCard({
         table="post"
       />
     </div>
+    </>
   )
 }

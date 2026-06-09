@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react'
+import { MessageCircle, X, Send, Loader2, Flag } from 'lucide-react'
+import ReportModal from '@/components/report-modal'
 import UserAvatar from '@/components/user-avatar'
 import { format, isToday, isYesterday } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -40,6 +41,7 @@ export default function LeagueChat({
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [unread, setUnread] = useState(0)
+  const [reportMsgId, setReportMsgId] = useState<string | null>(null)
 
   // Cargar unread inicial desde el servidor
   useEffect(() => {
@@ -253,12 +255,22 @@ export default function LeagueChat({
                         {msg.profiles?.username ?? 'Usuario'}
                       </span>
                     )}
-                    <div className={`px-3 py-2 rounded-2xl text-sm leading-snug ${
-                      isOwn
-                        ? 'bg-yellow-500 text-slate-900 font-medium rounded-br-sm'
-                        : 'bg-slate-700 text-white rounded-bl-sm'
-                    }`}>
-                      {msg.content}
+                    <div className="group relative">
+                      <div className={`px-3 py-2 rounded-2xl text-sm leading-snug ${
+                        isOwn
+                          ? 'bg-yellow-500 text-slate-900 font-medium rounded-br-sm'
+                          : 'bg-slate-700 text-white rounded-bl-sm'
+                      }`}>
+                        {msg.content}
+                      </div>
+                      {!isOwn && (
+                        <button
+                          onClick={() => setReportMsgId(msg.id)}
+                          className="absolute -right-6 top-1 opacity-0 group-hover:opacity-100 transition text-slate-500 hover:text-red-400"
+                        >
+                          <Flag className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                     <span className="text-xs text-slate-500 px-1">
                       {formatMsgTime(msg.created_at)}
@@ -293,6 +305,9 @@ export default function LeagueChat({
 
 
       </div>
+      {reportMsgId && (
+        <ReportModal type="message" targetId={reportMsgId} onClose={() => setReportMsgId(null)} />
+      )}
     </>
   )
 }
