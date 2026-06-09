@@ -27,7 +27,11 @@ export default function LeaguesClient({
 
   const [leagues, setLeagues] = useState<League[]>(initial)
   const [chatUnread, setChatUnread] = useState<Record<string, number>>(initialChatUnread)
+  const [leagueNotifsState, setLeagueNotifsState] = useState<Record<string, number>>(leagueNotifs)
   const [modal, setModal] = useState<'create' | 'join' | null>(null)
+  const [visibleCount, setVisibleCount] = useState(10)
+
+  const leagueIds = leagues.map(l => l.id)
 
   useEffect(() => {
     async function refreshUnread() {
@@ -37,12 +41,34 @@ export default function LeaguesClient({
         setChatUnread(counts ?? {})
       }
     }
+    async function refreshNotifs() {
+      const supabase = createClient()
+      const { data: notifs } = await supabase
+        .from('notifications')
+        .select('metadata')
+        .eq('user_id', userId)
+        .eq('type', 'join_request')
+        .is('read_at', null)
+      const counts: Record<string, number> = {}
+      for (const n of notifs ?? []) {
+        const lid = n.metadata?.league_id
+        if (lid && leagueIds.includes(lid)) counts[lid] = (counts[lid] ?? 0) + 1
+      }
+      setLeagueNotifsState(counts)
+    }
     const supabase = createClient()
-    const channel = supabase
+    const chatChannel = supabase
       .channel('leagues-chat-unread')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'league_chat_messages' }, refreshUnread)
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    const notifChannel = supabase
+      .channel('leagues-notifs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, refreshNotifs)
+      .subscribe()
+    return () => {
+      supabase.removeChannel(chatChannel)
+      supabase.removeChannel(notifChannel)
+    }
   }, [])
 
   // Crear torneo
@@ -228,32 +254,41 @@ export default function LeaguesClient({
         </div>
       ) : (
         <div className="space-y-2">
-          {leagues.map(league => (
-            <div key={league.id}>
-              <div className="flex items-center bg-slate-800 rounded-xl overflow-hidden">
-                {league.image_url && (
-                  <img src={league.image_url} alt={league.name} className="w-12 h-12 object-cover shrink-0" />
-                )}
-                <Link
-                  href={`/leagues/${league.id}`}
-                  className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-slate-700 transition min-w-0"
-                >
-                  <span className="font-medium truncate">{league.name}</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {(chatUnread[league.id] > 0 || leagueNotifs[league.id] > 0) && (
-                      <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                        {Math.min((chatUnread[league.id] ?? 0) + (leagueNotifs[league.id] ?? 0), 99) > 9
-                          ? '9+'
-                          : (chatUnread[league.id] ?? 0) + (leagueNotifs[league.id] ?? 0)}
-                      </span>
-                    )}
-                    <span className="text-xs font-mono text-slate-400">{league.code}</span>
-                    <ChevronRight className="w-4 h-4 text-slate-500" />
-                  </div>
-                </Link>
+          {leagues.slice(0, visibleCount).map(league => {
+            const totalNotifs = (chatUnread[league.id] ?? 0) + (leagueNotifsState[league.id] ?? 0)
+            return (
+              <div key={league.id}>
+                <div className="flex items-center bg-slate-800 rounded-xl overflow-hidden">
+                  {league.image_url && (
+                    <img src={league.image_url} alt={league.name} className="w-12 h-12 object-cover shrink-0" />
+                  )}
+                  <Link
+                    href={`/leagues/${league.id}`}
+                    className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-slate-700 transition min-w-0"
+                  >
+                    <span className="font-medium truncate">{league.name}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {totalNotifs > 0 && (
+                        <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                          {totalNotifs > 9 ? '9+' : totalNotifs}
+                        </span>
+                      )}
+                      <span className="text-xs font-mono text-slate-400">{league.code}</span>
+                      <ChevronRight className="w-4 h-4 text-slate-500" />
+                    </div>
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
+          {leagues.length > visibleCount && (
+            <button
+              onClick={() => setVisibleCount(c => c + 10)}
+              className="w-full py-2.5 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition"
+            >
+              Ver más ({leagues.length - visibleCount} restantes)
+            </button>
+          )}
         </div>
       )}
 
