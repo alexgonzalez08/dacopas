@@ -54,7 +54,11 @@ export async function POST(req: NextRequest) {
             notification: { title, body },
             android: {
               priority: 'high',
-              notification: { sound: 'default', click_action: 'FLUTTER_NOTIFICATION_CLICK' },
+              notification: {
+                sound: 'default',
+                channel_id: 'dacopas_default',
+                icon: 'ic_stat_notification',
+              },
             },
             data: data ?? {},
           },
