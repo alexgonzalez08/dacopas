@@ -40,6 +40,18 @@ export default function LeagueChat({
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [unread, setUnread] = useState(0)
+
+  // Cargar unread inicial desde el servidor
+  useEffect(() => {
+    if (open) return
+    fetch('/api/leagues/chat/unread')
+      .then(r => r.json())
+      .then(({ counts }) => {
+        const count = counts?.[leagueId] ?? 0
+        setUnread(count)
+      })
+      .catch(() => {})
+  }, [leagueId, open])
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
