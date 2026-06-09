@@ -184,7 +184,7 @@ export default function LeagueChat({
       {/* FAB */}
       <button
         onClick={handleOpen}
-        className="fixed top-1/2 -translate-y-1/2 right-4 z-40 w-14 h-14 rounded-full bg-sky-400 hover:bg-sky-300 text-white shadow-lg flex items-center justify-center transition relative"
+        className="fixed bottom-20 md:bottom-6 right-4 z-40 w-14 h-14 rounded-full bg-sky-400 hover:bg-sky-300 text-white shadow-lg flex items-center justify-center transition relative"
         aria-label="Abrir chat del torneo"
       >
         <img src="/chat-icon.png" alt="Chat" className="w-10 h-10 object-contain" />
