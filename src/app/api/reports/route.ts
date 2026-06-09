@@ -45,15 +45,15 @@ export async function POST(req: NextRequest) {
     to: 'alexgf08@gmail.com',
     subject: `⚠️ Nuevo reporte en Dacopas — ${typeLabel[type] ?? type}`,
     html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;">
-        <h2 style="color:#f59e0b;margin-bottom:4px;">⚠️ Nuevo reporte</h2>
-        <p style="color:#94a3b8;font-size:13px;margin-top:0;">Dacopas — Sistema de reportes</p>
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
+        <h2 style="color:#d97706;margin-bottom:4px;">⚠️ Nuevo reporte</h2>
+        <p style="color:#64748b;font-size:13px;margin-top:0;">Dacopas — Sistema de reportes</p>
         <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;">
-          <tr><td style="padding:8px 0;color:#94a3b8;width:140px;">Tipo</td><td style="color:#fff;">${typeLabel[type] ?? type}</td></tr>
-          <tr><td style="padding:8px 0;color:#94a3b8;">Reportado por</td><td style="color:#fff;">@${reporter?.username ?? user.id}</td></tr>
-          <tr><td style="padding:8px 0;color:#94a3b8;">ID del objetivo</td><td style="color:#fff;font-family:monospace;">${targetId}</td></tr>
-          <tr><td style="padding:8px 0;color:#94a3b8;">Motivo</td><td style="color:#fff;">${reason ?? '(sin motivo)'}</td></tr>
-          <tr><td style="padding:8px 0;color:#94a3b8;">Fecha</td><td style="color:#fff;">${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td></tr>
+          <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:10px 8px;color:#64748b;width:140px;font-weight:600;">Tipo</td><td style="padding:10px 8px;color:#1e293b;">${typeLabel[type] ?? type}</td></tr>
+          <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:10px 8px;color:#64748b;font-weight:600;">Reportado por</td><td style="padding:10px 8px;color:#1e293b;">@${reporter?.username ?? user.id}</td></tr>
+          <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:10px 8px;color:#64748b;font-weight:600;">ID del objetivo</td><td style="padding:10px 8px;color:#1e293b;font-family:monospace;font-size:12px;">${targetId}</td></tr>
+          <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:10px 8px;color:#64748b;font-weight:600;">Motivo</td><td style="padding:10px 8px;color:#1e293b;">${reason ?? '(sin motivo)'}</td></tr>
+          <tr><td style="padding:10px 8px;color:#64748b;font-weight:600;">Fecha</td><td style="padding:10px 8px;color:#1e293b;">${new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</td></tr>
         </table>
       </div>
     `,
