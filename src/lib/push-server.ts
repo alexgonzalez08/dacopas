@@ -1,5 +1,5 @@
 import { GoogleAuth } from 'google-auth-library'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, createClient as createAdmin } from '@supabase/supabase-js'
 
 const FCM_URL = `https://fcm.googleapis.com/v1/projects/${process.env.FIREBASE_PROJECT_ID}/messages:send`
 
@@ -53,4 +53,59 @@ export async function sendPushToAllUsers(
 
   const sent = results.filter(r => r.status === 'fulfilled').length
   return { sent, total: tokens.length }
+}
+
+export async function sendPushToUsers({
+  userIds,
+  title,
+  body,
+  data,
+}: {
+  userIds: string[]
+  title: string
+  body: string
+  data?: Record<string, string>
+}) {
+  if (userIds.length === 0) return
+
+  const admin = createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: tokens } = await admin
+    .from('push_tokens')
+    .select('token')
+    .in('user_id', userIds)
+
+  if (!tokens || tokens.length === 0) return
+
+  const accessToken = await getFCMAccessToken()
+
+  await Promise.allSettled(tokens.map(({ token }) =>
+    fetch(FCM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        message: {
+          token,
+          notification: { title, body },
+          android: {
+            priority: 'high',
+            notification: {
+              channel_id: 'dacopas_default',
+              sound: 'default',
+              icon: 'ic_stat_notification',
+              image: 'https://dacopas.com/logo.png',
+            },
+          },
+          apns: {
+            headers: { 'apns-priority': '10' },
+            payload: { aps: { alert: { title, body }, sound: 'default', badge: 1 } },
+          },
+          data: { url: '/notifications', ...(data ?? {}) },
+        },
+      }),
+    })
+  ))
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
+import { sendPushToUsers } from '@/lib/push-server'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -81,45 +82,15 @@ export async function POST(req: NextRequest) {
     ))
 
     // Push notifications
-    const { data: tokens } = await admin
-      .from('push_tokens')
-      .select('token, platform')
-      .in('user_id', memberIds)
-
-    if (tokens && tokens.length > 0) {
-      const FCM_URL = 'https://fcm.googleapis.com/v1/projects/dacopas-app/messages:send'
-      const accessToken = process.env.FCM_ACCESS_TOKEN ?? ''
-
-      const winner = top3[0]
-      const title = `🏆 Torneo "${league.name}" finalizado`
-      const body = winner
-        ? `¡${winner.username} ganó el torneo con ${winner.points} puntos!`
-        : 'El torneo ha terminado. ¡Mirá los resultados finales!'
-
-      await Promise.all(tokens.map(({ token, platform }) => {
-        const message: any = {
-          token,
-          notification: { title, body },
-          data: { url: `/leagues/${leagueId}`, type: 'league_ended' },
-          android: {
-            notification: {
-              title, body,
-              image: 'https://dacopas.com/logo.png',
-              click_action: 'FLUTTER_NOTIFICATION_CLICK',
-            },
-          },
-          apns: {
-            headers: { 'apns-priority': '10' },
-            payload: { aps: { alert: { title, body }, sound: 'default', badge: 1 } },
-          },
-        }
-        return fetch(`${FCM_URL}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message }),
-        })
-      }))
-    }
+    const winner = top3[0]
+    await sendPushToUsers({
+      userIds: memberIds,
+      title: `🏆 Torneo "${league.name}" finalizado`,
+      body: winner
+        ? `¡${winner.username} ganó con ${winner.points} puntos!`
+        : 'El torneo ha terminado. ¡Mirá los resultados finales!',
+      data: { url: `/leagues/${leagueId}`, type: 'league_ended' },
+    })
   }
 
   // Feed event glamoroso para cada miembro
