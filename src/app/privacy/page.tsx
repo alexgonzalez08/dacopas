@@ -70,8 +70,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-white mb-2">8. Contacto</h2>
           <p className="text-slate-400">
             Si tenés preguntas sobre esta política de privacidad, contactanos en:{' '}
-            <a href="mailto:dacopas.app@gmail.com" className="text-yellow-400 hover:underline">
-              dacopas.app@gmail.com
+            <a href="mailto:alexgf08@gmail.com" className="text-yellow-400 hover:underline">
+              alexgf08@gmail.com
             </a>
           </p>
         </div>
