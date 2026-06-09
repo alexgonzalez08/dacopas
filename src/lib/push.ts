@@ -4,10 +4,20 @@ import { createClient } from '@/lib/supabase/client'
  * Inicializa push notifications en Android/iOS via Capacitor.
  * Debe llamarse después de que el usuario inicia sesión.
  */
+async function waitForCapacitor(maxMs = 5000): Promise<boolean> {
+  const start = Date.now()
+  while (Date.now() - start < maxMs) {
+    if ((window as any).Capacitor?.isNativePlatform()) return true
+    await new Promise(r => setTimeout(r, 200))
+  }
+  return false
+}
+
 export async function initPushNotifications(userId: string) {
-  // Solo en entorno nativo (Capacitor)
   if (typeof window === 'undefined') return
-  if (!(window as any).Capacitor?.isNativePlatform()) return
+
+  const ready = await waitForCapacitor()
+  if (!ready) return
 
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
