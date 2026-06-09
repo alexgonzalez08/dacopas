@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     correct_winner: p.correct_winner,
   }))
 
-  const memberIds = (members ?? []).map(m => m.user_id)
+  const memberIds = (members ?? []).map(m => m.user_id).filter(id => id !== user.id)
 
   // Notificaciones in-app + push a todos los miembros
   if (memberIds.length > 0) {

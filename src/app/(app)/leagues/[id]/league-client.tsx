@@ -482,5 +482,35 @@ export default function LeagueClient({
   }
 
   // Vista sin tabs — moderadores y participantes
-  return null
+  return (
+    <div className="space-y-2">
+      {leaderboard.map((entry, i) => (
+        <div
+          key={entry.user_id}
+          className={`flex items-center gap-4 rounded-xl px-4 py-3 ${entry.user_id === userId ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800'}`}
+        >
+          <span className={`w-6 text-center font-bold ${MEDAL_COLORS[i] ?? 'text-slate-400'}`}>
+            {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
+          </span>
+          <Link href={`/profile/${entry.username}`} className="flex-1 font-medium hover:text-yellow-400 transition">{entry.username}</Link>
+          <div className="text-right">
+            <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
+            <span className="text-slate-500 text-sm"> pts</span>
+          </div>
+          <div className="text-xs text-slate-500 hidden sm:block">
+            {entry.exact_results} exactos · {entry.correct_winner} ganador
+          </div>
+        </div>
+      ))}
+      {leaderboard.length === 0 && (
+        <p className="text-sm text-slate-500 text-center py-6">Aún no hay puntos registrados.</p>
+      )}
+      <LeagueChat
+        leagueId={leagueId}
+        userId={userId}
+        username={username}
+        avatarUrl={avatarUrl}
+      />
+    </div>
+  )
 }

@@ -62,9 +62,9 @@ export async function initPushNotifications(userId: string) {
 
 async function savePushToken(userId: string, token: string, platform: string) {
   const supabase = createClient()
-  await supabase
-    .from('push_tokens')
-    .upsert({ user_id: userId, token, platform }, { onConflict: 'user_id,token' })
+  // Remove stale associations if this token was registered to a different user (e.g. same device, different account)
+  await supabase.from('push_tokens').delete().eq('token', token).neq('user_id', userId)
+  await supabase.from('push_tokens').upsert({ user_id: userId, token, platform }, { onConflict: 'user_id,token' })
 }
 
 /**
