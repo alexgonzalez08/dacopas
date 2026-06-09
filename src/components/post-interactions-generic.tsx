@@ -1,10 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MessageCircle, Send, Trash2 } from 'lucide-react'
+import { MessageCircle, Send, Trash2, Smile } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { sendPushNotification } from '@/lib/push'
+import dynamic from 'next/dynamic'
+
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
 const EMOJIS = ['❤️', '👍', '🔥', '😂', '😮', '🎯']
 
@@ -46,6 +49,8 @@ export default function PostInteractionsGeneric({
   const [showPicker, setShowPicker] = useState(false)
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [showEmojiComment, setShowEmojiComment] = useState(false)
+  const commentInputRef = useRef<HTMLInputElement>(null)
 
   const myReaction = reactions.find(r => r.user_id === userId)
 
@@ -196,7 +201,7 @@ export default function PostInteractionsGeneric({
           onClick={() => setShowComments(v => !v)}
           className="flex items-center gap-1 ml-auto text-xs text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-700"
         >
-          <MessageCircle className="w-3.5 h-3.5" /> Comentar
+          <MessageCircle className="w-3.5 h-3.5" /> Opinar
         </button>
       </div>
 
@@ -231,6 +236,19 @@ export default function PostInteractionsGeneric({
             </div>
           ))}
 
+          {showEmojiComment && (
+            <EmojiPicker
+              onEmojiClick={(e) => {
+                setComment(prev => prev + e.emoji)
+                commentInputRef.current?.focus()
+              }}
+              theme={'dark' as any}
+              skinTonesDisabled
+              height={260}
+              width="100%"
+              lazyLoadEmojis
+            />
+          )}
           <form onSubmit={handleComment} className="flex gap-2">
             <div className="w-6 h-6 rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
               {userAvatarUrl
@@ -238,12 +256,20 @@ export default function PostInteractionsGeneric({
                 : userId[0]
               }
             </div>
-            <div className="flex-1 flex gap-2">
+            <div className="flex-1 flex gap-1.5 items-center">
+              <button
+                type="button"
+                onClick={() => setShowEmojiComment(v => !v)}
+                className={`p-1 rounded-lg transition shrink-0 ${showEmojiComment ? 'text-yellow-400' : 'text-slate-500 hover:text-yellow-400'}`}
+              >
+                <Smile className="w-4 h-4" />
+              </button>
               <input
+                ref={commentInputRef}
                 type="text"
                 value={comment}
                 onChange={e => setComment(e.target.value)}
-                placeholder="Escribí un comentario..."
+                placeholder="Di lo que pensás..."
                 maxLength={280}
                 className="flex-1 bg-slate-700 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500 text-slate-200 placeholder-slate-500"
               />

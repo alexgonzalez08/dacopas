@@ -1,8 +1,11 @@
 'use client'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ImageIcon, X, Send, Loader2 } from 'lucide-react'
+import { ImageIcon, X, Send, Loader2, Smile } from 'lucide-react'
 import { sendPushNotification } from '@/lib/push'
+import dynamic from 'next/dynamic'
+
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
 type League = { id: string; name: string }
 
@@ -24,7 +27,9 @@ export default function CreatePost({
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showEmoji, setShowEmoji] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -130,6 +135,7 @@ export default function CreatePost({
           }
         </div>
         <textarea
+          ref={textareaRef}
           value={content}
           onChange={e => setContent(e.target.value)}
           placeholder="¿Qué frase histórica tenés?"
@@ -155,6 +161,23 @@ export default function CreatePost({
 
       {error && <p className="text-xs text-red-400 px-4 pb-2">{error}</p>}
 
+      {/* Emoji picker */}
+      {showEmoji && (
+        <div className="px-4 pb-2">
+          <EmojiPicker
+            onEmojiClick={(e) => {
+              setContent(prev => prev + e.emoji)
+              textareaRef.current?.focus()
+            }}
+            theme={'dark' as any}
+            skinTonesDisabled
+            height={280}
+            width="100%"
+            lazyLoadEmojis
+          />
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between px-3 py-2 border-t border-slate-700 gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -167,6 +190,14 @@ export default function CreatePost({
             <ImageIcon className="w-4 h-4" />
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+          <button
+            type="button"
+            onClick={() => setShowEmoji(v => !v)}
+            className={`p-1.5 rounded-lg transition shrink-0 ${showEmoji ? 'text-yellow-400 bg-slate-700' : 'text-slate-400 hover:text-yellow-400 hover:bg-slate-700'}`}
+            title="Emojis"
+          >
+            <Smile className="w-4 h-4" />
+          </button>
 
           {content.length > 0 && (
             <span className="text-xs text-slate-500 shrink-0">{content.length}/500</span>
