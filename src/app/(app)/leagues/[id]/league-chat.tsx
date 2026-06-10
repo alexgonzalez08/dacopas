@@ -48,7 +48,7 @@ export default function LeagueChat({
   const [showEmoji, setShowEmoji] = useState(false)
   const [dragY, setDragY] = useState(0)
   const [vpHeight, setVpHeight] = useState<number | null>(null)
-  const [vpOffsetTop, setVpOffsetTop] = useState(0)
+  const [vpBottom, setVpBottom] = useState(0)
   const touchStartY = useRef(0)
   const dragging = useRef(false)
 
@@ -57,7 +57,8 @@ export default function LeagueChat({
     if (!vv) return
     const update = () => {
       setVpHeight(vv.height)
-      setVpOffsetTop(vv.offsetTop)
+      // bottom = espacio debajo del viewport visual (teclado)
+      setVpBottom(window.innerHeight - vv.offsetTop - vv.height)
     }
     vv.addEventListener('resize', update)
     vv.addEventListener('scroll', update)
@@ -228,7 +229,7 @@ export default function LeagueChat({
         style={{
           maxHeight: vpHeight ? `${vpHeight}px` : '100dvh',
           height: open ? (vpHeight ? `${vpHeight}px` : '100dvh') : 'auto',
-          bottom: vpOffsetTop,
+          bottom: vpBottom,
           transform: open ? `translateY(${dragY}px)` : 'translateY(100%)',
           transition: dragging.current ? 'none' : 'transform 0.3s ease',
         }}
