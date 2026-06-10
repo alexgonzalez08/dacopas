@@ -199,14 +199,8 @@ function PredictionPost({ item, userId, now }: { item: ActivityPost; userId: str
   return (
     <div className="bg-slate-800 rounded-2xl p-4">
       <ActivityHeader item={item} now={now} />
-      <p className="text-sm text-slate-300 mb-1">
-        <span className="text-slate-400">Envió su predicción para </span>
-        {match
-          ? <Link href={`/matches/${match.id}`} className="text-yellow-400 hover:underline font-medium">{match.home_team} vs {match.away_team}</Link>
-          : <span>un partido</span>
-        }
-        {score && <span className="text-slate-400"> · <span className="text-white font-bold">{score}</span></span>}
-        {!score && !isLocked && <span className="text-xs text-slate-500 ml-1">(oculto hasta el inicio)</span>}
+      <p className="text-sm text-slate-400 mb-1">
+        Está enviando sus pronósticos para el <span className="text-white font-medium">Mundial 2026</span> ⚽
       </p>
       <PostInteractions
         eventId={item.id}

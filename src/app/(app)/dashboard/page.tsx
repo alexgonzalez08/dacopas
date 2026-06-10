@@ -104,6 +104,7 @@ export default async function DashboardPage() {
   const leagueIdSet = new Set(leagueIds)
   const activeLeagueIdSet = new Set(activeLeagueIds)
   const seen = new Set<string>()
+  const seenPredictionUsers = new Set<string>()
   const feedEvents = [...(friendEvents ?? []), ...(resultEvents ?? [])].filter((e: any) => {
     if (seen.has(e.id)) return false
     seen.add(e.id)
@@ -112,6 +113,11 @@ export default async function DashboardPage() {
     if (e.league_id && !activeLeagueIdSet.has(e.league_id)) return false
     if (e.type === 'league_join' && e.leagues?.created_by === user!.id) return false
     if (e.type === 'league_join' && e.leagues?.created_by === e.user_id) return false
+    // Una sola tarjeta de predicciones por usuario
+    if (e.type === 'prediction') {
+      if (seenPredictionUsers.has(e.user_id)) return false
+      seenPredictionUsers.add(e.user_id)
+    }
     return true
   })
 
