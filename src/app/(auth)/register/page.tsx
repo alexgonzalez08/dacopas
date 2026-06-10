@@ -102,6 +102,7 @@ function RegisterForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, username: alias }),
+      keepalive: true,
     }).catch(() => {})
 
     router.push(next ?? '/dashboard')

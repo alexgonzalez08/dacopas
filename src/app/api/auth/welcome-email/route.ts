@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background:#0a0f1e;font-family:'Segoe UI',Arial,sans-serif">
-  <div style="max-width:520px;margin:0 auto;padding:40px 24px">
+  <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#0a0f1e" style="background:#0a0f1e;min-height:100vh">
+    <tr><td align="center" style="padding:40px 24px">
+  <div style="max-width:520px;width:100%">
 
     <!-- Logo / Header -->
     <div style="text-align:center;margin-bottom:32px">
@@ -108,6 +110,8 @@ export async function POST(req: NextRequest) {
     </p>
 
   </div>
+    </td></tr>
+  </table>
 </body>
 </html>
     `,
