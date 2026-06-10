@@ -237,17 +237,23 @@ export default function PostInteractionsGeneric({
           ))}
 
           {showEmojiComment && (
-            <EmojiPicker
-              onEmojiClick={(e) => {
-                setComment(prev => prev + e.emoji)
-                commentInputRef.current?.focus()
-              }}
-              theme={'dark' as any}
-              skinTonesDisabled
-              height={260}
-              width="100%"
-              lazyLoadEmojis
-            />
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowEmojiComment(false)} />
+              <div className="relative z-50">
+                <EmojiPicker
+                  onEmojiClick={(e) => {
+                    setComment(prev => prev + e.emoji)
+                    commentInputRef.current?.focus()
+                  }}
+                  theme={'dark' as any}
+                  skinTonesDisabled
+                  searchDisabled
+                  height={220}
+                  width="100%"
+                  lazyLoadEmojis
+                />
+              </div>
+            </>
           )}
           <form onSubmit={handleComment} className="flex gap-2">
             <div className="w-6 h-6 rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">

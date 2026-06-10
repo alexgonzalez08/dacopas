@@ -163,19 +163,23 @@ export default function CreatePost({
 
       {/* Emoji picker */}
       {showEmoji && (
-        <div className="px-4 pb-2">
-          <EmojiPicker
-            onEmojiClick={(e) => {
-              setContent(prev => prev + e.emoji)
-              textareaRef.current?.focus()
-            }}
-            theme={'dark' as any}
-            skinTonesDisabled
-            height={280}
-            width="100%"
-            lazyLoadEmojis
-          />
-        </div>
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowEmoji(false)} />
+          <div className="px-4 pb-2 relative z-50">
+            <EmojiPicker
+              onEmojiClick={(e) => {
+                setContent(prev => prev + e.emoji)
+                textareaRef.current?.focus()
+              }}
+              theme={'dark' as any}
+              skinTonesDisabled
+              searchDisabled
+              height={220}
+              width="100%"
+              lazyLoadEmojis
+            />
+          </div>
+        </>
       )}
 
       {/* Footer */}

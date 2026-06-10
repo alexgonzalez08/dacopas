@@ -278,20 +278,23 @@ export default function LeagueChat({
 
         {/* Emoji picker */}
         {showEmoji && (
-          <div className="shrink-0 border-t border-slate-700">
-            <EmojiPicker
-              onEmojiClick={(e) => {
-                setInput(prev => prev + e.emoji)
-                inputRef.current?.focus()
-              }}
-              theme={'dark' as any}
-              skinTonesDisabled
-              searchDisabled={false}
-              height={280}
-              width="100%"
-              lazyLoadEmojis
-            />
-          </div>
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowEmoji(false)} />
+            <div className="shrink-0 border-t border-slate-700 relative z-50">
+              <EmojiPicker
+                onEmojiClick={(e) => {
+                  setInput(prev => prev + e.emoji)
+                  inputRef.current?.focus()
+                }}
+                theme={'dark' as any}
+                skinTonesDisabled
+                searchDisabled
+                height={220}
+                width="100%"
+                lazyLoadEmojis
+              />
+            </div>
+          </>
         )}
 
         {/* Input */}

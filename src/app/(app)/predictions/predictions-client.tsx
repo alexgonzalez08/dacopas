@@ -186,7 +186,10 @@ export default function PredictionsClient({
                               <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
                                 <div className="flex items-center gap-3 flex-1">
                                   <span className="flex-1 flex justify-end">
-                                    <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="lg" showName={false} />
+                                    <div className="flex flex-col items-center gap-1">
+                                      <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="lg" showName={false} />
+                                      <span className="text-xs text-slate-300 text-center max-w-[80px] leading-tight">{match.home_team}</span>
+                                    </div>
                                   </span>
                                   <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                     <input
@@ -210,7 +213,10 @@ export default function PredictionsClient({
                                     />
                                   </div>
                                   <span className="flex-1 flex justify-start">
-                                    <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="lg" showName={false} />
+                                    <div className="flex flex-col items-center gap-1">
+                                      <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="lg" showName={false} />
+                                      <span className="text-xs text-slate-300 text-center max-w-[80px] leading-tight">{match.away_team}</span>
+                                    </div>
                                   </span>
                                 </div>
                                 <div className="mt-3 sm:mt-0 flex flex-col items-stretch sm:items-end gap-1">
