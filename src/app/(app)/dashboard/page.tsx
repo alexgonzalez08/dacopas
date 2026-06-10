@@ -16,11 +16,17 @@ export default async function DashboardPage() {
 
   const { data: memberships } = await supabase
     .from('league_members')
-    .select('league_id, leagues(id, name)')
+    .select('league_id, leagues(id, name, ended_at)')
     .eq('user_id', user!.id)
+    .is('left_at', null)
 
   const leagueIds = (memberships ?? []).map(m => m.league_id)
-  const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string }] : [])
+  const activeLeagueIds = (memberships ?? [])
+    .filter(m => !(m.leagues as any)?.ended_at)
+    .map(m => m.league_id)
+  const leagues = (memberships ?? [])
+    .filter(m => m.leagues != null && !(m.leagues as any).ended_at)
+    .map(m => m.leagues as unknown as { id: string; name: string })
 
   // Amigos en ambas direcciones
   const { data: friendships } = await supabase
@@ -96,14 +102,14 @@ export default async function DashboardPage() {
   }))
 
   const leagueIdSet = new Set(leagueIds)
+  const activeLeagueIdSet = new Set(activeLeagueIds)
   const seen = new Set<string>()
   const feedEvents = [...(friendEvents ?? []), ...(resultEvents ?? [])].filter((e: any) => {
     if (seen.has(e.id)) return false
     seen.add(e.id)
-    // No mostrar eventos de torneos de los que el usuario no es miembro
     if (e.type === 'league_create') return false
-    if (e.type === 'league_join' && e.league_id && !leagueIdSet.has(e.league_id)) return false
-    // No mostrar "se unió al torneo" si el usuario es el creador o si quien se unió es el creador
+    // Ocultar eventos de torneos finalizados o de los que el usuario no es miembro
+    if (e.league_id && !activeLeagueIdSet.has(e.league_id)) return false
     if (e.type === 'league_join' && e.leagues?.created_by === user!.id) return false
     if (e.type === 'league_join' && e.leagues?.created_by === e.user_id) return false
     return true
@@ -115,11 +121,14 @@ export default async function DashboardPage() {
     sortDate: new Date(e.created_at),
   }))
 
-  const userPostItems: FeedItem[] = (userPosts ?? []).map((p: any) => ({
-    kind: 'user_post' as const,
-    ...p,
-    sortDate: new Date(p.created_at),
-  }))
+  // Ocultar posts de amigos que pertenecen a torneos en los que el usuario no es miembro activo
+  const userPostItems: FeedItem[] = (userPosts ?? [])
+    .filter((p: any) => !p.league_id || activeLeagueIdSet.has(p.league_id))
+    .map((p: any) => ({
+      kind: 'user_post' as const,
+      ...p,
+      sortDate: new Date(p.created_at),
+    }))
 
   const feed: FeedItem[] = [...matchPosts, ...activityPosts, ...userPostItems].sort((a, b) => {
     if (a.kind === 'match' && b.kind === 'match') return a.sortDate.getTime() - b.sortDate.getTime()
