@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { UserCheck, Check, Loader2, Users, Trash2, X, UserX, Shield, LogOut, ExternalLink, Trophy, MessageCircle, Heart, FileText } from 'lucide-react'
+import { UserCheck, Check, Loader2, Users, Trash2, X, UserX, Shield, LogOut, ExternalLink, Trophy, MessageCircle, Heart, FileText, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import UserAvatar from '@/components/user-avatar'
@@ -50,6 +50,8 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'friend_post') return wrap('bg-blue-500/20', <FileText className="w-4 h-4 text-blue-400" />)
   if (type === 'post_reaction') return wrap('bg-pink-500/20', <Heart className="w-4 h-4 text-pink-400" />)
   if (type === 'post_comment') return wrap('bg-green-500/20', <MessageCircle className="w-4 h-4 text-green-400" />)
+  if (type === 'match_starting_soon') return wrap('bg-orange-500/20', <Clock className="w-4 h-4 text-orange-400" />)
+  if (type === 'match_started') return wrap('bg-green-500/20', <Clock className="w-4 h-4 text-green-400" />)
   return wrap('bg-slate-700', <WhistleIcon className="w-4 h-4 text-slate-400" />)
 }
 
@@ -299,6 +301,30 @@ function NotificationItem({
             {notif.metadata?.comment && <p className="text-xs text-slate-400 italic line-clamp-2">"{notif.metadata.comment}"</p>}
             <Link href={`/dashboard#post-${notif.metadata?.post_id}`} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
               <ExternalLink className="w-3 h-3" /> Ver publicación
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'match_starting_soon' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="font-semibold text-white">⚽ {notif.metadata?.home_team} vs {notif.metadata?.away_team}</span>
+              <span className="text-slate-400"> — ¡No olvides registrar tu pronóstico!</span>
+            </p>
+            <Link href={notif.metadata?.url ?? '/predictions'} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-orange-500/20 text-orange-300 font-semibold rounded-lg hover:bg-orange-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver partido
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'match_started' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="font-semibold text-white">🟢 {notif.metadata?.home_team} vs {notif.metadata?.away_team}</span>
+              <span className="text-slate-400"> está comenzando</span>
+            </p>
+            <Link href={notif.metadata?.url ?? '/predictions'} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver partido
             </Link>
           </div>
         )}

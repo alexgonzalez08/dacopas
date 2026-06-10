@@ -76,31 +76,89 @@ async function runSync(request: Request) {
   // Lock predictions 1h before kickoff
   await supabase.rpc('lock_predictions_before_match')
 
-  // Notificar 45 minutos antes del partido
   const now = new Date()
-  const windowStart = new Date(now.getTime() + 40 * 60 * 1000)
-  const windowEnd = new Date(now.getTime() + 50 * 60 * 1000)
 
-  const { data: upcomingMatches } = await supabase
+  // Notificar 1 hora antes del partido
+  const window1hStart = new Date(now.getTime() + 55 * 60 * 1000)
+  const window1hEnd = new Date(now.getTime() + 65 * 60 * 1000)
+
+  const { data: upcoming1h } = await supabase
     .from('matches')
     .select('id, home_team, away_team')
     .eq('status', 'scheduled')
-    .eq('notified_45min', false)
-    .gte('match_date', windowStart.toISOString())
-    .lte('match_date', windowEnd.toISOString())
+    .eq('notified_1h', false)
+    .gte('match_date', window1hStart.toISOString())
+    .lte('match_date', window1hEnd.toISOString())
 
-  const notifiedIds: number[] = []
-  for (const match of upcomingMatches ?? []) {
+  const notified1h: number[] = []
+  for (const match of upcoming1h ?? []) {
+    const title = '⚽ ¡Partido en 1 hora!'
+    const body = `${match.home_team} vs ${match.away_team} — ¡No olvides registrar tu pronóstico!`
+    const url = `/matches/${match.id}`
+
+    // Push a todos los usuarios
     await sendPushToAllUsers(supabase, {
-      title: '⚽ ¡Partido en 45 minutos!',
-      body: `${match.home_team} vs ${match.away_team} — ¡No olvides enviar tu pronóstico!`,
-      data: { url: `/matches/${match.id}`, image: 'https://www.dacopas.com/og-image.png', tag: `match-${match.id}` },
+      title,
+      body,
+      data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-1h-${match.id}` },
     })
-    await supabase.from('matches').update({ notified_45min: true }).eq('id', match.id)
-    notifiedIds.push(match.id)
+
+    // In-app notification a todos los usuarios
+    const { data: allUsers } = await supabase.from('profiles').select('id')
+    if (allUsers) {
+      await supabase.from('notifications').insert(
+        allUsers.map(u => ({
+          user_id: u.id,
+          type: 'match_starting_soon',
+          metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
+        }))
+      )
+    }
+
+    await supabase.from('matches').update({ notified_1h: true }).eq('id', match.id)
+    notified1h.push(match.id)
   }
 
-  return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds, notified: notifiedIds })
+  // Notificar al inicio del partido (ventana de ±5 min alrededor del kickoff)
+  const windowStartNow = new Date(now.getTime() - 5 * 60 * 1000)
+  const windowEndNow = new Date(now.getTime() + 5 * 60 * 1000)
+
+  const { data: startingMatches } = await supabase
+    .from('matches')
+    .select('id, home_team, away_team')
+    .eq('status', 'scheduled')
+    .eq('notified_start', false)
+    .gte('match_date', windowStartNow.toISOString())
+    .lte('match_date', windowEndNow.toISOString())
+
+  const notifiedStart: number[] = []
+  for (const match of startingMatches ?? []) {
+    const title = '🟢 ¡El partido está comenzando!'
+    const body = `${match.home_team} vs ${match.away_team} — ¡Seguilo en vivo!`
+    const url = `/matches/${match.id}`
+
+    await sendPushToAllUsers(supabase, {
+      title,
+      body,
+      data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-start-${match.id}` },
+    })
+
+    const { data: allUsers } = await supabase.from('profiles').select('id')
+    if (allUsers) {
+      await supabase.from('notifications').insert(
+        allUsers.map(u => ({
+          user_id: u.id,
+          type: 'match_started',
+          metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
+        }))
+      )
+    }
+
+    await supabase.from('matches').update({ notified_start: true }).eq('id', match.id)
+    notifiedStart.push(match.id)
+  }
+
+  return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds, notified1h, notifiedStart })
 }
 
 export async function GET(request: Request) {
