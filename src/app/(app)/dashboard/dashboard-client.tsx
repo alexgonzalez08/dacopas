@@ -33,6 +33,7 @@ export default function DashboardClient({
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(initialFeed)
   const [showPushBanner, setShowPushBanner] = useState(false)
+  const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'error'>('idle')
 
   useEffect(() => {
     // En Android/Capacitor seguimos con el flujo automático
@@ -48,10 +49,15 @@ export default function DashboardClient({
   }, [userId])
 
   async function handleEnableNotifications() {
-    setShowPushBanner(false)
-    localStorage.setItem('push_banner_dismissed', '1')
+    setPushStatus('loading')
     const { initWebPushFromGesture } = await import('@/lib/push')
-    await initWebPushFromGesture()
+    const ok = await initWebPushFromGesture()
+    if (ok) {
+      setShowPushBanner(false)
+      localStorage.setItem('push_banner_dismissed', '1')
+    } else {
+      setPushStatus('error')
+    }
   }
 
   function handleDismissBanner() {
@@ -83,12 +89,15 @@ export default function DashboardClient({
       {showPushBanner && (
         <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
           <Bell className="w-5 h-5 text-yellow-400 shrink-0" />
-          <p className="text-sm text-slate-300 flex-1">Activá las notificaciones para no perderte nada</p>
+          <p className="text-sm text-slate-300 flex-1">
+            {pushStatus === 'error' ? 'No se pudo activar. Intentá de nuevo.' : 'Activá las notificaciones para no perderte nada'}
+          </p>
           <button
             onClick={handleEnableNotifications}
-            className="text-xs font-bold text-yellow-400 hover:text-yellow-300 shrink-0"
+            disabled={pushStatus === 'loading'}
+            className="text-xs font-bold text-yellow-400 hover:text-yellow-300 shrink-0 disabled:opacity-50"
           >
-            Activar
+            {pushStatus === 'loading' ? '...' : 'Activar'}
           </button>
           <button onClick={handleDismissBanner} className="text-slate-500 hover:text-slate-300">
             <X className="w-4 h-4" />

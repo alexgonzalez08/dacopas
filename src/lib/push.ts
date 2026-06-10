@@ -13,8 +13,8 @@ async function waitForCapacitor(maxMs = 5000): Promise<boolean> {
   return false
 }
 
-export async function initWebPushFromGesture() {
-  await initWebPush()
+export async function initWebPushFromGesture(): Promise<boolean> {
+  return initWebPush()
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -24,18 +24,12 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
 }
 
-async function initWebPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.log('Web Push no soportado en este browser')
-    return
-  }
+async function initWebPush(): Promise<boolean> {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
   try {
     const registration = await navigator.serviceWorker.ready
-    console.log('Service worker ready:', registration.scope)
-
     const permission = await Notification.requestPermission()
-    console.log('Permiso de notificaciones:', permission)
-    if (permission !== 'granted') return
+    if (permission !== 'granted') return false
 
     const existing = await registration.pushManager.getSubscription()
     const applicationServerKey = urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!).buffer as ArrayBuffer
@@ -43,16 +37,16 @@ async function initWebPush() {
       userVisibleOnly: true,
       applicationServerKey,
     })
-    console.log('Suscripción obtenida:', subscription.endpoint)
 
     const res = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(subscription),
     })
-    console.log('Suscripción guardada:', res.ok)
+    return res.ok
   } catch (err) {
     console.error('Error registrando web push:', err)
+    return false
   }
 }
 
