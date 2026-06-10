@@ -1,28 +1,8 @@
-/// <reference lib="webworker" />
-import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist'
-import { Serwist } from 'serwist'
-
-declare global {
-  interface WorkerGlobalScope extends SerwistGlobalConfig {
-    __SW_MANIFEST: (PrecacheEntry | string)[] | undefined
-  }
-}
-
-declare const self: ServiceWorkerGlobalScope & typeof globalThis & WorkerGlobalScope
-
-const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
-  skipWaiting: true,
-  clientsClaim: true,
-})
-
-serwist.addEventListeners()
-
 self.addEventListener('push', (event) => {
   if (!event.data) return
   const data = event.data.json()
   const title = data.title ?? 'Dacopas'
-  const options: NotificationOptions = {
+  const options = {
     body: data.body ?? '',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
@@ -42,3 +22,6 @@ self.addEventListener('notificationclick', (event) => {
     })
   )
 })
+
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))

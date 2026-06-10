@@ -11,5 +11,4 @@ export default withPWA({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === "development",
-  customWorkerSrc: "worker",
 })(nextConfig);
