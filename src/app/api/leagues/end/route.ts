@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       body: winner
         ? `¡${winner.username} ganó con ${winner.points} puntos!`
         : 'El torneo ha terminado. ¡Mirá los resultados finales!',
-      data: { url: `/leagues/${leagueId}`, type: 'league_ended' },
+      data: { url: `/leagues/${leagueId}`, tag: `league-ended-${leagueId}`, image: 'https://www.dacopas.com/og-image.png' },
     })
   }
 

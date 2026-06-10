@@ -25,7 +25,7 @@ async function getFCMAccessToken(): Promise<string> {
 
 export async function sendPushToAllUsers(
   supabase: SupabaseClient,
-  { title, body, data }: { title: string; body: string; data?: Record<string, string> }
+  { title, body, data }: { title: string; body: string; data?: Record<string, string | undefined> }
 ) {
   const { data: tokens } = await supabase
     .from('push_tokens')
@@ -37,7 +37,13 @@ export async function sendPushToAllUsers(
   const fcmTokens = tokens.filter(t => t.platform !== 'web')
 
   const webResults = await Promise.allSettled(webTokens.map(({ subscription }) =>
-    webpush.sendNotification(JSON.parse(subscription), JSON.stringify({ title, body, url: data?.url ?? '/notifications' }))
+    webpush.sendNotification(JSON.parse(subscription), JSON.stringify({
+      title,
+      body,
+      url: data?.url ?? '/notifications',
+      image: data?.image,
+      tag: data?.tag,
+    }))
   ))
 
   if (fcmTokens.length === 0) {
@@ -76,7 +82,7 @@ export async function sendPushToUsers({
   userIds: string[]
   title: string
   body: string
-  data?: Record<string, string>
+  data?: Record<string, string | undefined>
 }) {
   if (userIds.length === 0) return
 
@@ -98,7 +104,7 @@ export async function sendPushToUsers({
   // Web Push
   await Promise.allSettled(webTokens.map(({ subscription }) => {
     const sub = JSON.parse(subscription)
-    return webpush.sendNotification(sub, JSON.stringify({ title, body, url: data?.url ?? '/notifications' }))
+    return webpush.sendNotification(sub, JSON.stringify({ title, body, url: data?.url ?? '/notifications', image: data?.image, tag: data?.tag }))
   }))
 
   if (fcmTokens.length === 0) return

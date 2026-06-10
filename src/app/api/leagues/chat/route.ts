@@ -61,7 +61,11 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
     userIds: memberIds,
     title: `💬 ${leagueName}`,
     body: `@${senderUsername}: ${preview}`,
-    data: { url: `/leagues/${leagueId}?chat=open` },
+    data: {
+      url: `/leagues/${leagueId}?chat=open`,
+      image: league?.image_url ?? 'https://www.dacopas.com/og-image.png',
+      tag: `chat-${leagueId}`,
+    },
   })
 }
 

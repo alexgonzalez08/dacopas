@@ -94,7 +94,7 @@ async function runSync(request: Request) {
     await sendPushToAllUsers(supabase, {
       title: '⚽ ¡Partido en 45 minutos!',
       body: `${match.home_team} vs ${match.away_team} — ¡No olvides enviar tu pronóstico!`,
-      data: { url: `/matches/${match.id}` },
+      data: { url: `/matches/${match.id}`, image: 'https://www.dacopas.com/og-image.png', tag: `match-${match.id}` },
     })
     await supabase.from('matches').update({ notified_45min: true }).eq('id', match.id)
     notifiedIds.push(match.id)
