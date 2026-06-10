@@ -39,11 +39,19 @@ export default function DashboardClient({
     // En Android/Capacitor seguimos con el flujo automático
     initPushNotifications(userId)
 
-    // Mostrar banner solo en iOS PWA, una sola vez
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    if (!isIOS || !isStandalone) return
+
+    if (Notification.permission === 'granted') {
+      // Permiso ya concedido — suscribir silenciosamente en background
+      import('@/lib/push').then(({ initWebPushFromGesture }) => initWebPushFromGesture())
+      return
+    }
+
+    // Mostrar banner para pedir permiso
     const dismissed = localStorage.getItem('push_banner_dismissed')
-    if (isIOS && isStandalone && !dismissed && Notification.permission === 'default') {
+    if (!dismissed && Notification.permission === 'default') {
       setShowPushBanner(true)
     }
   }, [userId])
