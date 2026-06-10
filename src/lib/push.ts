@@ -27,11 +27,6 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 async function initWebPush(): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
   try {
-    // Registrar el SW si no está registrado
-    const existingReg = await navigator.serviceWorker.getRegistration('/sw.js')
-    if (!existingReg) {
-      await navigator.serviceWorker.register('/sw.js', { scope: '/' })
-    }
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Service worker timeout')), 5000)
     )
