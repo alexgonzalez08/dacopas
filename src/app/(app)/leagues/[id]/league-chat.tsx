@@ -47,8 +47,26 @@ export default function LeagueChat({
   const [reportMsgId, setReportMsgId] = useState<string | null>(null)
   const [showEmoji, setShowEmoji] = useState(false)
   const [dragY, setDragY] = useState(0)
+  const [vpHeight, setVpHeight] = useState<number | null>(null)
+  const [vpOffsetTop, setVpOffsetTop] = useState(0)
   const touchStartY = useRef(0)
   const dragging = useRef(false)
+
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => {
+      setVpHeight(vv.height)
+      setVpOffsetTop(vv.offsetTop)
+    }
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    update()
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [])
 
   useEffect(() => {
     if (open) return
@@ -208,8 +226,9 @@ export default function LeagueChat({
           left-2 right-2 md:left-auto md:right-4 md:w-80
           ${open ? 'translate-y-0' : 'translate-y-full'}`}
         style={{
-          maxHeight: '100dvh',
-          height: open ? '100dvh' : 'auto',
+          maxHeight: vpHeight ? `${vpHeight}px` : '100dvh',
+          height: open ? (vpHeight ? `${vpHeight}px` : '100dvh') : 'auto',
+          bottom: vpOffsetTop,
           transform: open ? `translateY(${dragY}px)` : 'translateY(100%)',
           transition: dragging.current ? 'none' : 'transform 0.3s ease',
         }}
