@@ -52,6 +52,7 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'post_comment') return wrap('bg-green-500/20', <MessageCircle className="w-4 h-4 text-green-400" />)
   if (type === 'match_starting_soon') return wrap('bg-orange-500/20', <Clock className="w-4 h-4 text-orange-400" />)
   if (type === 'match_started') return wrap('bg-green-500/20', <Clock className="w-4 h-4 text-green-400" />)
+  if (type === 'welcome_blast') return wrap('bg-yellow-500/20', <Trophy className="w-4 h-4 text-yellow-400" />)
   return wrap('bg-slate-700', <WhistleIcon className="w-4 h-4 text-slate-400" />)
 }
 
@@ -303,6 +304,13 @@ function NotificationItem({
               <ExternalLink className="w-3 h-3" /> Ver publicación
             </Link>
           </div>
+        )}
+
+        {notif.type === 'welcome_blast' && (
+          <p className="text-sm text-slate-200">
+            🌍 <span className="font-semibold text-white">¡Bienvenidos a Dacopas!</span>
+            <span className="text-slate-400"> La emoción del Mundial está cerca. ¡No olvides preparar tus pronósticos!</span>
+          </p>
         )}
 
         {notif.type === 'match_starting_soon' && (
