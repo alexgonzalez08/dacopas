@@ -1,7 +1,8 @@
 /// <reference lib="webworker" />
-declare const self: ServiceWorkerGlobalScope
 
-self.addEventListener('push', (event) => {
+const sw = self as unknown as ServiceWorkerGlobalScope
+
+sw.addEventListener('push', (event) => {
   if (!event.data) return
   const data = event.data.json()
   const title = data.title ?? 'Dacopas'
@@ -11,17 +12,17 @@ self.addEventListener('push', (event) => {
     badge: '/icons/icon-192.png',
     data: { url: data.url ?? '/notifications' },
   }
-  event.waitUntil(self.registration.showNotification(title, options))
+  event.waitUntil(sw.registration.showNotification(title, options))
 })
 
-self.addEventListener('notificationclick', (event) => {
+sw.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const url = event.notification.data?.url ?? '/notifications'
   event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((clients) => {
+    sw.clients.matchAll({ type: 'window' }).then((clients) => {
       const existing = clients.find((c) => c.url.includes(url))
       if (existing) return existing.focus()
-      return self.clients.openWindow(url)
+      return sw.clients.openWindow(url)
     })
   )
 })
