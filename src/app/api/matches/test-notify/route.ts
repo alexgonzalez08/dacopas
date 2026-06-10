@@ -17,10 +17,11 @@ export async function POST(request: Request) {
   )
 
   // Buscar usuario por email
-  const { data: { users } } = await supabase.auth.admin.listUsers()
-  const targetUser = users.find(u => u.email === email)
+  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+  if (listError) return NextResponse.json({ error: listError.message }, { status: 500 })
+  const targetUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
   if (!targetUser) {
-    return NextResponse.json({ error: `Usuario no encontrado: ${email}` }, { status: 404 })
+    return NextResponse.json({ error: `Usuario no encontrado: ${email}`, total_users: users.length, emails: users.map(u => u.email) }, { status: 404 })
   }
 
   // Buscar partido: si no se pasa match_id, usar el próximo partido scheduled
