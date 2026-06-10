@@ -29,28 +29,33 @@ export async function sendPushToAllUsers(
 ) {
   const { data: tokens } = await supabase
     .from('push_tokens')
-    .select('token')
+    .select('token, platform, subscription')
 
   if (!tokens || tokens.length === 0) return { sent: 0, total: 0 }
 
-  const accessToken = await getFCMAccessToken()
+  const webTokens = tokens.filter(t => t.platform === 'web' && t.subscription)
+  const fcmTokens = tokens.filter(t => t.platform !== 'web')
 
-  const results = await Promise.allSettled(
-    tokens.map(({ token }) =>
+  const webResults = await Promise.allSettled(webTokens.map(({ subscription }) =>
+    webpush.sendNotification(JSON.parse(subscription), JSON.stringify({ title, body, url: data?.url ?? '/notifications' }))
+  ))
+
+  if (fcmTokens.length === 0) {
+    const sent = webResults.filter(r => r.status === 'fulfilled').length
+    return { sent, total: tokens.length }
+  }
+
+  const accessToken = await getFCMAccessToken()
+  const fcmResults = await Promise.allSettled(
+    fcmTokens.map(({ token }) =>
       fetch(FCM_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           message: {
             token,
             notification: { title, body },
-            android: {
-              priority: 'high',
-              notification: { sound: 'default', click_action: 'FLUTTER_NOTIFICATION_CLICK' },
-            },
+            android: { priority: 'high', notification: { sound: 'default' } },
             data: data ?? {},
           },
         }),
@@ -58,7 +63,7 @@ export async function sendPushToAllUsers(
     )
   )
 
-  const sent = results.filter(r => r.status === 'fulfilled').length
+  const sent = [...webResults, ...fcmResults].filter(r => r.status === 'fulfilled').length
   return { sent, total: tokens.length }
 }
 

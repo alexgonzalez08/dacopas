@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { encryptMessage, decryptMessage } from '@/lib/crypto'
+import { sendPushToUsers } from '@/lib/push-server'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -54,52 +55,14 @@ async function notifyMembers(leagueId: string, senderId: string, senderUsername:
 
   const leagueName = league?.name ?? 'Torneo'
   const preview = content.length > 60 ? content.slice(0, 57) + '...' : content
-
-  // Obtener tokens de todos los miembros
   const memberIds = members.map(m => m.user_id)
-  const { data: tokens } = await adminSupabase
-    .from('push_tokens')
-    .select('user_id, token')
-    .in('user_id', memberIds)
 
-  if (!tokens || tokens.length === 0) return
-
-  const FCM_URL = `https://fcm.googleapis.com/v1/projects/${process.env.FIREBASE_PROJECT_ID}/messages:send`
-  const { GoogleAuth } = await import('google-auth-library')
-  const auth = new GoogleAuth({
-    credentials: {
-      client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  await sendPushToUsers({
+    userIds: memberIds,
+    title: `💬 ${leagueName}`,
+    body: `@${senderUsername}: ${preview}`,
+    data: { url: `/leagues/${leagueId}?chat=open` },
   })
-  const client = await auth.getClient()
-  const accessTokenObj = await client.getAccessToken()
-  const accessToken = accessTokenObj.token!
-
-  await Promise.allSettled(tokens.map(({ token }) =>
-    fetch(FCM_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification: { title: `🔥 La mesa está caliente — ${leagueName}`, body: `@${senderUsername}: ${preview}` },
-          android: {
-            priority: 'high',
-            notification: { channel_id: 'dacopas_default', sound: 'default', icon: 'ic_stat_notification', image: 'https://dacopas.com/logo.png' },
-          },
-          apns: {
-            headers: { 'apns-priority': '10' },
-            payload: {
-              aps: { alert: { title: `💬 ${leagueName}`, body: `@${senderUsername}: ${preview}` }, sound: 'default', badge: 1 },
-            },
-          },
-          data: { url: `/leagues/${leagueId}?chat=open`, type: 'chat_message', image_url: league?.image_url ?? '' },
-        },
-      }),
-    })
-  ))
 }
 
 export async function POST(req: NextRequest) {
