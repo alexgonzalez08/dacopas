@@ -259,7 +259,44 @@ async function runSync(request: Request) {
     notified15min.push(match.id)
   }
 
-  return NextResponse.json({ pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min })
+  // Notificar partidos finalizados que aún no se notificaron (independiente de la API externa)
+  const { data: finishedMatches } = await supabase
+    .from('matches')
+    .select('id, home_team, away_team, home_score, away_score')
+    .eq('status', 'finished')
+    .eq('notified_finished', false)
+    .not('home_score', 'is', null)
+
+  const notifiedFinished: number[] = []
+  for (const match of finishedMatches ?? []) {
+    await supabase.rpc('calculate_match_points', { p_match_id: match.id })
+    updatedIds.push(match.id)
+
+    const title = '🏁 Resultado final'
+    const body = `${match.home_team} ${match.home_score} - ${match.away_score} ${match.away_team}`
+    const url = `/matches/${match.id}`
+
+    await sendPushToAllUsers(supabase, {
+      title, body,
+      data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-finished-${match.id}` },
+    })
+
+    const { data: profiles } = await supabase.from('profiles').select('id')
+    if (profiles?.length) {
+      await supabase.from('notifications').insert(
+        profiles.map(p => ({
+          user_id: p.id,
+          type: 'match_finished',
+          metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, home_score: match.home_score, away_score: match.away_score, url },
+        }))
+      )
+    }
+
+    await supabase.from('matches').update({ notified_finished: true }).eq('id', match.id)
+    notifiedFinished.push(match.id)
+  }
+
+  return NextResponse.json({ pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min, notifiedFinished })
 }
 
 export async function GET(request: Request) {
