@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { sendPushToAllUsers } from '@/lib/push-server'
+import { sendPushToAllUsers, sendPushToUsers } from '@/lib/push-server'
 
 const FOOTBALL_API = 'https://api.football-data.org/v4'
 // World Cup 2026 competition id (will be updated once available)
@@ -197,7 +197,51 @@ async function runSync(request: Request) {
     notifiedStart.push(match.id)
   }
 
-  return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds, notified1h, notifiedStart })
+  // Notificar 15 minutos antes — solo a usuarios que enviaron pronóstico
+  const window15Start = new Date(now.getTime() + 10 * 60 * 1000)
+  const window15End = new Date(now.getTime() + 20 * 60 * 1000)
+
+  const { data: matches15 } = await supabase
+    .from('matches')
+    .select('id, home_team, away_team')
+    .eq('status', 'scheduled')
+    .eq('notified_15min', false)
+    .gte('match_date', window15Start.toISOString())
+    .lte('match_date', window15End.toISOString())
+
+  const notified15min: number[] = []
+  for (const match of matches15 ?? []) {
+    const url = `/predictions`
+
+    // Solo usuarios que tienen pronóstico enviado para este partido
+    const { data: preds } = await supabase
+      .from('predictions')
+      .select('user_id')
+      .eq('match_id', match.id)
+      .eq('status', 'locked')
+
+    const userIds = (preds ?? []).map(p => p.user_id)
+
+    if (userIds.length > 0) {
+      const title = '✅ ¡Pronóstico enviado!'
+      const body = `Tu pronóstico para ${match.home_team} vs ${match.away_team} fue registrado. ¡Mucha Suerte!`
+
+      await sendPushToUsers({ userIds, title, body, data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-pred-${match.id}` } })
+
+      await supabase.from('notifications').insert(
+        userIds.map(uid => ({
+          user_id: uid,
+          type: 'prediction_locked',
+          metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
+        }))
+      )
+    }
+
+    await supabase.from('matches').update({ notified_15min: true }).eq('id', match.id)
+    notified15min.push(match.id)
+  }
+
+  return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min })
 }
 
 export async function GET(request: Request) {

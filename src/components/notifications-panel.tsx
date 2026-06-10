@@ -54,6 +54,7 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'match_started') return wrap('bg-green-500/20', <Clock className="w-4 h-4 text-green-400" />)
   if (type === 'welcome_blast') return wrap('bg-yellow-500/20', <Trophy className="w-4 h-4 text-yellow-400" />)
   if (type === 'match_finished') return wrap('bg-slate-700', <Trophy className="w-4 h-4 text-green-400" />)
+  if (type === 'prediction_locked') return wrap('bg-green-500/20', <Check className="w-4 h-4 text-green-400" />)
   return wrap('bg-slate-700', <WhistleIcon className="w-4 h-4 text-slate-400" />)
 }
 
@@ -303,6 +304,19 @@ function NotificationItem({
             {notif.metadata?.comment && <p className="text-xs text-slate-400 italic line-clamp-2">"{notif.metadata.comment}"</p>}
             <Link href={`/dashboard#post-${notif.metadata?.post_id}`} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
               <ExternalLink className="w-3 h-3" /> Ver publicación
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'prediction_locked' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="font-semibold text-white">✅ Pronóstico enviado: </span>
+              <span className="text-slate-300">{notif.metadata?.home_team} vs {notif.metadata?.away_team}</span>
+              <span className="text-slate-400"> — ¡Mucha Suerte!</span>
+            </p>
+            <Link href="/predictions" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver pronóstico
             </Link>
           </div>
         )}
