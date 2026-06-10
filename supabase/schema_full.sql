@@ -379,7 +379,11 @@ begin
     select
       p.user_id,
       case
+        -- Marcador exacto: 3 puntos
         when p.home_score = v_home_score and p.away_score = v_away_score then 3
+        -- Empate pronosticado y resultado es empate (sin importar marcador exacto): 3 puntos
+        when p.home_score = p.away_score and v_actual_winner = 'draw' then 3
+        -- Ganador correcto pero marcador incorrecto (no aplica a empates): 1 punto
         when case
           when p.home_score > p.away_score then 'home'
           when p.away_score > p.home_score then 'away'
@@ -393,7 +397,10 @@ begin
           when p.home_score > p.away_score then 'home'
           when p.away_score > p.home_score then 'away'
           else 'draw'
-        end = v_actual_winner and not (p.home_score = v_home_score and p.away_score = v_away_score) then 1
+        end = v_actual_winner
+          and not (p.home_score = v_home_score and p.away_score = v_away_score)
+          and v_actual_winner != 'draw'
+        then 1
         else 0
       end as winner_only
     from predictions p
