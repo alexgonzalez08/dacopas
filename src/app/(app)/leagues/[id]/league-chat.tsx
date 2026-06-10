@@ -46,6 +46,9 @@ export default function LeagueChat({
   const [unread, setUnread] = useState(0)
   const [reportMsgId, setReportMsgId] = useState<string | null>(null)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [dragY, setDragY] = useState(0)
+  const touchStartY = useRef(0)
+  const dragging = useRef(false)
 
   useEffect(() => {
     if (open) return
@@ -201,11 +204,37 @@ export default function LeagueChat({
 
       {/* Bottom sheet */}
       <div
-        className={`fixed bottom-0 z-50 flex flex-col bg-slate-900 border border-slate-700 border-b-0 rounded-t-2xl shadow-2xl transition-transform duration-300
+        className={`fixed bottom-0 z-50 flex flex-col bg-slate-900 border border-slate-700 border-b-0 rounded-t-2xl shadow-2xl
           left-2 right-2 md:left-auto md:right-4 md:w-80
           ${open ? 'translate-y-0' : 'translate-y-full'}`}
-        style={{ maxHeight: '50vh', height: open ? '50vh' : 'auto' }}
+        style={{
+          maxHeight: '75vh',
+          height: open ? '75vh' : 'auto',
+          transform: open ? `translateY(${dragY}px)` : 'translateY(100%)',
+          transition: dragging.current ? 'none' : 'transform 0.3s ease',
+        }}
+        onTouchStart={e => {
+          touchStartY.current = e.touches[0].clientY
+          dragging.current = true
+        }}
+        onTouchMove={e => {
+          const delta = e.touches[0].clientY - touchStartY.current
+          if (delta > 0) setDragY(delta)
+        }}
+        onTouchEnd={() => {
+          dragging.current = false
+          if (dragY > 80) {
+            setDragY(0)
+            handleClose()
+          } else {
+            setDragY(0)
+          }
+        }}
       >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-2 pb-1 shrink-0 md:hidden">
+          <div className="w-10 h-1 rounded-full bg-slate-600" />
+        </div>
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
           <div className="flex items-center gap-2">
