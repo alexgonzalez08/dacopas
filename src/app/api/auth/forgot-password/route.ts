@@ -11,11 +11,15 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
 
-  // Verificar que el usuario existe
-  const { data: users } = await supabase.auth.admin.listUsers()
-  const user = users?.users.find(u => u.email === email)
+  // Verificar que el usuario existe (búsqueda directa, no paginada)
+  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+  if (listError) console.error('Error buscando usuario:', listError)
+  const user = users?.find(u => u.email === email)
   // Siempre respondemos OK para no revelar si el email existe
-  if (!user) return NextResponse.json({ ok: true })
+  if (!user) {
+    console.log('Usuario no encontrado para email:', email)
+    return NextResponse.json({ ok: true })
+  }
 
   // Generar token seguro
   const token = crypto.randomBytes(32).toString('hex')
