@@ -21,9 +21,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'El link expiró, solicitá uno nuevo' }, { status: 400 })
   }
 
-  // Buscar usuario por email
-  const { data: users } = await supabase.auth.admin.listUsers()
-  const user = users?.users.find(u => u.email === row.email)
+  // Buscar usuario por email (paginado para no perder usuarios)
+  const { data: { users }, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+  if (listError) console.error('Error buscando usuario:', listError)
+  const user = users?.find(u => u.email === row.email)
   if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
   // Actualizar contraseña
