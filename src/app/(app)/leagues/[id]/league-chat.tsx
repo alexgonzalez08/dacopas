@@ -208,8 +208,8 @@ export default function LeagueChat({
           left-2 right-2 md:left-auto md:right-4 md:w-80
           ${open ? 'translate-y-0' : 'translate-y-full'}`}
         style={{
-          maxHeight: '75vh',
-          height: open ? '75vh' : 'auto',
+          maxHeight: '100dvh',
+          height: open ? '100dvh' : 'auto',
           transform: open ? `translateY(${dragY}px)` : 'translateY(100%)',
           transition: dragging.current ? 'none' : 'transform 0.3s ease',
         }}
