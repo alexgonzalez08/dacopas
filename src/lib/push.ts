@@ -13,11 +13,35 @@ async function waitForCapacitor(maxMs = 5000): Promise<boolean> {
   return false
 }
 
+async function initWebPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return
+    const existing = await registration.pushManager.getSubscription()
+    const subscription = existing ?? await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    })
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription),
+    })
+  } catch (err) {
+    console.error('Error registrando web push:', err)
+  }
+}
+
 export async function initPushNotifications(userId: string) {
   if (typeof window === 'undefined') return
 
   const ready = await waitForCapacitor()
-  if (!ready) return
+  if (!ready) {
+    await initWebPush()
+    return
+  }
 
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')

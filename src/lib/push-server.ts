@@ -1,5 +1,12 @@
 import { GoogleAuth } from 'google-auth-library'
 import { SupabaseClient, createClient as createAdmin } from '@supabase/supabase-js'
+import webpush from 'web-push'
+
+webpush.setVapidDetails(
+  process.env.VAPID_SUBJECT!,
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+)
 
 const FCM_URL = `https://fcm.googleapis.com/v1/projects/${process.env.FIREBASE_PROJECT_ID}/messages:send`
 
@@ -75,14 +82,25 @@ export async function sendPushToUsers({
 
   const { data: tokens } = await admin
     .from('push_tokens')
-    .select('token')
+    .select('token, platform, subscription')
     .in('user_id', userIds)
 
   if (!tokens || tokens.length === 0) return
 
+  const webTokens = tokens.filter(t => t.platform === 'web' && t.subscription)
+  const fcmTokens = tokens.filter(t => t.platform !== 'web')
+
+  // Web Push
+  await Promise.allSettled(webTokens.map(({ subscription }) => {
+    const sub = JSON.parse(subscription)
+    return webpush.sendNotification(sub, JSON.stringify({ title, body, url: data?.url ?? '/notifications' }))
+  }))
+
+  if (fcmTokens.length === 0) return
+
   const accessToken = await getFCMAccessToken()
 
-  await Promise.allSettled(tokens.map(({ token }) =>
+  await Promise.allSettled(fcmTokens.map(({ token }) =>
     fetch(FCM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
