@@ -3,3 +3,4 @@ alter table matches rename column notified_45min to notified_1h;
 alter table matches add column if not exists notified_start boolean not null default false;
 alter table matches add column if not exists notified_finished boolean not null default false;
 alter table matches add column if not exists notified_15min boolean not null default false;
+alter table matches add column if not exists lineups jsonb;

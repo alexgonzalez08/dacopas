@@ -121,7 +121,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
       {/* Alineaciones */}
       {match.external_id && (
-        <Lineups externalId={match.external_id} status={match.status} />
+        <Lineups externalId={match.external_id} status={match.status} cachedLineups={match.lineups ?? null} />
       )}
 
       {/* Tabla del grupo */}

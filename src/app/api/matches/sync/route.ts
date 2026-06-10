@@ -21,12 +21,13 @@ async function runSync(request: Request) {
     headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY! },
   })
 
+  const updatedIds: number[] = []
+
   if (!res.ok) {
-    return NextResponse.json({ error: 'Football API error', status: res.status }, { status: 502 })
-  }
+    console.warn(`Football API error ${res.status} — skipping score sync, continuing with notifications`)
+  } else {
 
   const { matches } = await res.json()
-  const updatedIds: number[] = []
 
   for (const m of matches) {
     const matchDate = m.utcDate
@@ -111,6 +112,7 @@ async function runSync(request: Request) {
       })
     }
   }
+  } // end if res.ok
 
   // Lock predictions 1h before kickoff
   await supabase.rpc('lock_predictions_before_match')
@@ -123,7 +125,7 @@ async function runSync(request: Request) {
 
   const { data: upcoming1h } = await supabase
     .from('matches')
-    .select('id, home_team, away_team')
+    .select('id, home_team, away_team, external_id')
     .eq('status', 'scheduled')
     .eq('notified_1h', false)
     .gte('match_date', window1hStart.toISOString())
@@ -134,6 +136,22 @@ async function runSync(request: Request) {
     const title = '⚽ ¡Partido en 1 hora!'
     const body = `${match.home_team} vs ${match.away_team} — ¡No olvides registrar tu pronóstico!`
     const url = `/matches/${match.id}`
+
+    // Fetch alineaciones y guardar en DB
+    if (match.external_id) {
+      try {
+        const lineupsRes = await fetch(
+          `https://api.football-data.org/v4/matches/${match.external_id}`,
+          { headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY! } }
+        )
+        if (lineupsRes.ok) {
+          const lineupsData = await lineupsRes.json()
+          if (lineupsData.lineups?.length > 0) {
+            await supabase.from('matches').update({ lineups: lineupsData.lineups }).eq('id', match.id)
+          }
+        }
+      } catch {}
+    }
 
     // Push a todos los usuarios
     await sendPushToAllUsers(supabase, {
