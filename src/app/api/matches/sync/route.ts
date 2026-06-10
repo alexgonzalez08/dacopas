@@ -259,7 +259,7 @@ async function runSync(request: Request) {
     notified15min.push(match.id)
   }
 
-  return NextResponse.json({ synced: matches.length, pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min })
+  return NextResponse.json({ pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min })
 }
 
 export async function GET(request: Request) {

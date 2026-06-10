@@ -2,5 +2,8 @@
 
 export default function MatchTime({ matchDate }: { matchDate: string }) {
   const d = new Date(matchDate)
-  return <>{d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
+  const h = String(d.getHours()).padStart(2, '0')
+  const m = String(d.getMinutes()).padStart(2, '0')
+  return <>{h}:{m}</>
+
 }
