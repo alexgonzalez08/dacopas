@@ -27,7 +27,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 async function initWebPush(): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
   try {
-    const registration = await navigator.serviceWorker.ready
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Service worker timeout')), 5000)
+    )
+    const registration = await Promise.race([navigator.serviceWorker.ready, timeout])
     const permission = await Notification.requestPermission()
     if (permission !== 'granted') return false
 
