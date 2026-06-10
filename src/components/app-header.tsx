@@ -162,10 +162,20 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   return (
     <>
       <header className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
-        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-yellow-400">
+        <button
+          onClick={() => {
+            if (pathname === '/dashboard') {
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+              router.refresh()
+            } else {
+              router.push('/dashboard')
+            }
+          }}
+          className="flex items-center gap-2 font-bold text-yellow-400"
+        >
           <img src="/logo.png" alt="Dacopas" className="w-7 h-7 object-contain" />
           Dacopas
-        </Link>
+        </button>
 
         <div className="flex items-center gap-2">
           {/* Desktop nav */}
