@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Match, Prediction } from '@/types'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
+import { useRouter } from 'next/navigation'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -40,6 +41,19 @@ export default function DashboardMatches({
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
   const [errors, setErrors] = useState<Record<number, string>>({})
+  const router = useRouter()
+
+  // Auto-refresh cuando el próximo partido se bloquea (15 min antes del kickoff)
+  useEffect(() => {
+    const unlocked = matches.filter(m => !isPredictionLocked(m) && m.status === 'scheduled')
+    if (unlocked.length === 0) return
+    const nextLockMs = Math.min(
+      ...unlocked.map(m => new Date(m.match_date).getTime() - 15 * 60 * 1000 - Date.now())
+    )
+    if (nextLockMs <= 0) return
+    const t = setTimeout(() => router.refresh(), nextLockMs)
+    return () => clearTimeout(t)
+  }, [matches, router])
 
   async function handleSave(match: Match) {
     const s = scores[match.id]
