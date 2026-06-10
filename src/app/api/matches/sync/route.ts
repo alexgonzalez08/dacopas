@@ -54,6 +54,45 @@ async function runSync(request: Request) {
       if (resultChanged && status === 'finished' && homeScore !== null) {
         await supabase.rpc('calculate_match_points', { p_match_id: existing.id })
         updatedIds.push(existing.id)
+
+        // Notificar resultado final (push + in-app)
+        const { data: matchInfo } = await supabase
+          .from('matches')
+          .select('id, home_team, away_team, notified_finished')
+          .eq('id', existing.id)
+          .single()
+
+        if (matchInfo && !matchInfo.notified_finished) {
+          const title = '🏁 Resultado final'
+          const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
+          const url = `/matches/${existing.id}`
+
+          await sendPushToAllUsers(supabase, {
+            title,
+            body,
+            data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-finished-${existing.id}` },
+          })
+
+          const { data: profiles } = await supabase.from('profiles').select('id')
+          if (profiles?.length) {
+            await supabase.from('notifications').insert(
+              profiles.map(p => ({
+                user_id: p.id,
+                type: 'match_finished',
+                metadata: {
+                  match_id: existing.id,
+                  home_team: matchInfo.home_team,
+                  away_team: matchInfo.away_team,
+                  home_score: homeScore,
+                  away_score: awayScore,
+                  url,
+                },
+              }))
+            )
+          }
+
+          await supabase.from('matches').update({ notified_finished: true }).eq('id', existing.id)
+        }
       }
     } else {
       await supabase.from('matches').insert({
