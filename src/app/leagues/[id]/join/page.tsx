@@ -53,11 +53,12 @@ export default async function JoinPage({ params }: Props) {
 
   const { data: league } = await adminSupabase
     .from('leagues')
-    .select('id, name, description, image_url, code')
+    .select('id, name, description, image_url, code, ended_at')
     .eq('id', id)
     .single()
 
   if (!league) notFound()
+  if (league.ended_at) redirect('/dashboard')
 
   // Obtener miembros
   const { data: membersData } = await adminSupabase

@@ -62,6 +62,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   // Si no es miembro, verificar si tiene invitación pendiente
   if (!currentMember) {
+    // Torneo terminado — no permitir acceso a no-miembros
+    if ((league as any).ended_at) redirect('/dashboard')
+
     const { data: invites } = await supabase
       .from('notifications')
       .select('id, metadata, type')
