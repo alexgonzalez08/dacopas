@@ -97,6 +97,13 @@ function RegisterForm() {
       }
     }
 
+    // Fire-and-forget — no bloqueamos el redirect si falla
+    fetch('/api/auth/welcome-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, username: alias }),
+    }).catch(() => {})
+
     router.push(next ?? '/dashboard')
     router.refresh()
   }
