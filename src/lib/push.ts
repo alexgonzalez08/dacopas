@@ -13,6 +13,10 @@ async function waitForCapacitor(maxMs = 5000): Promise<boolean> {
   return false
 }
 
+export async function initWebPushFromGesture() {
+  await initWebPush()
+}
+
 async function initWebPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
   try {

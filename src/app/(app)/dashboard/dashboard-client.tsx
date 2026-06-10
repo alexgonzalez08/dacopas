@@ -5,6 +5,7 @@ import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
 import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
 import { initPushNotifications } from '@/lib/push'
+import { Bell, X } from 'lucide-react'
 
 type League = { id: string; name: string }
 type SuggestedUser = { id: string; username: string; full_name: string | null; avatar_url: string | null; shared_leagues: string[] }
@@ -31,10 +32,32 @@ export default function DashboardClient({
   suggestedFriends: SuggestedUser[]
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(initialFeed)
+  const [showPushBanner, setShowPushBanner] = useState(false)
 
   useEffect(() => {
+    // En Android/Capacitor seguimos con el flujo automático
     initPushNotifications(userId)
+
+    // Mostrar banner solo en iOS PWA, una sola vez
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const dismissed = localStorage.getItem('push_banner_dismissed')
+    if (isIOS && isStandalone && !dismissed && Notification.permission === 'default') {
+      setShowPushBanner(true)
+    }
   }, [userId])
+
+  async function handleEnableNotifications() {
+    setShowPushBanner(false)
+    localStorage.setItem('push_banner_dismissed', '1')
+    const { initWebPushFromGesture } = await import('@/lib/push')
+    await initWebPushFromGesture()
+  }
+
+  function handleDismissBanner() {
+    setShowPushBanner(false)
+    localStorage.setItem('push_banner_dismissed', '1')
+  }
 
   function handleNewPost(post: any) {
     const newItem: FeedItem = {
@@ -56,6 +79,22 @@ export default function DashboardClient({
   return (
     <div className="space-y-4">
       <h2 className="font-semibold text-lg">Los Temas Actuales</h2>
+
+      {showPushBanner && (
+        <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
+          <Bell className="w-5 h-5 text-yellow-400 shrink-0" />
+          <p className="text-sm text-slate-300 flex-1">Activá las notificaciones para no perderte nada</p>
+          <button
+            onClick={handleEnableNotifications}
+            className="text-xs font-bold text-yellow-400 hover:text-yellow-300 shrink-0"
+          >
+            Activar
+          </button>
+          <button onClick={handleDismissBanner} className="text-slate-500 hover:text-slate-300">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {showWelcome && <WelcomeCard username={username} userId={userId} />}
 
