@@ -55,14 +55,17 @@ export default function LeagueChat({
   useEffect(() => {
     const vv = window.visualViewport
     if (!vv) return
+    // En iOS el innerHeight no cambia con el teclado, hay que compensar manualmente.
+    // En Android el viewport ya se achica solo, no necesitamos ajustar.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
     const update = () => {
-      setVpHeight(vv.height)
-      // bottom = espacio debajo del viewport visual (teclado)
-      setVpBottom(window.innerHeight - vv.offsetTop - vv.height)
+      if (isIOS) {
+        setVpHeight(vv.height)
+        setVpBottom(window.innerHeight - vv.offsetTop - vv.height)
+      }
     }
     vv.addEventListener('resize', update)
     vv.addEventListener('scroll', update)
-    update()
     return () => {
       vv.removeEventListener('resize', update)
       vv.removeEventListener('scroll', update)
