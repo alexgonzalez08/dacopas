@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import BackButton from '@/components/back-button'
 
 
 export default function ForgotPasswordPage() {
@@ -26,6 +27,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4">
+      <BackButton />
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
           <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />

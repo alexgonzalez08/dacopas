@@ -1,6 +1,7 @@
 'use client'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
+import BackButton from '@/components/back-button'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -106,6 +107,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4">
+      <BackButton />
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-4">
           <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, Suspense } from 'react'
 import Link from 'next/link'
+import BackButton from '@/components/back-button'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Camera, Loader2, Eye, EyeOff, Check, X } from 'lucide-react'
@@ -193,6 +194,7 @@ function RegisterForm() {
 export default function RegisterPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-4 py-8">
+      <BackButton />
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
           <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />
