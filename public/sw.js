@@ -6,12 +6,10 @@ self.addEventListener('push', (event) => {
     body: data.body ?? '',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    image: data.image ?? undefined,
-    tag: data.tag ?? 'dacopas-default',
-    renotify: true,
-    vibrate: [200, 100, 200],
     data: { url: data.url ?? '/notifications' },
   }
+  if (data.image) options.image = data.image
+  if (data.tag) options.tag = data.tag
   event.waitUntil(self.registration.showNotification(title, options))
 })
 
