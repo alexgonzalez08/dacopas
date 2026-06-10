@@ -161,7 +161,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
 
   return (
     <>
-      <header className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+      <header className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 sticky top-0 z-40" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
         <button
           onClick={() => {
             if (pathname === '/dashboard') {
