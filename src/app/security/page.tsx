@@ -1,3 +1,5 @@
+import BackButton from '@/components/back-button'
+
 export const metadata = {
   title: 'Seguridad y Eliminación de Datos — Dacopas',
 }
@@ -5,6 +7,7 @@ export const metadata = {
 export default function SecurityPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12 text-slate-300">
+      <BackButton />
       <div className="flex items-center gap-3 mb-2">
         <img src="/logo.png" alt="Dacopas" className="w-10 h-10 object-contain" />
         <span className="text-yellow-400 font-bold text-xl">Dacopas</span>

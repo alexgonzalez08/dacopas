@@ -1,3 +1,5 @@
+import BackButton from '@/components/back-button'
+
 export const metadata = {
   title: 'Política de Privacidad — Dacopas',
 }
@@ -5,6 +7,7 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12 text-slate-300">
+      <BackButton />
       <h1 className="text-3xl font-bold text-white mb-2">Política de Privacidad</h1>
       <p className="text-sm text-slate-500 mb-10">Última actualización: junio 2026</p>
 
