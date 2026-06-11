@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check } from 'lucide-react'
+import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check, BookOpen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import WhistleIcon from '@/components/whistle-icon'
@@ -272,6 +272,13 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition"
                 >
                   <UserCircle className="w-4 h-4" /> Gestión de Cuenta
+                </Link>
+                <Link
+                  href="/rules"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                >
+                  <BookOpen className="w-4 h-4" /> Reglas del juego
                 </Link>
                 <div className="border-t border-slate-700" />
                 <button

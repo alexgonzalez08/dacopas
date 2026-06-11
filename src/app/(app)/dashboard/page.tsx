@@ -47,6 +47,8 @@ export default async function DashboardPage() {
     { data: friendEvents },
     { data: resultEvents },
     { data: userPosts },
+    { data: systemPosts },
+    { data: dismissedPosts },
     suggestedFriends,
   ] = await Promise.all([
     supabase
@@ -79,8 +81,21 @@ export default async function DashboardPage() {
       .from('user_posts')
       .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
       .in('user_id', [user!.id, ...friendIds])
+      .eq('is_system', false)
       .order('created_at', { ascending: false })
       .limit(30),
+    // Posts de sistema (visibles para todos)
+    supabase
+      .from('user_posts')
+      .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
+      .eq('is_system', true)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    // Posts de sistema ocultados por este usuario
+    supabase
+      .from('dismissed_posts')
+      .select('post_id')
+      .eq('user_id', user!.id),
     getSuggestedFriends(supabase, user!.id),
   ])
 
@@ -127,6 +142,8 @@ export default async function DashboardPage() {
     sortDate: new Date(e.created_at),
   }))
 
+  const dismissedIds = new Set((dismissedPosts ?? []).map((d: any) => d.post_id))
+
   // Ocultar posts de amigos que pertenecen a torneos en los que el usuario no es miembro activo
   const userPostItems: FeedItem[] = (userPosts ?? [])
     .filter((p: any) => !p.league_id || activeLeagueIdSet.has(p.league_id))
@@ -136,7 +153,15 @@ export default async function DashboardPage() {
       sortDate: new Date(p.created_at),
     }))
 
-  const feed: FeedItem[] = [...matchPosts, ...activityPosts, ...userPostItems].sort((a, b) => {
+  const systemPostItems: FeedItem[] = (systemPosts ?? [])
+    .filter((p: any) => !dismissedIds.has(p.id))
+    .map((p: any) => ({
+      kind: 'user_post' as const,
+      ...p,
+      sortDate: new Date(p.created_at),
+    }))
+
+  const feed: FeedItem[] = [...matchPosts, ...activityPosts, ...userPostItems, ...systemPostItems].sort((a, b) => {
     if (a.kind === 'match' && b.kind === 'match') return a.sortDate.getTime() - b.sortDate.getTime()
     if (a.kind === 'match') return -1
     if (b.kind === 'match') return 1

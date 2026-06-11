@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Trash2, MoreHorizontal, Flag } from 'lucide-react'
+import { Trash2, MoreHorizontal, Flag, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import PostInteractionsGeneric from './post-interactions-generic'
 import UserAvatar from './user-avatar'
@@ -14,6 +14,7 @@ type UserPost = {
   content: string | null
   image_url: string | null
   created_at: string
+  is_system?: boolean
   profiles?: { username: string; full_name: string | null; avatar_url: string | null } | null
   post_reactions?: { id: string; emoji: string; user_id: string }[]
   post_comments?: { id: string; content: string; user_id: string; created_at: string; profiles?: { username: string } }[]
@@ -40,7 +41,18 @@ export default function UserPostCard({
     onDelete(post.id)
   }
 
+  async function handleDismiss() {
+    if (!onDelete) return
+    await fetch('/api/posts/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_id: post.id }),
+    })
+    onDelete(post.id)
+  }
+
   const isOwner = post.user_id === userId
+  const isSystem = !!post.is_system
 
   return (
     <>
@@ -51,17 +63,33 @@ export default function UserPostCard({
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-3">
-          <UserAvatar
-            username={post.profiles?.username ?? ''}
-            fullName={post.profiles?.full_name}
-            avatarUrl={post.profiles?.avatar_url}
-            size="md"
-            showName
-            showAlias
-          />
-          <p suppressHydrationWarning className="text-xs text-slate-500">
-            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}
-          </p>
+          {isSystem ? (
+            <>
+              <div className="w-9 h-9 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0">
+                <span className="text-lg">⚽</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Dacopas</p>
+                <p suppressHydrationWarning className="text-xs text-slate-500">
+                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <UserAvatar
+                username={post.profiles?.username ?? ''}
+                fullName={post.profiles?.full_name}
+                avatarUrl={post.profiles?.avatar_url}
+                size="md"
+                showName
+                showAlias
+              />
+              <p suppressHydrationWarning className="text-xs text-slate-500">
+                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}
+              </p>
+            </>
+          )}
         </div>
         <div className="relative">
           <button
@@ -71,8 +99,16 @@ export default function UserPostCard({
             <MoreHorizontal className="w-4 h-4" />
           </button>
           {showMenu && (
-            <div className="absolute right-0 top-8 bg-slate-700 rounded-xl shadow-xl z-10 overflow-hidden min-w-36">
-              {isOwner && onDelete && (
+            <div className="absolute right-0 top-8 bg-slate-700 rounded-xl shadow-xl z-10 overflow-hidden min-w-40">
+              {isSystem && (
+                <button
+                  onClick={() => { handleDismiss(); setShowMenu(false) }}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-600 w-full transition"
+                >
+                  <EyeOff className="w-3.5 h-3.5" /> Ocultar del feed
+                </button>
+              )}
+              {!isSystem && isOwner && onDelete && (
                 <button
                   onClick={() => { handleDelete(); setShowMenu(false) }}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-slate-600 w-full transition"
@@ -80,7 +116,7 @@ export default function UserPostCard({
                   <Trash2 className="w-3.5 h-3.5" /> Eliminar post
                 </button>
               )}
-              {!isOwner && (
+              {!isSystem && !isOwner && (
                 <>
                   <button
                     onClick={() => { setReportTarget({ type: 'post', id: post.id }); setShowMenu(false) }}

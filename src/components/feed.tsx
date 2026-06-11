@@ -55,6 +55,7 @@ type UserPostItem = {
   content: string | null
   image_url: string | null
   created_at: string
+  is_system?: boolean
   profiles?: { username: string; full_name?: string | null; avatar_url?: string | null } | null
   post_reactions?: { id: string; emoji: string; user_id: string }[]
   post_comments?: { id: string; content: string; user_id: string; created_at: string; profiles?: { username: string } }[]
