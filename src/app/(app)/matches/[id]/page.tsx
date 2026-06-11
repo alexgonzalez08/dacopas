@@ -119,11 +119,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         prediction={prediction ?? null}
       />
 
-      {/* Alineaciones */}
-      {match.external_id && (
-        <Lineups externalId={match.external_id} status={match.status} cachedLineups={match.lineups ?? null} />
-      )}
-
       {/* Tabla del grupo */}
       {match.group_name && groupMatches.length > 0 && (
         <GroupStandings
