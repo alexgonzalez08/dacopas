@@ -289,6 +289,7 @@ function mapStatus(short: string): string {
 }
 
 function parseGroup(round: string): string | null {
-  const match = round.match(/Group\s+([A-Z])/i)
+  // Solo matchea letra suelta: "Group A", "Group B" — NO "Group Stage"
+  const match = round.match(/Group\s+([A-Z])\b(?!.*[a-z])/i)
   return match ? match[1].toUpperCase() : null
 }

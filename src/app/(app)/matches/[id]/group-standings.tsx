@@ -61,7 +61,7 @@ export default function GroupStandings({
 
   return (
     <div className="bg-slate-800 rounded-2xl p-5">
-      <h2 className="font-semibold mb-4 text-slate-300">Tabla — Grupo {groupName}</h2>
+      <h2 className="font-semibold mb-4 text-slate-300">{groupName ? `Tabla — Grupo ${groupName}` : 'Fase de Grupos'}</h2>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
