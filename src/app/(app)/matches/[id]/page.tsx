@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale'
 import TeamFlag from '@/components/team-flag'
 import MatchPrediction from './match-prediction'
 import GroupStandings from './group-standings'
+import Lineups from './lineups'
 import { Calendar, Clock } from 'lucide-react'
 import MatchTime from '@/components/match-time'
 import ShareButton from './share-button'
@@ -165,6 +166,11 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         match={match}
         prediction={prediction ?? null}
       />
+
+      {/* Alineaciones */}
+      {match.external_id && (
+        <Lineups externalId={match.external_id} status={match.status} />
+      )}
 
       {/* Tabla del grupo */}
       {match.stage === 'group' && groupMatches.length > 0 && (
