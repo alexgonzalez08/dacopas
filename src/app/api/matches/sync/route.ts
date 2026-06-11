@@ -53,10 +53,7 @@ async function runSync(request: Request) {
       }).eq('id', existing.id)
 
       if (resultChanged && status === 'finished' && homeScore !== null) {
-        await supabase.rpc('calculate_match_points', { p_match_id: existing.id })
-        updatedIds.push(existing.id)
-
-        // Notificar resultado final (push + in-app)
+        // Notificar resultado final (push + in-app) — solo una vez
         const { data: matchInfo } = await supabase
           .from('matches')
           .select('id, home_team, away_team, notified_finished')
@@ -64,6 +61,9 @@ async function runSync(request: Request) {
           .single()
 
         if (matchInfo && !matchInfo.notified_finished) {
+          await supabase.rpc('calculate_match_points', { p_match_id: existing.id })
+          updatedIds.push(existing.id)
+
           const title = '🏁 Resultado final'
           const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
           const url = `/matches/${existing.id}`
