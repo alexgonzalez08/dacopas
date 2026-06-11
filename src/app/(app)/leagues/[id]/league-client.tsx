@@ -94,7 +94,7 @@ function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredict
                       <span className="text-xs text-slate-500 shrink-0">Sin pronóstico</span>
                     )}
                     {isFinished && (
-                      <span className={`text-xs font-bold shrink-0 w-12 text-right ${pred.points === 3 ? 'text-yellow-400' : pred.points === 1 ? 'text-green-400' : 'text-slate-500'}`}>
+                      <span className={`text-xs font-bold shrink-0 w-12 text-right ${pred.points === 3 ? 'text-green-400' : pred.points === 1 ? 'text-yellow-400' : 'text-red-400'}`}>
                         {pred.points !== null ? `${pred.points} pts` : '— pts'}
                       </span>
                     )}

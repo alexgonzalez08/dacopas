@@ -281,7 +281,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   }
 
   const matchesWithPredictions = (allMatches ?? [])
-    .filter(m => m.status === 'live' || m.status === 'finished')
+    .filter(m => m.status === 'finished')
     .map(m => ({
       ...m,
       predictions: (predsByMatch.get(m.id) ?? []).map(p => ({
