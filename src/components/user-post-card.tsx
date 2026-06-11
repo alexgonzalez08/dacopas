@@ -137,27 +137,64 @@ export default function UserPostCard({
         </div>
       </div>
 
-      {/* Contenido */}
-      {post.content && (
-        <p className="px-4 pb-3 text-sm text-slate-200 leading-relaxed">{post.content}</p>
+      {/* Contenido sistema */}
+      {isSystem ? (
+        <div className="px-4 pb-4 space-y-3">
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+              <span className="text-lg shrink-0">🎯</span>
+              <div>
+                <p className="text-sm font-semibold text-white">Marcador exacto → <span className="text-yellow-400">3 puntos</span></p>
+                <p className="text-xs text-slate-400 mt-0.5">Incluye empates exactos (ej: 1-1 = 1-1)</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+              <span className="text-lg shrink-0">✅</span>
+              <div>
+                <p className="text-sm font-semibold text-white">Ganador correcto → <span className="text-yellow-400">1 punto</span></p>
+                <p className="text-xs text-slate-400 mt-0.5">Acertás quién gana pero no el marcador exacto</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+              <span className="text-lg shrink-0">✅</span>
+              <div>
+                <p className="text-sm font-semibold text-white">Empate no exacto → <span className="text-yellow-400">1 punto</span></p>
+                <p className="text-xs text-slate-400 mt-0.5">Predecís empate y hay empate, pero distintos goles</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            ⚠️ Los puntos aplican automáticamente en <span className="text-white font-medium">todos tus torneos</span>. Pronósticos bloqueados <span className="text-white font-medium">15 min antes</span> del partido.
+          </p>
+          <a href="/rules" className="inline-flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-300 transition font-medium">
+            Ver reglas completas →
+          </a>
+        </div>
+      ) : (
+        <>
+          {/* Contenido normal */}
+          {post.content && (
+            <p className="px-4 pb-3 text-sm text-slate-200 leading-relaxed">{post.content}</p>
+          )}
+          {post.image_url && (
+            <img src={post.image_url} alt="post" className="w-full max-h-96 object-cover" />
+          )}
+        </>
       )}
 
-      {/* Imagen */}
-      {post.image_url && (
-        <img src={post.image_url} alt="post" className="w-full max-h-96 object-cover" />
+      {/* Interacciones — solo posts normales */}
+      {!isSystem && (
+        <PostInteractionsGeneric
+          postId={post.id}
+          userId={userId}
+          userAvatarUrl={userAvatarUrl}
+          postOwnerId={post.user_id}
+          postOwnerUsername={post.profiles?.username ?? ''}
+          initialReactions={post.post_reactions ?? []}
+          initialComments={post.post_comments ?? []}
+          table="post"
+        />
       )}
-
-      {/* Interacciones */}
-      <PostInteractionsGeneric
-        postId={post.id}
-        userId={userId}
-        userAvatarUrl={userAvatarUrl}
-        postOwnerId={post.user_id}
-        postOwnerUsername={post.profiles?.username ?? ''}
-        initialReactions={post.post_reactions ?? []}
-        initialComments={post.post_comments ?? []}
-        table="post"
-      />
     </div>
     </>
   )
