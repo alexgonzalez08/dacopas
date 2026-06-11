@@ -5,9 +5,30 @@ import { es } from 'date-fns/locale'
 import TeamFlag from '@/components/team-flag'
 import MatchPrediction from './match-prediction'
 import GroupStandings from './group-standings'
-import Lineups from './lineups'
 import { Calendar, Clock } from 'lucide-react'
 import MatchTime from '@/components/match-time'
+import ShareButton from './share-button'
+import type { Metadata } from 'next'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: match } = await supabase.from('matches').select('home_team, away_team, status, home_score, away_score').eq('id', id).single()
+  if (!match) return {}
+  const hasScore = match.status === 'finished' || match.status === 'live'
+  const title = hasScore
+    ? `${match.home_team} ${match.home_score} - ${match.away_score} ${match.away_team}`
+    : `${match.home_team} vs ${match.away_team}`
+  const description = hasScore
+    ? `Resultado final: ${match.home_team} ${match.home_score} - ${match.away_score} ${match.away_team}. Registrá tu pronóstico en Dacopas.`
+    : `¡Registrá tu pronóstico para ${match.home_team} vs ${match.away_team} en Dacopas!`
+  return {
+    title,
+    description,
+    openGraph: { title, description, url: `https://www.dacopas.com/matches/${id}` },
+    twitter: { card: 'summary_large_image', title, description },
+  }
+}
 
 const STAGE_LABELS: Record<string, string> = {
   group: 'Fase de Grupos',
@@ -57,6 +78,15 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-6">
       {/* Header del partido */}
       <div className="bg-slate-800 rounded-2xl p-6">
+        <div className="flex justify-end mb-2">
+          <ShareButton
+            title={`${match.home_team} vs ${match.away_team}`}
+            text={match.status === 'finished'
+              ? `Resultado: ${match.home_team} ${match.home_score} - ${match.away_score} ${match.away_team}`
+              : `¡Registrá tu pronóstico para ${match.home_team} vs ${match.away_team} en Dacopas!`}
+            url={`https://www.dacopas.com/matches/${match.id}`}
+          />
+        </div>
         <div className="flex items-center gap-2 text-xs text-slate-400 mb-4 justify-center">
           <span>{match.group_name ? `Fase de Grupos · Grupo ${match.group_name}` : STAGE_LABELS[match.stage]}</span>
           <span>·</span>
