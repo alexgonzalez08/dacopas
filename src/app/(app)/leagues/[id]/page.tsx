@@ -269,7 +269,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const [{ data: allMatches }, { data: allPredictions }] = await Promise.all([
     supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score')
       .order('match_date', { ascending: true }),
-    supabase.from('predictions').select('user_id, match_id, home_score, away_score, points, status')
+    supabase.from('predictions').select('user_id, match_id, home_score, away_score, status')
       .in('user_id', memberIds)
       .eq('status', 'locked'),
   ])
@@ -278,6 +278,15 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   for (const pred of allPredictions ?? []) {
     if (!predsByMatch.has(pred.match_id)) predsByMatch.set(pred.match_id, [])
     predsByMatch.get(pred.match_id)!.push(pred)
+  }
+
+  function calcPoints(pred: { home_score: number | null; away_score: number | null }, match: { home_score: number | null; away_score: number | null }) {
+    if (pred.home_score === null || pred.away_score === null) return null
+    if (match.home_score === null || match.away_score === null) return null
+    if (pred.home_score === match.home_score && pred.away_score === match.away_score) return 3
+    const predWinner = pred.home_score > pred.away_score ? 'home' : pred.away_score > pred.home_score ? 'away' : 'draw'
+    const realWinner = match.home_score > match.away_score ? 'home' : match.away_score > match.home_score ? 'away' : 'draw'
+    return predWinner === realWinner ? 1 : 0
   }
 
   const matchesWithPredictions = (allMatches ?? [])
@@ -289,7 +298,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         username: usernameMap.get(p.user_id) ?? 'Usuario',
         home_score: p.home_score,
         away_score: p.away_score,
-        points: p.points,
+        points: calcPoints(p, m),
       })),
     }))
 
