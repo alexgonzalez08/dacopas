@@ -283,9 +283,11 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   function calcPoints(pred: { home_score: number | null; away_score: number | null }, match: { home_score: number | null; away_score: number | null }) {
     if (pred.home_score === null || pred.away_score === null) return null
     if (match.home_score === null || match.away_score === null) return null
-    if (pred.home_score === match.home_score && pred.away_score === match.away_score) return 3
-    const predWinner = pred.home_score > pred.away_score ? 'home' : pred.away_score > pred.home_score ? 'away' : 'draw'
-    const realWinner = match.home_score > match.away_score ? 'home' : match.away_score > match.home_score ? 'away' : 'draw'
+    const ph = Number(pred.home_score), pa = Number(pred.away_score)
+    const mh = Number(match.home_score), ma = Number(match.away_score)
+    if (ph === mh && pa === ma) return 3
+    const predWinner = ph > pa ? 'home' : pa > ph ? 'away' : 'draw'
+    const realWinner = mh > ma ? 'home' : ma > mh ? 'away' : 'draw'
     return predWinner === realWinner ? 1 : 0
   }
 
