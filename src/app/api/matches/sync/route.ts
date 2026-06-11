@@ -17,15 +17,22 @@ async function runSync(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const res = await fetch(`${FOOTBALL_API}/competitions/${COMPETITION_ID}/matches`, {
-    headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY! },
-  })
-
   const updatedIds: number[] = []
 
-  if (!res.ok) {
+  let res: Response | null = null
+  try {
+    res = await fetch(`${FOOTBALL_API}/competitions/${COMPETITION_ID}/matches`, {
+      headers: { 'X-Auth-Token': process.env.FOOTBALL_API_KEY! },
+    })
+  } catch (err) {
+    console.warn('Football API fetch failed (network error) — skipping score sync, continuing with notifications', err)
+  }
+
+  if (res && !res.ok) {
     console.warn(`Football API error ${res.status} — skipping score sync, continuing with notifications`)
-  } else {
+  }
+
+  if (res?.ok) {
 
   const { matches } = await res.json()
 
