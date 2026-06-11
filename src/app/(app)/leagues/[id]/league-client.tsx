@@ -3,11 +3,111 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { leaveLeague } from '@/lib/leagues'
-import { Shield, ChevronDown, LogOut, Loader2, Crown, Users, Check, X, Bell, Medal, Trophy, LayoutList, UserMinus } from 'lucide-react'
+import { Shield, ChevronDown, ChevronUp, LogOut, Loader2, Crown, Users, Check, X, Bell, Medal, Trophy, LayoutList, UserMinus } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
 import { sendPushNotification } from '@/lib/push'
 import Link from 'next/link'
 import LeagueChat from './league-chat'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+
+type MatchPrediction = {
+  user_id: string
+  username: string
+  home_score: number | null
+  away_score: number | null
+  points: number | null
+}
+
+type MatchWithPredictions = {
+  id: string
+  home_team: string
+  away_team: string
+  home_team_flag: string | null
+  away_team_flag: string | null
+  match_date: string
+  status: string
+  home_score: number | null
+  away_score: number | null
+  predictions: MatchPrediction[]
+}
+
+function TeamFlag({ flag, name }: { flag: string | null; name: string }) {
+  if (!flag) return <span className="text-xl">🏳️</span>
+  if (flag.startsWith('http')) return <img src={flag} alt={name} className="w-7 h-7 object-contain" />
+  return <span className="text-xl">{flag}</span>
+}
+
+function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredictions; currentUserId: string }) {
+  const [open, setOpen] = useState(false)
+  const isFinished = match.status === 'finished'
+  const isLive = match.status === 'live'
+  const isPending = !isFinished && !isLive
+  const date = new Date(match.match_date)
+
+  return (
+    <div className="bg-slate-800 rounded-2xl overflow-hidden">
+      <button onClick={() => setOpen(v => !v)} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-700/50 transition text-left">
+        <div className="shrink-0 w-14">
+          <p className="text-xs text-slate-500">{format(date, 'd MMM', { locale: es })}</p>
+          <p className="text-xs text-slate-400 font-medium">{format(date, 'HH:mm')}</p>
+        </div>
+        <div className="flex-1 flex items-center gap-1.5 min-w-0">
+          <TeamFlag flag={match.home_team_flag} name={match.home_team} />
+          <span className="text-xs font-medium truncate">{match.home_team}</span>
+          <div className="shrink-0 px-1.5">
+            {isFinished ? (
+              <span className="text-xs font-bold text-yellow-400">{match.home_score}-{match.away_score}</span>
+            ) : isLive ? (
+              <span className="text-xs font-bold text-green-400 animate-pulse">{match.home_score}-{match.away_score}</span>
+            ) : (
+              <span className="text-xs text-slate-500">vs</span>
+            )}
+          </div>
+          <span className="text-xs font-medium truncate">{match.away_team}</span>
+          <TeamFlag flag={match.away_team_flag} name={match.away_team} />
+        </div>
+        <div className="shrink-0">
+          {open ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-slate-700 px-4 py-3">
+          {isPending ? (
+            <p className="text-xs text-slate-500 text-center py-2">🔒 Las predicciones se revelarán al finalizar el partido</p>
+          ) : match.predictions.length === 0 ? (
+            <p className="text-xs text-slate-500 text-center py-2">Sin pronósticos registrados</p>
+          ) : (
+            <div className="space-y-1.5">
+              {match.predictions.map(pred => {
+                const isMe = pred.user_id === currentUserId
+                const hasPred = pred.home_score !== null && pred.away_score !== null
+                return (
+                  <div key={pred.user_id} className={`flex items-center gap-3 px-3 py-2 rounded-xl ${isMe ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-slate-700/40'}`}>
+                    <span className={`text-xs font-medium flex-1 truncate ${isMe ? 'text-yellow-400' : 'text-slate-300'}`}>
+                      @{pred.username}
+                    </span>
+                    {hasPred ? (
+                      <span className="text-sm font-bold text-white shrink-0">{pred.home_score} - {pred.away_score}</span>
+                    ) : (
+                      <span className="text-xs text-slate-500 shrink-0">Sin pronóstico</span>
+                    )}
+                    {isFinished && (
+                      <span className={`text-xs font-bold shrink-0 w-12 text-right ${pred.points === 3 ? 'text-yellow-400' : pred.points === 1 ? 'text-green-400' : 'text-slate-500'}`}>
+                        {pred.points !== null ? `${pred.points} pts` : '— pts'}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 type Role = 'admin' | 'moderator' | 'participant'
 type Member = {
@@ -70,6 +170,7 @@ export default function LeagueClient({
   leaderboard: initialLeaderboard = [],
   username,
   avatarUrl,
+  matches = [],
 }: {
   leagueId: string
   leagueName: string
@@ -82,9 +183,10 @@ export default function LeagueClient({
   leaderboard?: LeaderboardEntry[]
   username: string
   avatarUrl?: string | null
+  matches?: MatchWithPredictions[]
 }) {
   const router = useRouter()
-  const [tab, setTab] = useState<'gestion' | 'posiciones'>('posiciones')
+  const [tab, setTab] = useState<'gestion' | 'posiciones' | 'pronosticos'>('posiciones')
 
   // Swipe derecha → volver a lista de torneos
   const touchStartX = useRef<number | null>(null)
@@ -304,17 +406,23 @@ export default function LeagueClient({
         <div className="flex rounded-xl overflow-hidden border border-slate-700">
           <button
             onClick={() => setTab('posiciones')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
-            <Trophy className="w-4 h-4" /> Posiciones
+            <Trophy className="w-3.5 h-3.5" /> Posiciones
+          </button>
+          <button
+            onClick={() => setTab('pronosticos')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+          >
+            ⚽ Pronósticos
           </button>
           <button
             onClick={() => setTab('gestion')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition relative ${tab === 'gestion' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition relative ${tab === 'gestion' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
-            <LayoutList className="w-4 h-4" /> Gestión
+            <LayoutList className="w-3.5 h-3.5" /> Gestión
             {pendingCount > 0 && (
-              <span className="absolute top-1.5 right-3 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
+              <span className="absolute top-1.5 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5">
                 {pendingCount}
               </span>
             )}
@@ -351,6 +459,19 @@ export default function LeagueClient({
               username={username}
               avatarUrl={avatarUrl}
             />
+          </div>
+        )}
+
+        {/* Tab: Pronósticos */}
+        {tab === 'pronosticos' && (
+          <div className="space-y-2">
+            {matches.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
+            ) : (
+              matches.map(match => (
+                <MatchPredictionCard key={match.id} match={match} currentUserId={userId} />
+              ))
+            )}
           </div>
         )}
 
@@ -499,13 +620,57 @@ export default function LeagueClient({
     )
   }
 
-  // Vista sin tabs — moderadores y participantes (leaderboard ya renderizado en page.tsx)
+  // Vista con tabs — moderadores y participantes
   return (
-    <LeagueChat
-      leagueId={leagueId}
-      userId={userId}
-      username={username}
-      avatarUrl={avatarUrl}
-    />
+    <div className="space-y-4">
+      <div className="flex rounded-xl overflow-hidden border border-slate-700">
+        <button
+          onClick={() => setTab('posiciones')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+        >
+          <Trophy className="w-3.5 h-3.5" /> Posiciones
+        </button>
+        <button
+          onClick={() => setTab('pronosticos')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+        >
+          ⚽ Pronósticos
+        </button>
+      </div>
+
+      {tab === 'posiciones' && (
+        <div className="space-y-2">
+          {leaderboard.map((entry, i) => (
+            <div key={entry.user_id} className={`flex items-center gap-4 rounded-xl px-4 py-3 ${entry.user_id === userId ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800'}`}>
+              <span className={`w-6 text-center font-bold ${MEDAL_COLORS[i] ?? 'text-slate-400'}`}>
+                {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
+              </span>
+              <Link href={`/profile/${entry.username}`} className="flex-1 font-medium hover:text-yellow-400 transition">{entry.username}</Link>
+              <div className="text-right">
+                <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
+                <span className="text-slate-500 text-sm"> pts</span>
+              </div>
+              <div className="text-xs text-slate-500 hidden sm:block">
+                {entry.exact_results} exactos · {entry.correct_winner} ganador
+              </div>
+            </div>
+          ))}
+          {leaderboard.length === 0 && <p className="text-sm text-slate-500 text-center py-6">Aún no hay puntos registrados.</p>}
+          <LeagueChat leagueId={leagueId} userId={userId} username={username} avatarUrl={avatarUrl} />
+        </div>
+      )}
+
+      {tab === 'pronosticos' && (
+        <div className="space-y-2">
+          {matches.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
+          ) : (
+            matches.map(match => (
+              <MatchPredictionCard key={match.id} match={match} currentUserId={userId} />
+            ))
+          )}
+        </div>
+      )}
+    </div>
   )
 }

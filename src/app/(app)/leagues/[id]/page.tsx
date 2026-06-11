@@ -9,7 +9,6 @@ import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import LeagueHeaderMenu from './league-header-menu'
 import CopyCodeButton from './copy-code-button'
-import LeagueMatchPredictions from './league-match-predictions'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -397,37 +396,6 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         />
       )}
 
-      {/* Admins: leaderboard dentro de tabs en LeagueClient */}
-      {userRole !== 'admin' && (
-        <div>
-          <h2 className="font-semibold mb-3 text-slate-300">Tabla de posiciones</h2>
-          <div className="space-y-2">
-            {leaderboard.map((entry, i) => (
-              <div
-                key={entry.user_id}
-                className={`flex items-center gap-4 rounded-xl px-4 py-3 ${entry.user_id === user!.id ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800'}`}
-              >
-                <span className={`w-6 text-center font-bold ${medalColors[i] ?? 'text-slate-400'}`}>
-                  {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
-                </span>
-                <Link href={`/profile/${entry.username}`} className="flex-1 font-medium hover:text-yellow-400 transition">{entry.username}</Link>
-                <div className="text-right">
-                  <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
-                  <span className="text-slate-500 text-sm"> pts</span>
-                </div>
-                <div className="text-xs text-slate-500 hidden sm:block">
-                  {entry.exact_results} exactos · {entry.correct_winner} ganador
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <LeagueMatchPredictions
-        matches={matchesWithPredictions}
-        currentUserId={user!.id}
-      />
 
       <LeagueClient
         leagueId={id}
@@ -441,6 +409,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         leaderboard={leaderboard}
         username={currentMember?.profiles?.username ?? ''}
         avatarUrl={currentMember?.profiles?.avatar_url}
+        matches={matchesWithPredictions}
       />
     </div>
   )
