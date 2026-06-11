@@ -95,12 +95,45 @@ export async function POST(req: NextRequest) {
       </div>
 
       <!-- CTA Button -->
-      <div style="text-align:center">
+      <div style="text-align:center;margin-bottom:32px">
         <a href="${dashboardUrl}"
            style="display:inline-block;background:#eab308;color:#0a0f1e;font-weight:800;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;letter-spacing:0.3px">
           ¡Ir a mi cuenta →
         </a>
       </div>
+
+      <hr style="border:none;border-top:1px solid #1e293b;margin:0 0 28px 0">
+
+      <!-- Acceso desde cualquier dispositivo -->
+      <p style="color:#cbd5e1;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0 0 16px 0">
+        📱 Accedé desde cualquier dispositivo
+      </p>
+      <p style="color:#94a3b8;font-size:14px;margin:0 0 20px 0;line-height:1.7">
+        Podés usar Dacopas desde tu <strong style="color:#f1f5f9">computadora</strong> o instalarlo como app en tu celular:
+      </p>
+
+      <!-- iOS -->
+      <div style="background:#0a0f1e;border-radius:12px;padding:20px;margin-bottom:12px;border:1px solid #1e293b">
+        <p style="color:#f1f5f9;font-size:14px;font-weight:700;margin:0 0 12px 0">🍎 iPhone / iPad (iOS)</p>
+        <ol style="color:#94a3b8;font-size:13px;margin:0;padding-left:20px;line-height:2">
+          <li>Abrí <strong style="color:#f1f5f9">Safari</strong> y entrá a <a href="https://www.dacopas.com" style="color:#eab308;text-decoration:none">www.dacopas.com</a></li>
+          <li>Tocá el ícono de <strong style="color:#f1f5f9">Compartir</strong> ⬆️ (abajo al centro)</li>
+          <li>Seleccioná <strong style="color:#f1f5f9">"Agregar a pantalla de inicio"</strong></li>
+          <li>Tocá <strong style="color:#f1f5f9">"Agregar"</strong> — ¡listo! 🎉</li>
+        </ol>
+      </div>
+
+      <!-- Android -->
+      <div style="background:#0a0f1e;border-radius:12px;padding:20px;margin-bottom:0;border:1px solid #1e293b">
+        <p style="color:#f1f5f9;font-size:14px;font-weight:700;margin:0 0 8px 0">🤖 Android</p>
+        <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.7">
+          ¿Sos usuario de Android y querés instalar Dacopas como app?
+          Escribile directamente a <strong style="color:#f1f5f9">Alex González</strong>, desarrollador y creador de Dacopas,
+          a <a href="mailto:alexgf08@gmail.com" style="color:#eab308;text-decoration:none">alexgf08@gmail.com</a>
+          y con gusto te ayuda a instalarlo. 🙌
+        </p>
+      </div>
+
     </div>
 
     <!-- Footer -->
