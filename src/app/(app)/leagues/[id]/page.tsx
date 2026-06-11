@@ -9,6 +9,7 @@ import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import LeagueHeaderMenu from './league-header-menu'
 import CopyCodeButton from './copy-code-button'
+import LeagueMatchPredictions from './league-match-predictions'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -262,6 +263,35 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     }))
     .sort((a, b) => b.points - a.points)
 
+  // Partidos + predicciones de todos los miembros
+  const memberIds = members.map(m => m.user_id)
+  const usernameMap = new Map(members.map(m => [m.user_id, m.profiles?.username ?? 'Usuario']))
+
+  const [{ data: allMatches }, { data: allPredictions }] = await Promise.all([
+    supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score')
+      .order('match_date', { ascending: true }),
+    supabase.from('predictions').select('user_id, match_id, home_score, away_score, points, status')
+      .in('user_id', memberIds)
+      .eq('status', 'locked'),
+  ])
+
+  const predsByMatch = new Map<string, typeof allPredictions>()
+  for (const pred of allPredictions ?? []) {
+    if (!predsByMatch.has(pred.match_id)) predsByMatch.set(pred.match_id, [])
+    predsByMatch.get(pred.match_id)!.push(pred)
+  }
+
+  const matchesWithPredictions = (allMatches ?? []).map(m => ({
+    ...m,
+    predictions: (predsByMatch.get(m.id) ?? []).map(p => ({
+      user_id: p.user_id,
+      username: usernameMap.get(p.user_id) ?? 'Usuario',
+      home_score: p.home_score,
+      away_score: p.away_score,
+      points: p.points,
+    })),
+  }))
+
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
   const RANK_STYLES = [
     { medal: '🥇', text: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30' },
@@ -393,6 +423,11 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           </div>
         </div>
       )}
+
+      <LeagueMatchPredictions
+        matches={matchesWithPredictions}
+        currentUserId={user!.id}
+      />
 
       <LeagueClient
         leagueId={id}
