@@ -63,13 +63,30 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
   // Partidos del grupo para calcular tabla
   let groupMatches: any[] = []
-  if (match.group_name) {
-    const { data } = await supabase
+  if (match.stage === 'group') {
+    const { data: allGroupMatches } = await supabase
       .from('matches')
       .select('*')
-      .eq('group_name', match.group_name)
+      .eq('stage', 'group')
       .order('match_date', { ascending: true })
-    groupMatches = data ?? []
+
+    if (allGroupMatches) {
+      // Encontrar equipos del mismo grupo conectando por quién jugó contra quién
+      const groupTeams = new Set([match.home_team, match.away_team])
+      let changed = true
+      while (changed) {
+        changed = false
+        for (const m of allGroupMatches) {
+          const hasHome = groupTeams.has(m.home_team)
+          const hasAway = groupTeams.has(m.away_team)
+          if (hasHome && !hasAway) { groupTeams.add(m.away_team); changed = true }
+          if (hasAway && !hasHome) { groupTeams.add(m.home_team); changed = true }
+        }
+      }
+      groupMatches = allGroupMatches.filter(
+        m => groupTeams.has(m.home_team) && groupTeams.has(m.away_team)
+      )
+    }
   }
 
   const matchDate = new Date(match.match_date)
@@ -150,9 +167,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       />
 
       {/* Tabla del grupo */}
-      {match.group_name && groupMatches.length > 0 && (
+      {match.stage === 'group' && groupMatches.length > 0 && (
         <GroupStandings
-          groupName={match.group_name}
+          groupName={match.group_name ?? ''}
           matches={groupMatches}
           highlightTeams={[match.home_team, match.away_team]}
         />
