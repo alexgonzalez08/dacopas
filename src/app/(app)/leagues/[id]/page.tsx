@@ -280,16 +280,18 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     predsByMatch.get(pred.match_id)!.push(pred)
   }
 
-  const matchesWithPredictions = (allMatches ?? []).map(m => ({
-    ...m,
-    predictions: (predsByMatch.get(m.id) ?? []).map(p => ({
-      user_id: p.user_id,
-      username: usernameMap.get(p.user_id) ?? 'Usuario',
-      home_score: p.home_score,
-      away_score: p.away_score,
-      points: p.points,
-    })),
-  }))
+  const matchesWithPredictions = (allMatches ?? [])
+    .filter(m => m.status === 'live' || m.status === 'finished')
+    .map(m => ({
+      ...m,
+      predictions: (predsByMatch.get(m.id) ?? []).map(p => ({
+        user_id: p.user_id,
+        username: usernameMap.get(p.user_id) ?? 'Usuario',
+        home_score: p.home_score,
+        away_score: p.away_score,
+        points: p.points,
+      })),
+    }))
 
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
   const RANK_STYLES = [
