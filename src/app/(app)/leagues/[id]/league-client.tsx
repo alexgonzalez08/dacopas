@@ -454,12 +454,6 @@ export default function LeagueClient({
             {leaderboard.length === 0 && (
               <p className="text-sm text-slate-500 text-center py-6">Aún no hay puntos registrados.</p>
             )}
-            <LeagueChat
-              leagueId={leagueId}
-              userId={userId}
-              username={username}
-              avatarUrl={avatarUrl}
-            />
           </div>
         )}
 
@@ -617,6 +611,8 @@ export default function LeagueClient({
             </div>
           </div>
         )}
+
+        <LeagueChat leagueId={leagueId} userId={userId} username={username} avatarUrl={avatarUrl} />
       </div>
     )
   }
@@ -657,7 +653,6 @@ export default function LeagueClient({
             </div>
           ))}
           {leaderboard.length === 0 && <p className="text-sm text-slate-500 text-center py-6">Aún no hay puntos registrados.</p>}
-          <LeagueChat leagueId={leagueId} userId={userId} username={username} avatarUrl={avatarUrl} />
         </div>
       )}
 
@@ -672,6 +667,8 @@ export default function LeagueClient({
           )}
         </div>
       )}
+
+      <LeagueChat leagueId={leagueId} userId={userId} username={username} avatarUrl={avatarUrl} />
     </div>
   )
 }
