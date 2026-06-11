@@ -5,6 +5,7 @@ import { Match, Prediction } from '@/types'
 import { Lock, Clock, ChevronDown } from 'lucide-react'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
+import MatchTime from '@/components/match-time'
 import { es } from 'date-fns/locale'
 import { useRouter } from 'next/navigation'
 import PredictionsInfoModal from '@/components/predictions-info-modal'
@@ -117,7 +118,7 @@ export default function PredictionsClient({
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {format(new Date(match.match_date), 'HH:mm')}
+                        <MatchTime matchDate={match.match_date} />
                       </span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-400 font-medium">
                         {getGroupLabel(match)}

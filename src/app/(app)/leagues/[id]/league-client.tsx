@@ -10,6 +10,7 @@ import Link from 'next/link'
 import LeagueChat from './league-chat'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import MatchTime from '@/components/match-time'
 
 type MatchPrediction = {
   user_id: string
@@ -50,7 +51,7 @@ function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredict
       <button onClick={() => setOpen(v => !v)} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-700/50 transition text-left">
         <div className="shrink-0 w-14">
           <p className="text-xs text-slate-500">{format(date, 'd MMM', { locale: es })}</p>
-          <p className="text-xs text-slate-400 font-medium">{format(date, 'HH:mm')}</p>
+          <p className="text-xs text-slate-400 font-medium"><MatchTime matchDate={date} /></p>
         </div>
         <div className="flex-1 flex items-center gap-1.5 min-w-0">
           <TeamFlag flag={match.home_team_flag} name={match.home_team} />

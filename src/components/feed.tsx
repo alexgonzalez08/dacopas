@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { formatDistance, differenceInHours, differenceInMinutes, format, isToday, isTomorrow, startOfDay, addDays } from 'date-fns'
+import MatchTime from '@/components/match-time'
 import { es } from 'date-fns/locale'
 import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight } from 'lucide-react'
 import PostInteractions from './post-interactions'
@@ -131,7 +132,7 @@ function MatchPost({ item, now }: { item: MatchPost; now: string }) {
           <div className="flex items-center justify-between gap-2 mb-3">
             <span className="text-xs text-slate-400">{stage}</span>
             <span suppressHydrationWarning className="text-xs text-slate-400">
-              {format(matchDate, "d MMM · HH:mm", { locale: es })}
+              {format(matchDate, "d MMM · ", { locale: es })}<MatchTime matchDate={matchDate} />
             </span>
           </div>
           <div className="flex items-center justify-between">

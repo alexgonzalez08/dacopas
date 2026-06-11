@@ -1,9 +1,8 @@
 'use client'
 
-export default function MatchTime({ matchDate }: { matchDate: string }) {
-  const d = new Date(matchDate)
+export default function MatchTime({ matchDate }: { matchDate: string | Date }) {
+  const d = typeof matchDate === 'string' ? new Date(matchDate) : matchDate
   const h = String(d.getHours()).padStart(2, '0')
   const m = String(d.getMinutes()).padStart(2, '0')
-  return <>{h}:{m}</>
-
+  return <span suppressHydrationWarning>{h}:{m}</span>
 }

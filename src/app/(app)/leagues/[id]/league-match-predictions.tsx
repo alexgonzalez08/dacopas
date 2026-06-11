@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import MatchTime from '@/components/match-time'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 type MatchPrediction = {
@@ -48,7 +49,7 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
         {/* Fecha */}
         <div className="text-left shrink-0 w-16">
           <p className="text-xs text-slate-500">{format(date, 'd MMM', { locale: es })}</p>
-          <p className="text-xs text-slate-400 font-medium">{format(date, 'HH:mm')}</p>
+          <p className="text-xs text-slate-400 font-medium"><MatchTime matchDate={date} /></p>
         </div>
 
         {/* Equipos y marcador */}

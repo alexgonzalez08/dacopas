@@ -5,6 +5,7 @@ import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { useRouter } from 'next/navigation'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
+import MatchTime from '@/components/match-time'
 import { es } from 'date-fns/locale'
 import { Lock, Clock, CheckCircle, Info, ChevronRight, Save } from 'lucide-react'
 import Link from 'next/link'
@@ -130,7 +131,7 @@ export default function DashboardMatches({
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {format(new Date(match.match_date), 'HH:mm')}
+                        <MatchTime matchDate={match.match_date} />
                       </span>
                       {match.group_name && (
                         <span className="text-xs text-slate-500">
