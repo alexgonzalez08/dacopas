@@ -448,7 +448,8 @@ export default function NotificationsPanel({
     if (friendship) {
       await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendship.id)
       await supabase.from('notifications').insert({ user_id: notif.from_user.id, from_user_id: userId, type: 'follow_accepted' })
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
+      await supabase.from('notifications').delete().eq('id', notif.id)
+      setNotifications(prev => prev.filter(n => n.id !== notif.id))
     }
     setAccepting(null)
   }
@@ -458,7 +459,8 @@ export default function NotificationsPanel({
     setDeclining(notif.id)
     const supabase = createClient()
     await supabase.from('friendships').delete().eq('requester_id', notif.from_user.id).eq('addressee_id', userId).eq('status', 'pending')
-    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, declined: true, alreadyDeclined: true } : n))
+    await supabase.from('notifications').delete().eq('id', notif.id)
+    setNotifications(prev => prev.filter(n => n.id !== notif.id))
     setDeclining(null)
   }
 
@@ -491,8 +493,9 @@ export default function NotificationsPanel({
         })
       }
 
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, joined: true, alreadyJoined: true } : n))
-      setTimeout(() => router.push(`/leagues/${league.id}`), 1200)
+      await supabase.from('notifications').delete().eq('id', notif.id)
+      setNotifications(prev => prev.filter(n => n.id !== notif.id))
+      setTimeout(() => router.push(`/leagues/${league.id}`), 800)
     } catch (err: any) { setJoinError(err.message) }
     finally { setJoining(null) }
   }
