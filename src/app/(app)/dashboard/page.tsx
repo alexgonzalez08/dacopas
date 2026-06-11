@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import Feed, { FeedItem } from '@/components/feed'
 import { isPredictionLocked } from '@/lib/predictions'
 import DashboardClient from './dashboard-client'
@@ -6,6 +7,10 @@ import { getSuggestedFriends } from '@/lib/suggested-friends'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const supabaseAdmin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data: profile } = await supabase
@@ -84,15 +89,15 @@ export default async function DashboardPage() {
       .eq('is_system', false)
       .order('created_at', { ascending: false })
       .limit(30),
-    // Posts de sistema (visibles para todos)
-    supabase
+    // Posts de sistema (visibles para todos, usa admin para bypassear RLS)
+    supabaseAdmin
       .from('user_posts')
       .select('*, profiles(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
       .eq('is_system', true)
       .order('created_at', { ascending: false })
       .limit(10),
     // Posts de sistema ocultados por este usuario
-    supabase
+    supabaseAdmin
       .from('dismissed_posts')
       .select('post_id')
       .eq('user_id', user!.id),
