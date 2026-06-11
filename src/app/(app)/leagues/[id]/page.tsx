@@ -269,7 +269,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const [{ data: allMatches }, { data: allPredictions }] = await Promise.all([
     supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score')
       .order('match_date', { ascending: true }),
-    supabase.from('predictions').select('user_id, match_id, home_score, away_score, status')
+    adminSupabase.from('predictions').select('user_id, match_id, home_score, away_score, status')
       .in('user_id', memberIds)
       .eq('status', 'locked'),
   ])
