@@ -18,6 +18,7 @@ export default function LiveScore({ matchId, initialHomeScore, initialAwayScore,
   useEffect(() => {
     const supabase = createClient()
 
+    // Realtime
     const channel = supabase
       .channel(`match-${matchId}`)
       .on(
@@ -25,19 +26,38 @@ export default function LiveScore({ matchId, initialHomeScore, initialAwayScore,
         { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
         (payload) => {
           const m = payload.new as any
-          if (m.home_score !== homeScore || m.away_score !== awayScore) {
-            setFlash(true)
-            setTimeout(() => setFlash(false), 1500)
-          }
-          setHomeScore(m.home_score)
-          setAwayScore(m.away_score)
-          setStatus(m.status)
+          update(m.home_score, m.away_score, m.status)
         }
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Polling cada 30s como fallback
+    const poll = setInterval(async () => {
+      const { data } = await supabase
+        .from('matches')
+        .select('home_score, away_score, status')
+        .eq('id', matchId)
+        .single()
+      if (data) update(data.home_score, data.away_score, data.status)
+    }, 30_000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(poll)
+    }
   }, [matchId])
+
+  function update(h: number | null, a: number | null, s: string) {
+    setHomeScore(prev => {
+      if (prev !== h || awayScore !== a) {
+        setFlash(true)
+        setTimeout(() => setFlash(false), 1500)
+      }
+      return h
+    })
+    setAwayScore(a)
+    setStatus(s)
+  }
 
   if (status === 'finished') {
     return (
