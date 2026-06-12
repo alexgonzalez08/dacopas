@@ -65,7 +65,11 @@ async function runSync(request: Request) {
         updated_at: new Date().toISOString(),
       }).eq('id', existing.id)
 
-      if (resultChanged && status === 'live' && homeScore !== null && awayScore !== null) {
+      const prevTotal = (existing.home_score ?? 0) + (existing.away_score ?? 0)
+      const newTotal = (homeScore ?? 0) + (awayScore ?? 0)
+      const scoreChanged = resultChanged && status === 'live' && homeScore !== null && awayScore !== null
+
+      if (scoreChanged) {
         const { data: matchInfo } = await supabase
           .from('matches')
           .select('id, home_team, away_team')
@@ -73,13 +77,15 @@ async function runSync(request: Request) {
           .single()
 
         if (matchInfo) {
-          const title = '⚽ ¡Gooool!'
-          const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
+          const isCorrection = newTotal < prevTotal
           const url = `/matches/${existing.id}`
+          const title = isCorrection ? '🚫 Gol anulado' : '⚽ ¡Gooool!'
+          const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
+          const notifType = isCorrection ? 'goal_cancelled' : 'goal_scored'
 
           await sendPushToAllUsers(supabase, {
             title, body,
-            data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-goal-${existing.id}-${homeScore}-${awayScore}` },
+            data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-score-${existing.id}-${homeScore}-${awayScore}` },
           })
 
           const { data: profiles } = await supabase.from('profiles').select('id')
@@ -87,7 +93,7 @@ async function runSync(request: Request) {
             await supabase.from('notifications').insert(
               profiles.map(p => ({
                 user_id: p.id,
-                type: 'goal_scored',
+                type: notifType,
                 metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
               }))
             )
