@@ -65,6 +65,36 @@ async function runSync(request: Request) {
         updated_at: new Date().toISOString(),
       }).eq('id', existing.id)
 
+      if (resultChanged && status === 'live' && homeScore !== null && awayScore !== null) {
+        const { data: matchInfo } = await supabase
+          .from('matches')
+          .select('id, home_team, away_team')
+          .eq('id', existing.id)
+          .single()
+
+        if (matchInfo) {
+          const title = '⚽ ¡Gooool!'
+          const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
+          const url = `/matches/${existing.id}`
+
+          await sendPushToAllUsers(supabase, {
+            title, body,
+            data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-goal-${existing.id}-${homeScore}-${awayScore}` },
+          })
+
+          const { data: profiles } = await supabase.from('profiles').select('id')
+          if (profiles?.length) {
+            await supabase.from('notifications').insert(
+              profiles.map(p => ({
+                user_id: p.id,
+                type: 'goal_scored',
+                metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
+              }))
+            )
+          }
+        }
+      }
+
       if (resultChanged && status === 'finished' && homeScore !== null) {
         const { data: matchInfo } = await supabase
           .from('matches')
