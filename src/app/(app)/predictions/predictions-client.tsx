@@ -125,12 +125,7 @@ export default function PredictionsClient({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {locked && <span className="flex items-center gap-1 text-xs text-amber-400"><Lock className="w-3 h-3" /> Bloqueado</span>}
-                      {match.status === 'finished' && (
-                        <span className="text-xs text-green-400 font-semibold">
-                          {match.home_score} - {match.away_score}
-                        </span>
-                      )}
+                      {locked && <Lock className="w-3.5 h-3.5 text-amber-400" />}
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
@@ -170,6 +165,11 @@ export default function PredictionsClient({
                       </span>
                     </div>
                     <div className="mt-3 sm:mt-0 flex flex-col items-stretch sm:items-end gap-1">
+                      {match.status === 'finished' && match.home_score !== null && (
+                        <span className="text-xs text-green-400 font-semibold text-center sm:text-right">
+                          Resultado: {match.home_score} - {match.away_score}
+                        </span>
+                      )}
                       {!locked && errors[match.id] && <span className="text-xs text-red-400 sm:text-right">{errors[match.id]}</span>}
                       <button
                         onClick={!locked ? (e) => { e.stopPropagation(); handleSave(match) } : (e) => e.stopPropagation()}

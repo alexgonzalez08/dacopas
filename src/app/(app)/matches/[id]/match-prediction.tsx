@@ -45,9 +45,20 @@ export default function MatchPrediction({
     }
   }
 
+  const isFinished = match.status === 'finished'
+
   return (
     <div className="bg-slate-800 rounded-2xl p-5">
       <h2 className="font-semibold mb-4 text-slate-300">Tu predicción</h2>
+
+      {isFinished && match.home_score !== null && match.away_score !== null && (
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <span className="text-xs text-slate-400">Resultado final</span>
+          <span className="text-sm font-black text-yellow-400">
+            {match.home_score} - {match.away_score}
+          </span>
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <span className="text-sm text-slate-400 flex-1 text-right">{match.home_team}</span>
@@ -77,12 +88,7 @@ export default function MatchPrediction({
 
       <div className="mt-4 flex items-center justify-between">
         {!locked && <span className="text-xs text-red-400">{error}</span>}
-        {locked && (
-          <span className="text-xs text-amber-400 flex items-center gap-1">
-            <Lock className="w-3 h-3" />
-            {match.status === 'finished' ? 'El partido ya terminó' : 'Bloqueado (15 min antes)'}
-          </span>
-        )}
+        {locked && <Lock className="w-3.5 h-3.5 text-amber-400" />}
         <button
           onClick={!locked ? handleSave : undefined}
           disabled={locked || saving}
