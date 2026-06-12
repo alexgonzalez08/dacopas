@@ -166,7 +166,14 @@ export default async function DashboardPage() {
       sortDate: new Date(p.created_at),
     }))
 
-  const feed: FeedItem[] = [...matchPosts, ...activityPosts, ...userPostItems, ...systemPostItems].sort((a, b) => {
+  const seenFeedIds = new Set<string>()
+  const allItems = [...matchPosts, ...activityPosts, ...userPostItems, ...systemPostItems].filter(item => {
+    const id = String((item as any).id)
+    if (seenFeedIds.has(id)) return false
+    seenFeedIds.add(id)
+    return true
+  })
+  const feed: FeedItem[] = allItems.sort((a, b) => {
     if (a.kind === 'match' && b.kind === 'match') return a.sortDate.getTime() - b.sortDate.getTime()
     if (a.kind === 'match') return -1
     if (b.kind === 'match') return 1

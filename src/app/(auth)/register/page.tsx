@@ -64,6 +64,18 @@ function RegisterForm() {
 
     const supabase = createClient()
 
+    // Verificar alias disponible antes de crear cuenta
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', alias)
+      .maybeSingle()
+    if (existingProfile) {
+      setError('Ese alias ya está en uso, elegí otro.')
+      setLoading(false)
+      return
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,

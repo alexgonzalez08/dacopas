@@ -43,11 +43,18 @@ export default function UserPostCard({
 
   async function handleDismiss() {
     if (!onDelete) return
-    await fetch('/api/posts/dismiss', {
+    // Guardar en localStorage como fallback inmediato
+    try {
+      const dismissed = JSON.parse(localStorage.getItem('dismissed_system_posts') ?? '[]')
+      if (!dismissed.includes(post.id)) {
+        localStorage.setItem('dismissed_system_posts', JSON.stringify([...dismissed, post.id]))
+      }
+    } catch {}
+    fetch('/api/posts/dismiss', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ post_id: post.id }),
-    })
+    }).catch(() => {})
     onDelete(post.id)
   }
 

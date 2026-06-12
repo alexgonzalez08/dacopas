@@ -6,6 +6,7 @@ import WelcomeCard from '@/components/welcome-card'
 import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
 import { initPushNotifications } from '@/lib/push'
 import { Bell, X } from 'lucide-react'
+import WorldCupPromoModal from '@/components/world-cup-promo-modal'
 
 type League = { id: string; name: string }
 type SuggestedUser = { id: string; username: string; full_name: string | null; avatar_url: string | null; shared_leagues: string[] }
@@ -31,7 +32,15 @@ export default function DashboardClient({
   showWelcome: boolean
   suggestedFriends: SuggestedUser[]
 }) {
-  const [feed, setFeed] = useState<FeedItem[]>(initialFeed)
+  const [feed, setFeed] = useState<FeedItem[]>(() => {
+    try {
+      const dismissed = JSON.parse(localStorage.getItem('dismissed_system_posts') ?? '[]') as string[]
+      if (dismissed.length === 0) return initialFeed
+      return initialFeed.filter(i => !(i.kind === 'user_post' && (i as any).is_system && dismissed.includes((i as any).id)))
+    } catch {
+      return initialFeed
+    }
+  })
   const [showPushBanner, setShowPushBanner] = useState(false)
   const [pushStatus, setPushStatus] = useState<'idle' | 'loading' | 'error'>('idle')
 
@@ -92,6 +101,7 @@ export default function DashboardClient({
 
   return (
     <div className="space-y-4">
+      <WorldCupPromoModal />
       <h2 className="font-semibold text-lg">Los Temas Actuales</h2>
 
       {showPushBanner && (
