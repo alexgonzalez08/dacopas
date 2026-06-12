@@ -88,19 +88,6 @@ export default async function Lineups({
   externalId: string
   status: string
 }) {
-  if (status === 'scheduled') {
-    return (
-      <div className="bg-slate-800 rounded-2xl p-5">
-        <h2 className="font-semibold mb-2 text-slate-300 flex items-center gap-2">
-          <Users className="w-4 h-4" /> Alineaciones
-        </h2>
-        <p className="text-slate-500 text-sm">
-          Las alineaciones se publican aproximadamente 1 hora antes del partido.
-        </p>
-      </div>
-    )
-  }
-
   const lineups = await fetchLineups(externalId)
 
   if (!lineups) {
@@ -109,7 +96,7 @@ export default async function Lineups({
         <h2 className="font-semibold mb-2 text-slate-300 flex items-center gap-2">
           <Users className="w-4 h-4" /> Alineaciones
         </h2>
-        <p className="text-slate-500 text-sm">Alineaciones no disponibles todavía.</p>
+        <p className="text-slate-500 text-sm">Estamos esperando que el árbitro confirme las alineaciones.</p>
       </div>
     )
   }
