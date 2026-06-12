@@ -53,6 +53,7 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'match_starting_soon') return wrap('bg-orange-500/20', <Clock className="w-4 h-4 text-orange-400" />)
   if (type === 'match_started') return wrap('bg-green-500/20', <Clock className="w-4 h-4 text-green-400" />)
   if (type === 'welcome_blast') return wrap('bg-yellow-500/20', <Trophy className="w-4 h-4 text-yellow-400" />)
+  if (type === 'goal_scored') return wrap('bg-green-500/20', <Trophy className="w-4 h-4 text-green-400" />)
   if (type === 'match_finished') return wrap('bg-slate-700', <Trophy className="w-4 h-4 text-green-400" />)
   if (type === 'prediction_locked') return wrap('bg-green-500/20', <Check className="w-4 h-4 text-green-400" />)
   return wrap('bg-slate-700', <WhistleIcon className="w-4 h-4 text-slate-400" />)
@@ -317,6 +318,20 @@ function NotificationItem({
             </p>
             <Link href="/predictions" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
               <ExternalLink className="w-3 h-3" /> Ver pronóstico
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'goal_scored' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="font-semibold text-white">⚽ ¡Gooool! </span>
+              <span className="text-white font-bold">
+                {notif.metadata?.home_team} {notif.metadata?.home_score} - {notif.metadata?.away_score} {notif.metadata?.away_team}
+              </span>
+            </p>
+            <Link href={notif.metadata?.url ?? '/predictions'} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver partido
             </Link>
           </div>
         )}
