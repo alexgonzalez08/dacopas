@@ -9,6 +9,7 @@ import Lineups from './lineups'
 import { Calendar, Clock } from 'lucide-react'
 import MatchTime from '@/components/match-time'
 import ShareButton from './share-button'
+import LiveScore from './live-score'
 import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -128,24 +129,12 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           </div>
 
           {/* Marcador o VS */}
-          <div className="text-center">
-            {match.status === 'finished' ? (
-              <div className="text-4xl font-black text-yellow-400">
-                {match.home_score} - {match.away_score}
-              </div>
-            ) : match.status === 'live' ? (
-              <div className="text-4xl font-black text-green-400 animate-pulse">
-                {match.home_score} - {match.away_score}
-              </div>
-            ) : (
-              <div className="text-2xl font-bold text-slate-500">VS</div>
-            )}
-            <div className="mt-1">
-              {match.status === 'finished' && <span className="text-xs text-green-400 font-medium">Finalizado</span>}
-              {match.status === 'live' && <span className="text-xs text-green-400 font-medium animate-pulse">En curso</span>}
-              {match.status === 'scheduled' && <span className="text-xs text-slate-500">Programado</span>}
-            </div>
-          </div>
+          <LiveScore
+            matchId={match.id}
+            initialHomeScore={match.home_score}
+            initialAwayScore={match.away_score}
+            initialStatus={match.status}
+          />
 
           {/* Visitante */}
           <div className="flex-1 flex flex-col items-center gap-2 text-center">
