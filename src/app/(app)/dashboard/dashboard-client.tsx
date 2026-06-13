@@ -6,7 +6,6 @@ import WelcomeCard from '@/components/welcome-card'
 import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
 import { initPushNotifications } from '@/lib/push'
 import { Bell, X } from 'lucide-react'
-import WorldCupPromoModal from '@/components/world-cup-promo-modal'
 
 type League = { id: string; name: string }
 type SuggestedUser = { id: string; username: string; full_name: string | null; avatar_url: string | null; shared_leagues: string[] }
@@ -101,8 +100,7 @@ export default function DashboardClient({
 
   return (
     <div className="space-y-4">
-      <WorldCupPromoModal />
-      <h2 className="font-semibold text-lg">Los Temas Actuales</h2>
+<h2 className="font-semibold text-lg">Los Temas Actuales</h2>
 
       {showPushBanner && (
         <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
