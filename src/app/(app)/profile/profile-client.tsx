@@ -54,16 +54,12 @@ export default function ProfileClient({
     if (file.size > 3 * 1024 * 1024) { setError('La imagen no puede superar 3MB'); return }
     setUploadingAvatar(true)
     setError('')
-    const supabase = createClient()
-    const ext = file.name.split('.').pop()
-    const path = `${userId}/avatar.${ext}`
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(path, file, { upsert: true })
-    if (uploadError) { setError(uploadError.message); setUploadingAvatar(false); return }
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId)
-    setAvatarUrl(publicUrl + '?t=' + Date.now())
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/avatar', { method: 'POST', body: formData })
+    const data = await res.json()
+    if (!res.ok) { setError(data.error ?? 'Error al subir imagen'); setUploadingAvatar(false); return }
+    setAvatarUrl(data.publicUrl + '?t=' + Date.now())
     setUploadingAvatar(false)
   }
 
