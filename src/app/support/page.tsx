@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { MessageSquareWarning, Send, CheckCircle2 } from 'lucide-react'
 import BackButton from '@/components/back-button'
@@ -14,6 +15,7 @@ const SUBJECTS = [
 ]
 
 export default function SupportPage() {
+  const router = useRouter()
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
@@ -60,6 +62,12 @@ export default function SupportPage() {
         <CheckCircle2 className="w-14 h-14 text-green-400 mx-auto" />
         <h1 className="text-xl font-bold text-white">¡Reporte enviado!</h1>
         <p className="text-slate-400 text-sm">Recibimos tu mensaje. Te responderemos a <span className="text-white">{email}</span> a la brevedad.</p>
+        <button
+          onClick={() => router.back()}
+          className="mt-4 px-6 py-2.5 bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-600 transition"
+        >
+          Volver
+        </button>
       </div>
     )
   }
