@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MessageSquareWarning, Send, CheckCircle2 } from 'lucide-react'
 import BackButton from '@/components/back-button'
@@ -20,20 +20,23 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const [username, setUsername] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      setEmail(user.email ?? '')
+      const { data } = await supabase.from('profiles').select('username').eq('id', user.id).single()
+      setUsername(data?.username ?? null)
+    })
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!subject || !message || !email) return
     setLoading(true)
     setError('')
-
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    let username: string | null = null
-    if (user) {
-      const { data } = await supabase.from('profiles').select('username').eq('id', user.id).single()
-      username = data?.username ?? null
-    }
 
     const res = await fetch('/api/support', {
       method: 'POST',
@@ -62,7 +65,7 @@ export default function SupportPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6 pb-8">
+    <div className="max-w-lg mx-auto space-y-6 pb-8 px-4 pt-6">
       <BackButton />
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -77,7 +80,9 @@ export default function SupportPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="bg-slate-800 rounded-2xl p-5 space-y-4">
           <div>
-            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">Tu email de contacto</label>
+            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">
+              Email de contacto
+            </label>
             <input
               type="email"
               value={email}
@@ -89,7 +94,9 @@ export default function SupportPage() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">Tipo de problema</label>
+            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">
+              Tipo de problema
+            </label>
             <select
               value={subject}
               onChange={e => setSubject(e.target.value)}
@@ -102,7 +109,9 @@ export default function SupportPage() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">Descripción</label>
+            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">
+              Descripción
+            </label>
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
