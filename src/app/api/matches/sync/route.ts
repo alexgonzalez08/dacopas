@@ -67,7 +67,7 @@ async function runSync(request: Request) {
 
       const prevTotal = (existing.home_score ?? 0) + (existing.away_score ?? 0)
       const newTotal = (homeScore ?? 0) + (awayScore ?? 0)
-      const scoreChanged = resultChanged && status === 'live' && homeScore !== null && awayScore !== null
+      const scoreChanged = resultChanged && status === 'live' && homeScore !== null && awayScore !== null && newTotal !== prevTotal
 
       if (scoreChanged) {
         const { data: matchInfo } = await supabase
