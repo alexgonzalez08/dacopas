@@ -432,7 +432,7 @@ export default function LeagueClient({
 
         {/* Tab: Posiciones */}
         {tab === 'posiciones' && (
-          <div className="space-y-2">
+          <div className="space-y-2 pb-24 md:pb-0">
             {leaderboard.map((entry, i) => (
               <div
                 key={entry.user_id}
@@ -636,7 +636,7 @@ export default function LeagueClient({
       </div>
 
       {tab === 'posiciones' && (
-        <div className="space-y-2">
+        <div className="space-y-2 pb-24 md:pb-0">
           {leaderboard.map((entry, i) => (
             <div key={entry.user_id} className={`flex items-center gap-4 rounded-xl px-4 py-3 ${entry.user_id === userId ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800'}`}>
               <span className={`w-6 text-center font-bold ${MEDAL_COLORS[i] ?? 'text-slate-400'}`}>
