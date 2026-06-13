@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       .from('matches')
       .select('*')
       .in('status', ['scheduled', 'live'])
-      .gte('match_date', new Date().toISOString())
+      .gte('match_date', new Date().toISOString().slice(0, 10))
       .order('match_date', { ascending: true })
       .limit(50),
     supabase.from('predictions').select('*').eq('user_id', user!.id),
@@ -105,10 +105,12 @@ export default async function DashboardPage() {
   ])
 
   const predMap = new Map((predictions ?? []).map(p => [p.match_id, p]))
-  const available = (allUpcoming ?? []).filter(m => !isPredictionLocked(m))
+  const allMatches = allUpcoming ?? []
+  const available = allMatches.filter(m => !isPredictionLocked(m))
   const todayStr = new Date().toISOString().slice(0, 10)
-  const todayMatches = available.filter(m => m.match_date.slice(0, 10) === todayStr)
-  const displayMatches = todayMatches.length > 0
+  const todayMatches = allMatches.filter(m => m.match_date.slice(0, 10) === todayStr)
+  const todayHasUnlocked = todayMatches.some(m => !isPredictionLocked(m))
+  const displayMatches = todayHasUnlocked
     ? todayMatches
     : available.length > 0
       ? available.filter(m => m.match_date.slice(0, 10) === available[0].match_date.slice(0, 10))
