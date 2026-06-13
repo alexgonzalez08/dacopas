@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { formatDistance, differenceInHours, differenceInMinutes, format, isToday, isTomorrow, startOfDay, addDays } from 'date-fns'
 import MatchTime from '@/components/match-time'
 import { es } from 'date-fns/locale'
-import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight } from 'lucide-react'
+import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight, Save, CheckCircle } from 'lucide-react'
 import PostInteractions from './post-interactions'
 import UserPostCard from './user-post-card'
 import UserAvatar from './user-avatar'
+import { useState } from 'react'
+import { upsertPrediction } from '@/lib/predictions'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -99,15 +101,42 @@ function getUrgencyLabel(matchDate: Date, now: string): { label: string; accent:
 
 // ─── Match Post ───────────────────────────────────────────────────────────────
 
-function MatchPost({ item, now }: { item: MatchPost; now: string }) {
+function MatchPost({ item, userId, now }: { item: MatchPost; userId: string; now: string }) {
   const matchDate = new Date(item.match_date)
   const { label, accent } = getUrgencyLabel(matchDate, now)
-  const hasPrediction = item.prediction !== null
   const stage = item.group_name ? `Grupo ${item.group_name}` : (STAGE_LABELS[item.stage] ?? item.stage)
+
+  const [home, setHome] = useState(item.prediction ? String(item.prediction.home_score) : '')
+  const [away, setAway] = useState(item.prediction ? String(item.prediction.away_score) : '')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSave() {
+    const h = parseInt(home)
+    const a = parseInt(away)
+    if (isNaN(h) || isNaN(a) || h < 0 || a < 0) {
+      setError('Ingresá un resultado válido')
+      return
+    }
+    setSaving(true)
+    setError('')
+    try {
+      await upsertPrediction(userId, item.id, h, a)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      setError('Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const hasPrediction = saved || item.prediction !== null
 
   return (
     <div className="bg-slate-800 rounded-2xl overflow-hidden">
-      {/* Header del post */}
+      {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <div className="w-9 h-9 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0">
           <span className="text-lg">⚽</span>
@@ -118,49 +147,65 @@ function MatchPost({ item, now }: { item: MatchPost; now: string }) {
         </div>
       </div>
 
-      {/* Cuerpo */}
-      <div className="px-4 pb-2">
-        <p className="text-sm text-slate-300 mb-4">
-          ¡No te olvides de enviar tu predicción para el encuentro entre{' '}
-          <span className="font-semibold text-white">{item.home_team}</span>
-          {' '}y{' '}
-          <span className="font-semibold text-white">{item.away_team}</span>!
-        </p>
-
-        {/* Card del partido */}
-        <div className="bg-slate-700/50 rounded-xl p-4 mb-3">
-          <div className="flex items-center justify-between gap-2 mb-3">
+      {/* Predicción inline */}
+      <div className="px-4 pb-4">
+        <div className="bg-slate-700/50 rounded-xl p-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <span className="text-xs text-slate-400">{stage}</span>
             <span suppressHydrationWarning className="text-xs text-slate-400">
               {format(matchDate, "d MMM · ", { locale: es })}<MatchTime matchDate={matchDate} />
             </span>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <div className="flex flex-col items-center gap-1 flex-1">
               <TeamCrest name={item.home_team} flagUrl={item.home_team_flag} />
-              <span className="text-sm font-semibold text-center leading-tight">{item.home_team}</span>
+              <span className="text-xs font-semibold text-center leading-tight">{item.home_team}</span>
             </div>
-            <span className="text-slate-500 font-bold text-xl px-4">VS</span>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number" min="0" max="20"
+                value={home}
+                onChange={e => setHome(e.target.value)}
+                className="w-11 text-center bg-slate-600 border border-slate-500 rounded-lg py-1.5 text-lg font-bold focus:outline-none focus:border-yellow-500"
+              />
+              <span className="text-slate-500 font-bold">-</span>
+              <input
+                type="number" min="0" max="20"
+                value={away}
+                onChange={e => setAway(e.target.value)}
+                className="w-11 text-center bg-slate-600 border border-slate-500 rounded-lg py-1.5 text-lg font-bold focus:outline-none focus:border-yellow-500"
+              />
+            </div>
             <div className="flex flex-col items-center gap-1 flex-1">
               <TeamCrest name={item.away_team} flagUrl={item.away_team_flag} />
-              <span className="text-sm font-semibold text-center leading-tight">{item.away_team}</span>
+              <span className="text-xs font-semibold text-center leading-tight">{item.away_team}</span>
             </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs text-red-400">{error}</span>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-500 text-slate-900 text-xs font-semibold rounded-lg hover:bg-yellow-400 disabled:opacity-50 transition"
+            >
+              {saving
+                ? <span className="w-3.5 h-3.5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                : saved || hasPrediction
+                  ? <><CheckCircle className="w-3.5 h-3.5" /> {saved ? 'Guardado' : 'Actualizar'}</>
+                  : <><Save className="w-3.5 h-3.5" /> Guardar</>
+              }
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Footer / CTA */}
+      {/* Footer — ver detalles */}
       <Link
         href={`/matches/${item.id}`}
-        className={`flex items-center justify-between px-4 py-3 border-t border-slate-700 hover:bg-slate-700/40 transition ${hasPrediction ? 'text-green-400' : 'text-yellow-400'}`}
+        className="flex items-center justify-between px-4 py-3 border-t border-slate-700 hover:bg-slate-700/40 transition text-slate-400 hover:text-white"
       >
-        <span className="text-sm font-semibold flex items-center gap-2">
-          {hasPrediction
-            ? <><CheckCircle2 className="w-4 h-4" /> Predicción enviada — editar</>
-            : <><Clock className="w-4 h-4" /> Enviar predicción</>
-          }
-        </span>
-        <ChevronRight className="w-4 h-4" />
+        <span className="text-xs flex items-center gap-1">Ver detalles del partido</span>
+        <ChevronRight className="w-3.5 h-3.5" />
       </Link>
     </div>
   )
@@ -361,7 +406,7 @@ export default function Feed({
   return (
     <div className="space-y-3">
       {items.map(item => {
-        if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} now={serverNow} />
+        if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} userId={userId} now={serverNow} />
         if (item.kind === 'user_post') return (
           <UserPostCard
             key={item.id}
