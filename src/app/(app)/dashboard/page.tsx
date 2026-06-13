@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       .from('matches')
       .select('*')
       .in('status', ['scheduled', 'live'])
-      .gte('match_date', new Date(new Date().setUTCHours(0, 0, 0, 0) - 6 * 60 * 60 * 1000).toISOString())
+      .gte('match_date', new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString())
       .order('match_date', { ascending: true })
       .limit(50),
     supabase.from('predictions').select('*').eq('user_id', user!.id),
@@ -107,14 +107,12 @@ export default async function DashboardPage() {
   const predMap = new Map((predictions ?? []).map(p => [p.match_id, p]))
   const allMatches = allUpcoming ?? []
   const available = allMatches.filter(m => !isPredictionLocked(m))
-  const CR_OFFSET_MS = -6 * 60 * 60 * 1000
-  const toCRDate = (utcStr: string) => new Date(new Date(utcStr).getTime() + CR_OFFSET_MS).toISOString().slice(0, 10)
-  const todayStrCR = toCRDate(new Date().toISOString())
-  const todayUnlocked = available.filter(m => toCRDate(m.match_date) === todayStrCR)
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayUnlocked = available.filter(m => m.match_date.slice(0, 10) === todayStr)
   const displayMatches = todayUnlocked.length > 0
     ? todayUnlocked
     : available.length > 0
-      ? available.filter(m => toCRDate(m.match_date) === toCRDate(available[0].match_date))
+      ? available.filter(m => m.match_date.slice(0, 10) === available[0].match_date.slice(0, 10))
       : []
 
   const matchPosts: FeedItem[] = displayMatches.map(m => ({
