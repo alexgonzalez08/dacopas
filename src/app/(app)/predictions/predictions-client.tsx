@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { Match, Prediction } from '@/types'
-import { Lock, Clock } from 'lucide-react'
+import { Lock, Clock, ChevronDown, ChevronRight } from 'lucide-react'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
 import MatchTime from '@/components/match-time'
@@ -109,6 +109,14 @@ export default function PredictionsClient({
   }, {})
   const days = Object.keys(byDate).sort()
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const [openDays, setOpenDays] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(days.map(d => [d, d >= todayStr]))
+  )
+  function toggleDay(day: string) {
+    setOpenDays(v => ({ ...v, [day]: !v[day] }))
+  }
+
   return (
     <>
     <UnsavedChangesGuard isDirty={isDirty} id="predictions" />
@@ -120,10 +128,19 @@ export default function PredictionsClient({
 
       {days.map(day => (
         <div key={day}>
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider px-1 mb-3">
-            {format(new Date(day + 'T12:00:00'), "EEEE d 'de' MMMM", { locale: es })}
-          </h2>
-          <div className="space-y-3">
+          <button
+            onClick={() => toggleDay(day)}
+            className="w-full flex items-center justify-between px-1 mb-3 group"
+          >
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider group-hover:text-slate-200 transition">
+              {format(new Date(day + 'T12:00:00'), "EEEE d 'de' MMMM", { locale: es })}
+            </h2>
+            {openDays[day]
+              ? <ChevronDown className="w-4 h-4 text-slate-500" />
+              : <ChevronRight className="w-4 h-4 text-slate-500" />
+            }
+          </button>
+          {openDays[day] && <div className="space-y-3">
             {byDate[day].map(match => {
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
@@ -209,7 +226,7 @@ export default function PredictionsClient({
                 </div>
               )
             })}
-          </div>
+          </div>}
         </div>
       ))}
     </div>
