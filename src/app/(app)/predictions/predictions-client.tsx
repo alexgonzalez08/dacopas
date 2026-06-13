@@ -151,8 +151,10 @@ export default function PredictionsClient({
             {byDate[day].map(match => {
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
+              const c = committed[match.id] ?? { home: '', away: '' }
+              const matchDirty = !locked && (s.home !== c.home || s.away !== c.away)
               return (
-                <div key={match.id} onClick={() => navigate(`/matches/${match.id}`)} className="bg-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-750 transition-colors">
+                <div key={match.id} onClick={() => navigate(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -164,6 +166,7 @@ export default function PredictionsClient({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
+                      {matchDirty && <span className="text-xs text-yellow-400 font-semibold">Sin guardar</span>}
                       {locked && <Lock className="w-3.5 h-3.5 text-amber-400" />}
                     </div>
                   </div>
