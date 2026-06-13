@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import AppHeader from '@/components/app-header'
 import ChatToast from '@/components/chat-toast'
 import SWRegister from '@/components/sw-register'
+import { UnsavedChangesProvider } from '@/lib/unsaved-changes-context'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -18,11 +19,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string; image_url: string | null }] : [])
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <SWRegister />
-      <AppHeader username={profile?.username ?? ''} avatarUrl={profile?.avatar_url} userId={user.id} />
-      <main className="flex-1 px-4 py-6 max-w-3xl mx-auto w-full pb-24 md:pb-6">{children}</main>
-      <ChatToast userId={user.id} leagues={leagues} />
-    </div>
+    <UnsavedChangesProvider>
+      <div className="flex flex-col min-h-screen">
+        <SWRegister />
+        <AppHeader username={profile?.username ?? ''} avatarUrl={profile?.avatar_url} userId={user.id} />
+        <main className="flex-1 px-4 py-6 max-w-3xl mx-auto w-full pb-24 md:pb-6">{children}</main>
+        <ChatToast userId={user.id} leagues={leagues} />
+      </div>
+    </UnsavedChangesProvider>
   )
 }

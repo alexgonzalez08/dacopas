@@ -58,7 +58,7 @@ export default function MatchPrediction({
 
   return (
     <>
-    <UnsavedChangesGuard isDirty={isDirty} />
+    <UnsavedChangesGuard isDirty={isDirty} id="match-prediction" />
     <div className="bg-slate-800 rounded-2xl p-5">
       <h2 className="font-semibold mb-4 text-slate-300">Tu predicción</h2>
 

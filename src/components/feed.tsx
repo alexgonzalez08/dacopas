@@ -9,9 +9,9 @@ import PostInteractions from './post-interactions'
 import UserPostCard from './user-post-card'
 import UserAvatar from './user-avatar'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { upsertPrediction } from '@/lib/predictions'
 import UnsavedChangesGuard from './unsaved-changes-guard'
+import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -421,10 +421,9 @@ export default function Feed({
   onDeletePost?: (id: string) => void
   serverNow: string
 }) {
-  const router = useRouter()
   const dirtyRef = useRef<Set<number>>(new Set())
   const [hasAnyDirty, setHasAnyDirty] = useState(false)
-  const [pendingNav, setPendingNav] = useState<string | null>(null)
+  const { navigate } = useUnsavedChanges()
 
   const handleDirtyChange = useCallback((id: number, dirty: boolean) => {
     if (dirty) dirtyRef.current.add(id)
@@ -433,12 +432,8 @@ export default function Feed({
   }, [])
 
   const handleNavigate = useCallback((href: string) => {
-    if (dirtyRef.current.size > 0) {
-      setPendingNav(href)
-    } else {
-      router.push(href)
-    }
-  }, [router])
+    navigate(href)
+  }, [navigate])
 
   if (items.length === 0) {
     return (
@@ -451,29 +446,7 @@ export default function Feed({
 
   return (
     <>
-    <UnsavedChangesGuard isDirty={hasAnyDirty} />
-    {pendingNav && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
-        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
-          <p className="text-white font-semibold text-base mb-1">Cambios sin guardar</p>
-          <p className="text-slate-400 text-sm mb-6">Tenés predicciones modificadas que no fueron guardadas. ¿Querés salir igual?</p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setPendingNav(null)}
-              className="flex-1 py-2.5 rounded-xl border border-slate-600 text-slate-300 text-sm font-semibold hover:bg-slate-700 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => { setPendingNav(null); router.push(pendingNav) }}
-              className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-400 transition"
-            >
-              Salir sin guardar
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+    <UnsavedChangesGuard isDirty={hasAnyDirty} id="feed" />
     <div className="space-y-3">
       {items.map(item => {
         if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} userId={userId} now={serverNow} onDirtyChange={handleDirtyChange} onNavigate={handleNavigate} />

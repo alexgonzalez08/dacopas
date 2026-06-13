@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check, BookOpen, MessageSquareWarning } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
+import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
 import WhistleIcon from '@/components/whistle-icon'
 import FriendsIcon from '@/components/friends-icon'
 import ProfileIcon from '@/components/profile-icon'
@@ -52,6 +53,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   const notifRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const pathname = usePathname()
+  const { navigate } = useUnsavedChanges()
 
   useEffect(() => {
     import('@/lib/push').then(({ initPushNotifications }) => {
@@ -168,7 +170,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
               window.scrollTo({ top: 0, behavior: 'smooth' })
               router.refresh()
             } else {
-              router.push('/dashboard')
+              navigate('/dashboard')
             }
           }}
           className="flex items-center gap-2 font-bold text-yellow-400"

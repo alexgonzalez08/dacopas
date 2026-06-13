@@ -7,9 +7,9 @@ import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
 import MatchTime from '@/components/match-time'
 import { es } from 'date-fns/locale'
-import { useRouter } from 'next/navigation'
 import PredictionsInfoModal from '@/components/predictions-info-modal'
 import UnsavedChangesGuard from '@/components/unsaved-changes-guard'
+import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
 
 type MatchWithPrediction = Match & { prediction: Prediction | null }
 
@@ -32,7 +32,7 @@ export default function PredictionsClient({
   matches: MatchWithPrediction[]
   predictionsInfoSeen: boolean
 }) {
-  const router = useRouter()
+  const { navigate } = useUnsavedChanges()
   const [, setTick] = useState(0)
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 60_000)
@@ -58,7 +58,6 @@ export default function PredictionsClient({
     matches.forEach(m => { init[m.id] = !!m.prediction })
     return init
   })
-  const [pendingNav, setPendingNav] = useState<string | null>(null)
 
   const isDirty = matches.some(m => {
     if (isPredictionLocked(m)) return false
@@ -67,9 +66,8 @@ export default function PredictionsClient({
     return s && c && (s.home !== c.home || s.away !== c.away)
   })
 
-  function navigate(href: string) {
-    if (isDirty) { setPendingNav(href); return }
-    router.push(href)
+  function handleCardNav(href: string) {
+    navigate(href)
   }
 
   async function handleSave(match: Match) {
@@ -113,29 +111,7 @@ export default function PredictionsClient({
 
   return (
     <>
-    <UnsavedChangesGuard isDirty={isDirty} />
-    {pendingNav && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
-        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
-          <p className="text-white font-semibold text-base mb-1">Cambios sin guardar</p>
-          <p className="text-slate-400 text-sm mb-6">Tenés predicciones modificadas que no fueron guardadas. ¿Querés salir igual?</p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setPendingNav(null)}
-              className="flex-1 py-2.5 rounded-xl border border-slate-600 text-slate-300 text-sm font-semibold hover:bg-slate-700 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => { setPendingNav(null); router.push(pendingNav) }}
-              className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-400 transition"
-            >
-              Salir sin guardar
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+    <UnsavedChangesGuard isDirty={isDirty} id="predictions" />
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Mis Predicciones</h1>
@@ -154,7 +130,7 @@ export default function PredictionsClient({
               const c = committed[match.id] ?? { home: '', away: '' }
               const matchDirty = !locked && (s.home !== c.home || s.away !== c.away)
               return (
-                <div key={match.id} onClick={() => navigate(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
+                <div key={match.id} onClick={() => handleCardNav(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
