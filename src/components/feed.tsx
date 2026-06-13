@@ -8,7 +8,8 @@ import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight, Save, CheckC
 import PostInteractions from './post-interactions'
 import UserPostCard from './user-post-card'
 import UserAvatar from './user-avatar'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { upsertPrediction } from '@/lib/predictions'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -105,12 +106,30 @@ function MatchPost({ item, userId, now }: { item: MatchPost; userId: string; now
   const matchDate = new Date(item.match_date)
   const { label, accent } = getUrgencyLabel(matchDate, now)
   const stage = item.group_name ? `Grupo ${item.group_name}` : (STAGE_LABELS[item.stage] ?? item.stage)
+  const router = useRouter()
 
-  const [home, setHome] = useState(item.prediction ? String(item.prediction.home_score) : '')
-  const [away, setAway] = useState(item.prediction ? String(item.prediction.away_score) : '')
+  const savedHome = item.prediction ? String(item.prediction.home_score) : ''
+  const savedAway = item.prediction ? String(item.prediction.away_score) : ''
+
+  const [home, setHome] = useState(savedHome)
+  const [away, setAway] = useState(savedAway)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  const isDirty = (home !== savedHome || away !== savedAway) && !saved
+
+  useEffect(() => {
+    if (!isDirty) return
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isDirty])
+
+  const handleNavigate = useCallback((href: string) => {
+    if (isDirty && !confirm('Tenés cambios sin guardar en tu predicción. ¿Querés salir igual?')) return
+    router.push(href)
+  }, [isDirty, router])
 
   async function handleSave() {
     const h = parseInt(home)
@@ -200,13 +219,16 @@ function MatchPost({ item, userId, now }: { item: MatchPost; userId: string; now
       </div>
 
       {/* Footer — ver detalles */}
-      <Link
-        href={`/matches/${item.id}`}
-        className="flex items-center justify-between px-4 py-3 border-t border-slate-700 hover:bg-slate-700/40 transition text-slate-400 hover:text-white"
+      <button
+        onClick={() => handleNavigate(`/matches/${item.id}`)}
+        className="w-full flex items-center justify-between px-4 py-3 border-t border-slate-700 hover:bg-slate-700/40 transition text-slate-400 hover:text-white"
       >
-        <span className="text-xs flex items-center gap-1">Ver detalles del partido</span>
+        <span className="text-xs flex items-center gap-2">
+          Ver detalles del partido
+          {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />}
+        </span>
         <ChevronRight className="w-3.5 h-3.5" />
-      </Link>
+      </button>
     </div>
   )
 }
