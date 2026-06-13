@@ -108,10 +108,9 @@ export default async function DashboardPage() {
   const allMatches = allUpcoming ?? []
   const available = allMatches.filter(m => !isPredictionLocked(m))
   const todayStr = new Date().toISOString().slice(0, 10)
-  const todayMatches = allMatches.filter(m => m.match_date.slice(0, 10) === todayStr)
-  const todayHasUnlocked = todayMatches.some(m => !isPredictionLocked(m))
-  const displayMatches = todayHasUnlocked
-    ? todayMatches
+  const todayUnlocked = available.filter(m => m.match_date.slice(0, 10) === todayStr)
+  const displayMatches = todayUnlocked.length > 0
+    ? todayUnlocked
     : available.length > 0
       ? available.filter(m => m.match_date.slice(0, 10) === available[0].match_date.slice(0, 10))
       : []
