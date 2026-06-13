@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MessageCircle, Send, Trash2, Smile } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -50,6 +50,7 @@ export default function PostInteractionsGeneric({
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [showEmojiComment, setShowEmojiComment] = useState(false)
+  const [reactorsModal, setReactorsModal] = useState<{ emoji: string; users: string[] } | null>(null)
   const commentInputRef = useRef<HTMLInputElement>(null)
 
   const myReaction = reactions.find(r => r.user_id === userId)
@@ -145,18 +146,30 @@ export default function PostInteractionsGeneric({
       {(totalReactions > 0 || totalComments > 0) && (
         <div className="flex items-center gap-1.5 px-4 pt-2 pb-1 flex-wrap">
           {grouped.filter(g => g.count > 0).map(g => (
-            <div key={g.emoji} className="relative group/reaction">
+            <div key={g.emoji} className="relative group/reaction flex items-center rounded-full overflow-hidden">
+              {/* Emoji — toggle reacción */}
               <button
                 onClick={() => handleReaction(g.emoji)}
-                className={`flex items-center gap-1 text-sm rounded-full px-2.5 py-0.5 transition ${
+                className={`flex items-center gap-1 text-sm pl-2.5 pr-1.5 py-0.5 transition ${
                   myReaction?.emoji === g.emoji
-                    ? 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-300'
+                    ? 'bg-yellow-500/20 text-yellow-300'
                     : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                 }`}
               >
                 <span>{g.emoji}</span>
-                <span className="text-xs font-medium">{g.count}</span>
               </button>
+              {/* Contador — ver quiénes reaccionaron */}
+              <button
+                onClick={() => setReactorsModal({ emoji: g.emoji, users: g.users })}
+                className={`text-xs font-medium pr-2.5 pl-1 py-0.5 transition ${
+                  myReaction?.emoji === g.emoji
+                    ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                    : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                }`}
+              >
+                {g.count}
+              </button>
+              {/* Tooltip desktop */}
               <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/reaction:block z-20 pointer-events-none">
                 <div className="bg-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
                   {g.users.join(', ')}
@@ -296,6 +309,32 @@ export default function PostInteractionsGeneric({
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Modal de reactores — mobile */}
+      {reactorsModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 px-4 pb-6 sm:pb-0"
+          onClick={() => setReactorsModal(null)}
+        >
+          <div
+            className="bg-slate-800 rounded-2xl p-5 w-full max-w-xs shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-center text-2xl mb-3">{reactorsModal.emoji}</p>
+            <div className="space-y-2">
+              {reactorsModal.users.map(u => (
+                <p key={u} className="text-sm text-slate-200 text-center font-medium">@{u}</p>
+              ))}
+            </div>
+            <button
+              onClick={() => setReactorsModal(null)}
+              className="mt-4 w-full py-2 rounded-xl bg-slate-700 text-slate-300 text-sm font-semibold hover:bg-slate-600 transition"
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       )}
     </div>
