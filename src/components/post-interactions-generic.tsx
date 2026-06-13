@@ -11,7 +11,7 @@ const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false })
 
 const EMOJIS = ['❤️', '👍', '🔥', '😂', '😮', '🎯']
 
-type Reaction = { id: string; emoji: string; user_id: string }
+type Reaction = { id: string; emoji: string; user_id: string; profiles?: { username: string } | null }
 type Comment = {
   id: string
   content: string
@@ -69,7 +69,8 @@ export default function PostInteractionsGeneric({
       .select()
       .single()
     if (data) {
-      setReactions(r => [...r.filter(x => x.id !== myReaction?.id), data])
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single()
+      setReactions(r => [...r.filter(x => x.id !== myReaction?.id), { ...data, profiles: { username: profile?.username ?? '…' } }])
       // Notificar al dueño del post (no a uno mismo)
       if (postOwnerId && postOwnerId !== userId && table === 'post') {
         const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single()
@@ -133,6 +134,7 @@ export default function PostInteractionsGeneric({
   const grouped = EMOJIS.map(emoji => ({
     emoji,
     count: reactions.filter(r => r.emoji === emoji).length,
+    users: reactions.filter(r => r.emoji === emoji).map(r => r.profiles?.username ?? '…'),
   }))
   const totalReactions = reactions.length
   const totalComments = comments.length
@@ -143,18 +145,24 @@ export default function PostInteractionsGeneric({
       {(totalReactions > 0 || totalComments > 0) && (
         <div className="flex items-center gap-1.5 px-4 pt-2 pb-1 flex-wrap">
           {grouped.filter(g => g.count > 0).map(g => (
-            <button
-              key={g.emoji}
-              onClick={() => handleReaction(g.emoji)}
-              className={`flex items-center gap-1 text-sm rounded-full px-2.5 py-0.5 transition ${
-                myReaction?.emoji === g.emoji
-                  ? 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-300'
-                  : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-              }`}
-            >
-              <span>{g.emoji}</span>
-              <span className="text-xs font-medium">{g.count}</span>
-            </button>
+            <div key={g.emoji} className="relative group/reaction">
+              <button
+                onClick={() => handleReaction(g.emoji)}
+                className={`flex items-center gap-1 text-sm rounded-full px-2.5 py-0.5 transition ${
+                  myReaction?.emoji === g.emoji
+                    ? 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-300'
+                    : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                }`}
+              >
+                <span>{g.emoji}</span>
+                <span className="text-xs font-medium">{g.count}</span>
+              </button>
+              <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/reaction:block z-20 pointer-events-none">
+                <div className="bg-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
+                  {g.users.join(', ')}
+                </div>
+              </div>
+            </div>
           ))}
           {totalComments > 0 && (
             <button
