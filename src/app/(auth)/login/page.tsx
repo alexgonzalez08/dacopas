@@ -100,6 +100,10 @@ function LoginForm() {
         ¿No tenés cuenta?{' '}
         <Link href={next ? `/register?next=${encodeURIComponent(next)}` : '/register'} className="text-yellow-400 hover:underline">Registrarse</Link>
       </p>
+      <p className="text-center text-slate-600 text-xs mt-2">
+        ¿Tenés un problema?{' '}
+        <Link href="/support" className="text-slate-400 hover:text-yellow-400 hover:underline transition">Reportarlo acá</Link>
+      </p>
     </form>
   )
 }

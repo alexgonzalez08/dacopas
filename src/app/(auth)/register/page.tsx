@@ -199,6 +199,10 @@ function RegisterForm() {
         ¿Ya tenés cuenta?{' '}
         <Link href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'} className="text-yellow-400 hover:underline">Iniciar sesión</Link>
       </p>
+      <p className="text-center text-slate-600 text-xs mt-2">
+        ¿Tenés un problema?{' '}
+        <Link href="/support" className="text-slate-400 hover:text-yellow-400 hover:underline transition">Reportarlo acá</Link>
+      </p>
     </form>
   )
 }
