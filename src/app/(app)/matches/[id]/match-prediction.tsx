@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Match, Prediction } from '@/types'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { Lock } from 'lucide-react'
+import UnsavedChangesGuard from '@/components/unsaved-changes-guard'
 
 export default function MatchPrediction({
   userId,
@@ -13,8 +14,13 @@ export default function MatchPrediction({
   match: Match
   prediction: Prediction | null
 }) {
-  const [home, setHome] = useState(prediction ? String(prediction.home_score) : '')
-  const [away, setAway] = useState(prediction ? String(prediction.away_score) : '')
+  const initialHome = prediction ? String(prediction.home_score) : ''
+  const initialAway = prediction ? String(prediction.away_score) : ''
+
+  const [home, setHome] = useState(initialHome)
+  const [away, setAway] = useState(initialAway)
+  const [committedHome, setCommittedHome] = useState(initialHome)
+  const [committedAway, setCommittedAway] = useState(initialAway)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -24,6 +30,7 @@ export default function MatchPrediction({
     return () => clearInterval(interval)
   }, [])
   const locked = isPredictionLocked(match)
+  const isDirty = !locked && (home !== committedHome || away !== committedAway)
 
   async function handleSave() {
     const h = parseInt(home)
@@ -36,6 +43,8 @@ export default function MatchPrediction({
     setError('')
     try {
       await upsertPrediction(userId, match.id, h, a)
+      setCommittedHome(String(h))
+      setCommittedAway(String(a))
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -48,6 +57,8 @@ export default function MatchPrediction({
   const isFinished = match.status === 'finished'
 
   return (
+    <>
+    <UnsavedChangesGuard isDirty={isDirty} />
     <div className="bg-slate-800 rounded-2xl p-5">
       <h2 className="font-semibold mb-4 text-slate-300">Tu predicción</h2>
 
@@ -106,5 +117,6 @@ export default function MatchPrediction({
         </button>
       </div>
     </div>
+    </>
   )
 }

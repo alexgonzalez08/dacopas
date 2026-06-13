@@ -11,6 +11,7 @@ import UserAvatar from './user-avatar'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { upsertPrediction } from '@/lib/predictions'
+import UnsavedChangesGuard from './unsaved-changes-guard'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -422,11 +423,13 @@ export default function Feed({
 }) {
   const router = useRouter()
   const dirtyRef = useRef<Set<number>>(new Set())
+  const [hasAnyDirty, setHasAnyDirty] = useState(false)
   const [pendingNav, setPendingNav] = useState<string | null>(null)
 
   const handleDirtyChange = useCallback((id: number, dirty: boolean) => {
     if (dirty) dirtyRef.current.add(id)
     else dirtyRef.current.delete(id)
+    setHasAnyDirty(dirtyRef.current.size > 0)
   }, [])
 
   const handleNavigate = useCallback((href: string) => {
@@ -448,6 +451,7 @@ export default function Feed({
 
   return (
     <>
+    <UnsavedChangesGuard isDirty={hasAnyDirty} />
     {pendingNav && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
         <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">

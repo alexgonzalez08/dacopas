@@ -9,6 +9,7 @@ import MatchTime from '@/components/match-time'
 import { es } from 'date-fns/locale'
 import { useRouter } from 'next/navigation'
 import PredictionsInfoModal from '@/components/predictions-info-modal'
+import UnsavedChangesGuard from '@/components/unsaved-changes-guard'
 
 type MatchWithPrediction = Match & { prediction: Prediction | null }
 
@@ -112,6 +113,7 @@ export default function PredictionsClient({
 
   return (
     <>
+    <UnsavedChangesGuard isDirty={isDirty} />
     {pendingNav && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
         <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
