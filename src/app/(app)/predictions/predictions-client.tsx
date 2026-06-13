@@ -130,14 +130,14 @@ export default function PredictionsClient({
         <div key={day}>
           <button
             onClick={() => toggleDay(day)}
-            className="w-full flex items-center justify-between px-1 mb-3 group"
+            className="w-full flex items-center justify-between px-4 py-3 mb-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
           >
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider group-hover:text-slate-200 transition">
+            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider group-hover:text-white transition">
               {format(new Date(day + 'T12:00:00'), "EEEE d 'de' MMMM", { locale: es })}
             </h2>
             {openDays[day]
-              ? <ChevronDown className="w-4 h-4 text-slate-500" />
-              : <ChevronRight className="w-4 h-4 text-slate-500" />
+              ? <ChevronDown className="w-4 h-4 text-slate-400" />
+              : <ChevronRight className="w-4 h-4 text-slate-400" />
             }
           </button>
           {openDays[day] && <div className="space-y-3">
