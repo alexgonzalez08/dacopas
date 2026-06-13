@@ -113,16 +113,18 @@ function MatchPost({ item, userId, now, onDirtyChange, onNavigate }: {
   const { label, accent } = getUrgencyLabel(matchDate, now)
   const stage = item.group_name ? `Grupo ${item.group_name}` : (STAGE_LABELS[item.stage] ?? item.stage)
 
-  const savedHome = item.prediction ? String(item.prediction.home_score) : ''
-  const savedAway = item.prediction ? String(item.prediction.away_score) : ''
+  const initialHome = item.prediction ? String(item.prediction.home_score) : ''
+  const initialAway = item.prediction ? String(item.prediction.away_score) : ''
 
-  const [home, setHome] = useState(savedHome)
-  const [away, setAway] = useState(savedAway)
+  const [home, setHome] = useState(initialHome)
+  const [away, setAway] = useState(initialAway)
+  const [committedHome, setCommittedHome] = useState(initialHome)
+  const [committedAway, setCommittedAway] = useState(initialAway)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
-  const isDirty = (home !== savedHome || away !== savedAway) && !saved
+  const isDirty = home !== committedHome || away !== committedAway
 
   useEffect(() => {
     onDirtyChange(item.id, isDirty)
@@ -142,6 +144,8 @@ function MatchPost({ item, userId, now, onDirtyChange, onNavigate }: {
     setError('')
     try {
       await upsertPrediction(userId, item.id, h, a)
+      setCommittedHome(String(h))
+      setCommittedAway(String(a))
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
