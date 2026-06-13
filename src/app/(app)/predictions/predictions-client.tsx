@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { Match, Prediction } from '@/types'
-import { Lock, Clock, ChevronDown } from 'lucide-react'
+import { Lock, Clock } from 'lucide-react'
 import TeamFlag from '@/components/team-flag'
 import { format } from 'date-fns'
 import MatchTime from '@/components/match-time'
@@ -38,17 +38,17 @@ export default function PredictionsClient({
     return () => clearInterval(interval)
   }, [])
 
-  const [scores, setScores] = useState<Record<number, { home: string; away: string }>>(() => {
+  const initScores = () => {
     const init: Record<number, { home: string; away: string }> = {}
     matches.forEach(m => {
-      if (m.prediction) {
-        init[m.id] = { home: String(m.prediction.home_score), away: String(m.prediction.away_score) }
-      } else {
-        init[m.id] = { home: '', away: '' }
-      }
+      init[m.id] = m.prediction
+        ? { home: String(m.prediction.home_score), away: String(m.prediction.away_score) }
+        : { home: '', away: '' }
     })
     return init
-  })
+  }
+  const [scores, setScores] = useState<Record<number, { home: string; away: string }>>(initScores)
+  const [committed, setCommitted] = useState<Record<number, { home: string; away: string }>>(initScores)
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
   const [errors, setErrors] = useState<Record<number, string>>({})
@@ -57,6 +57,19 @@ export default function PredictionsClient({
     matches.forEach(m => { init[m.id] = !!m.prediction })
     return init
   })
+  const [pendingNav, setPendingNav] = useState<string | null>(null)
+
+  const isDirty = matches.some(m => {
+    if (isPredictionLocked(m)) return false
+    const s = scores[m.id]
+    const c = committed[m.id]
+    return s && c && (s.home !== c.home || s.away !== c.away)
+  })
+
+  function navigate(href: string) {
+    if (isDirty) { setPendingNav(href); return }
+    router.push(href)
+  }
 
   async function handleSave(match: Match) {
     const s = scores[match.id]
@@ -70,6 +83,7 @@ export default function PredictionsClient({
     setErrors(e => ({ ...e, [match.id]: '' }))
     try {
       await upsertPrediction(userId, match.id, home, away)
+      setCommitted(v => ({ ...v, [match.id]: { home: String(home), away: String(away) } }))
       setHasPrediction(v => ({ ...v, [match.id]: true }))
       setSaved(v => ({ ...v, [match.id]: true }))
       setTimeout(() => setSaved(v => ({ ...v, [match.id]: false })), 2000)
@@ -97,9 +111,32 @@ export default function PredictionsClient({
   const days = Object.keys(byDate).sort()
 
   return (
+    <>
+    {pendingNav && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
+        <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
+          <p className="text-white font-semibold text-base mb-1">Cambios sin guardar</p>
+          <p className="text-slate-400 text-sm mb-6">Tenés predicciones modificadas que no fueron guardadas. ¿Querés salir igual?</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setPendingNav(null)}
+              className="flex-1 py-2.5 rounded-xl border border-slate-600 text-slate-300 text-sm font-semibold hover:bg-slate-700 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => { setPendingNav(null); router.push(pendingNav) }}
+              className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-400 transition"
+            >
+              Salir sin guardar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Mis Pronósticos</h1>
+        <h1 className="text-2xl font-bold">Mis Predicciones</h1>
         <PredictionsInfoModal userId={userId} autoOpen={!predictionsInfoSeen} />
       </div>
 
@@ -113,7 +150,7 @@ export default function PredictionsClient({
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
               return (
-                <div key={match.id} onClick={() => router.push(`/matches/${match.id}`)} className="bg-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-750 transition-colors">
+                <div key={match.id} onClick={() => navigate(`/matches/${match.id}`)} className="bg-slate-800 rounded-xl p-4 cursor-pointer hover:bg-slate-750 transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -195,5 +232,6 @@ export default function PredictionsClient({
         </div>
       ))}
     </div>
+    </>
   )
 }
