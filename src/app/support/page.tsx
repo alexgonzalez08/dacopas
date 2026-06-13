@@ -1,8 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { MessageSquareWarning, Send, CheckCircle2 } from 'lucide-react'
+import { MessageSquareWarning, Send, CheckCircle2, ImagePlus, X } from 'lucide-react'
 import BackButton from '@/components/back-button'
 
 const SUBJECTS = [
@@ -23,6 +23,9 @@ export default function SupportPage() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
   const [username, setUsername] = useState<string | null>(null)
+  const [image, setImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const imageRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -34,16 +37,37 @@ export default function SupportPage() {
     })
   }, [])
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { setError('La imagen no puede superar 5MB'); return }
+    setImage(file)
+    setImagePreview(URL.createObjectURL(file))
+    setError('')
+  }
+
+  function removeImage() {
+    setImage(null)
+    setImagePreview(null)
+    if (imageRef.current) imageRef.current.value = ''
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!subject || !message || !email) return
     setLoading(true)
     setError('')
 
+    const formData = new FormData()
+    formData.append('email', email)
+    formData.append('subject', subject)
+    formData.append('message', message)
+    if (username) formData.append('username', username)
+    if (image) formData.append('image', image)
+
     const res = await fetch('/api/support', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, subject, message, username }),
+      body: formData,
     })
 
     if (!res.ok) {
@@ -127,6 +151,48 @@ export default function SupportPage() {
               required
               rows={5}
               className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-yellow-500 resize-none"
+            />
+          </div>
+
+          {/* Imagen opcional */}
+          <div>
+            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-1.5 block">
+              Captura de pantalla <span className="text-slate-500 normal-case font-normal">(opcional)</span>
+            </label>
+            <p className="text-xs text-slate-500 mb-2.5">
+              Una imagen vale más que mil palabras. Si podés adjuntar una captura de la pantalla donde ocurre el problema, nos ayudará a resolverlo mucho más rápido.
+            </p>
+            {imagePreview ? (
+              <div className="relative">
+                <img
+                  src={imagePreview}
+                  alt="Vista previa"
+                  className="w-full max-h-48 object-contain rounded-xl bg-slate-900 border border-slate-600"
+                />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 w-7 h-7 bg-slate-800/80 text-slate-300 hover:text-white rounded-full flex items-center justify-center transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => imageRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-600 rounded-xl text-sm text-slate-400 hover:text-slate-200 hover:border-slate-400 transition"
+              >
+                <ImagePlus className="w-4 h-4" />
+                Adjuntar imagen (PNG, JPG — máx 5MB)
+              </button>
+            )}
+            <input
+              ref={imageRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={handleImageChange}
             />
           </div>
         </div>
