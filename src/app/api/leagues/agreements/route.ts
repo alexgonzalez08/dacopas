@@ -77,10 +77,15 @@ export async function POST(req: NextRequest) {
   const allMembers = members ?? []
   const nonAdminMembers = allMembers.filter(m => m.user_id !== user.id)
 
-  // Crear votos pendientes para todos los miembros (admin client para saltar RLS)
+  // Crear votos: creador auto-aceptado, resto pendientes
   if (allMembers.length > 0) {
     await admin.from('league_agreement_votes').insert(
-      allMembers.map(m => ({ agreement_id: agreement.id, user_id: m.user_id, status: 'pending' }))
+      allMembers.map(m => ({
+        agreement_id: agreement.id,
+        user_id: m.user_id,
+        status: m.user_id === user.id ? 'accepted' : 'pending',
+        voted_at: m.user_id === user.id ? new Date().toISOString() : null,
+      }))
     )
   }
 
