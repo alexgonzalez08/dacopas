@@ -13,7 +13,7 @@ type Member = {
   role: Role
   profiles: { username: string; full_name: string | null; avatar_url: string | null } | null
 }
-type Vote = { id: string; user_id: string; status: 'pending' | 'accepted' | 'declined'; voted_at: string | null }
+type Vote = { id: string; user_id: string; status: 'pending' | 'accepted' | 'declined' | 'waived'; voted_at: string | null }
 type Agreement = {
   id: string
   title: string
@@ -54,6 +54,11 @@ function VoteStatusBadge({ status }: { status: Vote['status'] }) {
       <X className="w-3 h-3" /> Denegado
     </span>
   )
+  if (status === 'waived') return (
+    <span className="inline-flex items-center gap-1 text-xs text-slate-400 font-medium">
+      <X className="w-3 h-3" /> Eximido
+    </span>
+  )
   return (
     <span className="inline-flex items-center gap-1 text-xs text-orange-400 font-medium">
       <Clock className="w-3 h-3" /> En Espera
@@ -86,6 +91,7 @@ export default function LeagueAgreements({
   const [formContent, setFormContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [voting, setVoting] = useState<string | null>(null)
+  const [waiving, setWaiving] = useState<string | null>(null)
   const [formError, setFormError] = useState('')
 
   const isAdmin = userRole === 'admin'
@@ -196,6 +202,36 @@ export default function LeagueAgreements({
     setVoting(null)
   }
 
+  async function handleWaive(agreementId: string, targetUserId: string) {
+    setWaiving(targetUserId)
+    const res = await fetch(`/api/leagues/agreements/${agreementId}/waive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: targetUserId }),
+    })
+    const json = await res.json()
+    if (res.ok) {
+      const newAgreementStatus = json.agreementStatus as Agreement['status']
+      const now = new Date().toISOString()
+      setAgreements(prev => prev.map(a => {
+        if (a.id !== agreementId) return a
+        return {
+          ...a,
+          status: newAgreementStatus,
+          votes: a.votes.map(v => v.user_id === targetUserId ? { ...v, status: 'waived' as const, voted_at: now } : v),
+        }
+      }))
+      if (selected?.id === agreementId) {
+        setSelected(s => s ? {
+          ...s,
+          status: newAgreementStatus,
+          votes: s.votes.map(v => v.user_id === targetUserId ? { ...v, status: 'waived' as const, voted_at: now } : v),
+        } : s)
+      }
+    }
+    setWaiving(null)
+  }
+
   const memberMap = new Map(members.map(m => [m.user_id, m]))
   const adminMember = members.find(m => m.user_id === userId && m.role === 'admin')
     || members.find(m => m.role === 'admin')
@@ -260,6 +296,7 @@ export default function LeagueAgreements({
     const myVote = myVoteMap.get(selected.id) ?? selected.votes.find(v => v.user_id === userId)
     const canVote = myVote?.status === 'pending' && selected.status === 'pending'
     const canEdit = isAdmin && selected.status === 'denied' && selected.created_by === userId
+    const canWaive = isAdmin && selected.status === 'pending' && selected.created_by === userId
 
     return (
       <div className="space-y-4">
@@ -298,6 +335,8 @@ export default function LeagueAgreements({
               const vote = myVoteMap.get(selected.id) && m.user_id === userId
                 ? (myVoteMap.get(selected.id) ?? selected.votes.find(v => v.user_id === m.user_id))
                 : selected.votes.find(v => v.user_id === m.user_id)
+              const isPending = (vote?.status ?? 'pending') === 'pending'
+              const isWaivable = canWaive && m.user_id !== userId && isPending
               return (
                 <div key={m.user_id} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
@@ -311,6 +350,19 @@ export default function LeagueAgreements({
                     />
                   </div>
                   <VoteStatusBadge status={vote?.status ?? 'pending'} />
+                  {isWaivable && (
+                    <button
+                      onClick={() => handleWaive(selected.id, m.user_id)}
+                      disabled={!!waiving}
+                      title="Eximir firma"
+                      className="p-1 text-slate-500 hover:text-red-400 transition disabled:opacity-40"
+                    >
+                      {waiving === m.user_id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <X className="w-3.5 h-3.5" />
+                      }
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -389,7 +441,7 @@ export default function LeagueAgreements({
           {agreements.map(a => {
             const myVote = myVoteMap.get(a.id) ?? a.votes.find(v => v.user_id === userId)
             const accepted = a.votes.filter(v => v.status === 'accepted').length
-            const total = a.votes.length
+            const total = a.votes.filter(v => v.status !== 'waived').length
             const needsMyVote = myVote?.status === 'pending' && a.status === 'pending'
 
             return (
