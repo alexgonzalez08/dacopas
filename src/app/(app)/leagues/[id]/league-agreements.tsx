@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import UserAvatar from '@/components/user-avatar'
 import AgreementsInfoModal from '@/components/agreements-info-modal'
+import UnsavedChangesGuard from '@/components/unsaved-changes-guard'
 
 type Role = 'admin' | 'moderator' | 'participant'
 type Member = {
@@ -201,8 +202,13 @@ export default function LeagueAgreements({
 
   // ——— MODAL FORMULARIO ———
   if (showForm) {
+    const isDirty = editing
+      ? formTitle !== editing.title || formContent !== editing.content
+      : formTitle.trim().length > 0 || formContent.trim().length > 0
+
     return (
       <div className="space-y-4">
+        <UnsavedChangesGuard isDirty={isDirty} id="agreement-form" />
         <div className="flex items-center gap-3">
           <button onClick={() => setShowForm(false)} className="p-1.5 text-slate-400 hover:text-white transition">
             <ChevronLeft className="w-5 h-5" />
