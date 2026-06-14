@@ -12,8 +12,7 @@ export async function POST(req: NextRequest) {
   if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
   if (file.size > 3 * 1024 * 1024) return NextResponse.json({ error: 'La imagen no puede superar 3MB' }, { status: 400 })
 
-  const ext = file.name.split('.').pop()
-  const path = `${user.id}/avatar.${ext}`
+  const path = `${user.id}/avatar.jpg`
   const buffer = Buffer.from(await file.arrayBuffer())
 
   const admin = createAdmin(
@@ -28,8 +27,9 @@ export async function POST(req: NextRequest) {
   if (uploadError) return NextResponse.json({ error: uploadError.message }, { status: 500 })
 
   const { data: { publicUrl } } = admin.storage.from('avatars').getPublicUrl(path)
+  const versionedUrl = `${publicUrl}?v=${Date.now()}`
 
-  await admin.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
+  await admin.from('profiles').update({ avatar_url: versionedUrl }).eq('id', user.id)
 
-  return NextResponse.json({ publicUrl })
+  return NextResponse.json({ publicUrl: versionedUrl })
 }

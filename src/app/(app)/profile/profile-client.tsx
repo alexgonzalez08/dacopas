@@ -99,7 +99,7 @@ export default function ProfileClient({
     const data = await res.json()
     if (!res.ok) { setError(data.error ?? 'Error al subir imagen'); setAvatarError(true); setUploadingAvatar(false); return }
     setAvatarError(false)
-    setAvatarUrl(data.publicUrl + '?t=' + Date.now())
+    setAvatarUrl(data.publicUrl)
     setUploadingAvatar(false)
   }
 
