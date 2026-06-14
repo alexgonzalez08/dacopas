@@ -43,6 +43,7 @@ export default function ProfileClient({
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarError, setAvatarError] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
   const [posts, setPosts] = useState<Post[]>(initialPosts)
@@ -58,7 +59,8 @@ export default function ProfileClient({
     formData.append('file', file)
     const res = await fetch('/api/avatar', { method: 'POST', body: formData })
     const data = await res.json()
-    if (!res.ok) { setError(data.error ?? 'Error al subir imagen'); setUploadingAvatar(false); return }
+    if (!res.ok) { setError(data.error ?? 'Error al subir imagen'); setAvatarError(true); setUploadingAvatar(false); return }
+    setAvatarError(false)
     setAvatarUrl(data.publicUrl + '?t=' + Date.now())
     setUploadingAvatar(false)
   }
@@ -137,7 +139,7 @@ export default function ProfileClient({
                   </button>
                   <button
                     onClick={handleSave}
-                    disabled={saving}
+                    disabled={saving || uploadingAvatar || avatarError}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-yellow-500 text-slate-900 font-semibold rounded-xl hover:bg-yellow-400 disabled:opacity-50 transition"
                   >
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
