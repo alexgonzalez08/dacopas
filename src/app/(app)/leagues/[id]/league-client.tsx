@@ -434,7 +434,7 @@ export default function LeagueClient({
             onClick={() => setTab('pronosticos')}
             className={`flex-none min-w-[90px] flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
-            ⚽ Pronósticos
+            ⚽ Predicciones
           </button>
           <button
             onClick={() => setTab('acuerdos')}
@@ -489,7 +489,7 @@ export default function LeagueClient({
 
         {/* Tab: Pronósticos */}
         {tab === 'pronosticos' && (
-          <div className="space-y-2">
+          <div className="space-y-2 pb-32 md:pb-6">
             {matches.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
             ) : (
@@ -502,7 +502,7 @@ export default function LeagueClient({
 
         {/* Tab: Gestión */}
         {tab === 'gestion' && (
-          <div className="space-y-4">
+          <div className="space-y-4 pb-32 md:pb-6">
             {/* Solicitudes pendientes */}
             {modRequests.length > 0 && (
               <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
@@ -673,7 +673,7 @@ export default function LeagueClient({
           onClick={() => setTab('pronosticos')}
           className={`flex-none min-w-[90px] flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
         >
-          ⚽ Pronósticos
+          ⚽ Predicciones
         </button>
         <button
           onClick={() => setTab('acuerdos')}
