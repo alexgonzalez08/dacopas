@@ -258,12 +258,8 @@ export default function LeagueAgreements({
   // ——— DETALLE DE ACUERDO ———
   if (selected) {
     const myVote = myVoteMap.get(selected.id) ?? selected.votes.find(v => v.user_id === userId)
-    const canVote = !isAdmin && myVote?.status === 'pending' && selected.status === 'pending'
+    const canVote = myVote?.status === 'pending' && selected.status === 'pending'
     const canEdit = isAdmin && selected.status === 'denied' && selected.created_by === userId
-
-    // Construir lista de participantes con su voto
-    const adminOfLeague = members.find(m => m.role === 'admin')
-    const nonAdminMembers = members.filter(m => m.user_id !== selected.created_by)
 
     return (
       <div className="space-y-4">
@@ -297,25 +293,11 @@ export default function LeagueAgreements({
         <div className="bg-slate-800 rounded-2xl p-5 space-y-3">
           <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">Firmas</p>
           <div className="space-y-2">
-            {/* Admin creador */}
-            {adminOfLeague && (
-              <div className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <UserAvatar
-                    username={adminOfLeague.profiles?.username ?? ''}
-                    fullName={adminOfLeague.profiles?.full_name ?? null}
-                    avatarUrl={adminOfLeague.profiles?.avatar_url ?? null}
-                    size="sm"
-                    showName
-                    linkable
-                  />
-                </div>
-                <span className="text-xs text-yellow-400 font-medium shrink-0">Creador</span>
-              </div>
-            )}
-            {/* Resto de miembros */}
-            {nonAdminMembers.map(m => {
-              const vote = selected.votes.find(v => v.user_id === m.user_id)
+            {/* Todos los miembros con su voto */}
+            {members.map(m => {
+              const vote = myVoteMap.get(selected.id) && m.user_id === userId
+                ? (myVoteMap.get(selected.id) ?? selected.votes.find(v => v.user_id === m.user_id))
+                : selected.votes.find(v => v.user_id === m.user_id)
               return (
                 <div key={m.user_id} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
@@ -408,7 +390,7 @@ export default function LeagueAgreements({
             const myVote = myVoteMap.get(a.id) ?? a.votes.find(v => v.user_id === userId)
             const accepted = a.votes.filter(v => v.status === 'accepted').length
             const total = a.votes.length
-            const needsMyVote = !isAdmin && myVote?.status === 'pending' && a.status === 'pending'
+            const needsMyVote = myVote?.status === 'pending' && a.status === 'pending'
 
             return (
               <button

@@ -67,20 +67,20 @@ export async function POST(req: NextRequest) {
 
   if (error || !agreement) return NextResponse.json({ error: error?.message }, { status: 500 })
 
-  // Traer todos los miembros activos excepto el admin creador
+  // Traer todos los miembros activos
   const { data: members } = await admin
     .from('league_members')
     .select('user_id, profiles(username)')
     .eq('league_id', leagueId)
     .is('left_at', null)
-    .neq('user_id', user.id)
 
-  const otherMembers = members ?? []
+  const allMembers = members ?? []
+  const nonAdminMembers = allMembers.filter(m => m.user_id !== user.id)
 
-  // Crear votos pendientes para cada miembro (admin client para saltar RLS)
-  if (otherMembers.length > 0) {
+  // Crear votos pendientes para todos los miembros (admin client para saltar RLS)
+  if (allMembers.length > 0) {
     await admin.from('league_agreement_votes').insert(
-      otherMembers.map(m => ({ agreement_id: agreement.id, user_id: m.user_id, status: 'pending' }))
+      allMembers.map(m => ({ agreement_id: agreement.id, user_id: m.user_id, status: 'pending' }))
     )
   }
 
@@ -90,10 +90,10 @@ export async function POST(req: NextRequest) {
     admin.from('profiles').select('username').eq('id', user.id).single(),
   ])
 
-  // Notificar a cada miembro
-  if (otherMembers.length > 0) {
+  // Notificar solo a los no-admin
+  if (nonAdminMembers.length > 0) {
     await supabase.from('notifications').insert(
-      otherMembers.map(m => ({
+      nonAdminMembers.map(m => ({
         user_id: m.user_id,
         from_user_id: user.id,
         type: 'agreement_created',
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     )
 
     await sendPushToUsers({
-      userIds: otherMembers.map(m => m.user_id),
+      userIds: nonAdminMembers.map(m => m.user_id),
       title: '📄 Nuevo acuerdo',
       body: `"${agreement.title}" — Tu firma es requerida en ${league?.name ?? 'el torneo'}`,
       data: { url: `/leagues/${leagueId}` },
