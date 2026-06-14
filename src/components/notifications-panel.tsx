@@ -66,6 +66,11 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'goal_cancelled') return wrap('bg-red-500/20', <X className="w-4 h-4 text-red-400" />)
   if (type === 'match_finished') return wrap('bg-slate-700', <Trophy className="w-4 h-4 text-green-400" />)
   if (type === 'prediction_locked') return wrap('bg-green-500/20', <Check className="w-4 h-4 text-green-400" />)
+  if (type === 'agreement_created') return wrap('bg-blue-500/20', <FileText className="w-4 h-4 text-blue-400" />)
+  if (type === 'agreement_vote') return wrap('bg-slate-700', <FileText className="w-4 h-4 text-slate-400" />)
+  if (type === 'agreement_approved') return wrap('bg-green-500/20', <Check className="w-4 h-4 text-green-400" />)
+  if (type === 'agreement_denied') return wrap('bg-red-500/20', <X className="w-4 h-4 text-red-400" />)
+  if (type === 'agreements_existing') return wrap('bg-yellow-500/20', <FileText className="w-4 h-4 text-yellow-400" />)
   return wrap('bg-slate-700', <WhistleIcon className="w-4 h-4 text-slate-400" />)
 }
 
@@ -401,6 +406,70 @@ function NotificationItem({
             </p>
             <Link href={notif.metadata?.url ?? '/predictions'} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
               <ExternalLink className="w-3 h-3" /> Ver partido
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'agreement_created' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="text-slate-400">Nuevo acuerdo en </span>
+              <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+              <span className="text-slate-400">: </span>
+              <span className="font-semibold text-white">{notif.metadata?.title}</span>
+            </p>
+            <p className="text-xs text-yellow-400 font-medium">Tu firma es requerida</p>
+            <Link href={`/leagues/${notif.metadata?.league_id}?tab=acuerdos`} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500/20 text-blue-300 font-semibold rounded-lg hover:bg-blue-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver acuerdo
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'agreement_vote' && (
+          <p className="text-sm text-slate-200">
+            <Link href={`/profile/${notif.metadata?.username}`} className="font-semibold text-white hover:text-yellow-400">@{notif.metadata?.username}</Link>
+            {notif.metadata?.vote === 'accepted'
+              ? <span className="text-green-400"> aceptó </span>
+              : <span className="text-red-400"> rechazó </span>
+            }
+            <span className="text-slate-400">el acuerdo </span>
+            <span className="font-semibold text-white">"{notif.metadata?.title}"</span>
+          </p>
+        )}
+
+        {notif.type === 'agreement_approved' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="text-green-400 font-semibold">✅ Acuerdo aprobado: </span>
+              <span className="font-semibold text-white">"{notif.metadata?.title}"</span>
+              <span className="text-slate-400"> — todos los miembros aceptaron</span>
+            </p>
+            <Link href={`/leagues/${notif.metadata?.league_id}?tab=acuerdos`} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/20 text-green-300 font-semibold rounded-lg hover:bg-green-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver acuerdo
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'agreement_denied' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              <span className="text-red-400 font-semibold">❌ Acuerdo rechazado: </span>
+              <span className="font-semibold text-white">"{notif.metadata?.title}"</span>
+            </p>
+            <Link href={`/leagues/${notif.metadata?.league_id}?tab=acuerdos`} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500/20 text-red-300 font-semibold rounded-lg hover:bg-red-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver acuerdo
+            </Link>
+          </div>
+        )}
+
+        {notif.type === 'agreements_existing' && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-slate-200">
+              El torneo <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span> tiene{' '}
+              <span className="text-yellow-400 font-semibold">{notif.metadata?.count} acuerdo{notif.metadata?.count !== 1 ? 's' : ''} aprobado{notif.metadata?.count !== 1 ? 's' : ''}</span> que debés revisar.
+            </p>
+            <Link href={`/leagues/${notif.metadata?.league_id}?tab=acuerdos`} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500/20 text-yellow-300 font-semibold rounded-lg hover:bg-yellow-500/30 transition">
+              <ExternalLink className="w-3 h-3" /> Ver acuerdos
             </Link>
           </div>
         )}

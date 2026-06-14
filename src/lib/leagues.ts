@@ -75,6 +75,25 @@ export async function joinLeague(code: string, userId: string) {
     if (insertError) throw insertError
   }
 
+  // Notificar si el torneo ya tiene acuerdos aprobados
+  const { data: approvedAgreements } = await supabase
+    .from('league_agreements')
+    .select('id')
+    .eq('league_id', league.id)
+    .eq('status', 'approved')
+
+  if (approvedAgreements?.length) {
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      type: 'agreements_existing',
+      metadata: {
+        league_id: league.id,
+        league_name: league.name,
+        count: approvedAgreements.length,
+      },
+    })
+  }
+
   return league
 }
 

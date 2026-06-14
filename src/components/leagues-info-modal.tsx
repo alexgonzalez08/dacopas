@@ -24,6 +24,11 @@ const STEPS = [
     title: 'Solicitudes de ingreso',
     text: 'Por seguridad, para unirte a un torneo vía link el administrador debe aprobar tu solicitud. Si te unís con código, el ingreso es inmediato.',
   },
+  {
+    emoji: '📄',
+    title: 'Acuerdos de Torneo',
+    text: 'El admin puede crear acuerdos escritos para formalizar premios o reglas del torneo. Todos los miembros deben firmarlos (aceptar o rechazar). El estado cambia a Aprobado solo cuando todos aceptaron.',
+  },
 ]
 
 export function LeaguesInfoButton({ onClick }: { onClick: () => void }) {

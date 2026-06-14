@@ -43,5 +43,22 @@ export async function POST(req: NextRequest) {
       .insert({ league_id: leagueId, user_id: targetUserId, role: 'participant' })
   }
 
+  // Notificar si el torneo ya tiene acuerdos aprobados
+  const [{ data: approvedAgreements }, { data: leagueData }] = await Promise.all([
+    adminClient.from('league_agreements').select('id').eq('league_id', leagueId).eq('status', 'approved'),
+    adminClient.from('leagues').select('name').eq('id', leagueId).single(),
+  ])
+  if (approvedAgreements?.length) {
+    await adminClient.from('notifications').insert({
+      user_id: targetUserId,
+      type: 'agreements_existing',
+      metadata: {
+        league_id: leagueId,
+        league_name: leagueData?.name ?? '',
+        count: approvedAgreements.length,
+      },
+    })
+  }
+
   return NextResponse.json({ ok: true, alreadyMember: false })
 }
