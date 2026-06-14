@@ -423,22 +423,22 @@ export default function LeagueClient({
         )}
 
         {/* Tabs */}
-        <div className="flex rounded-xl overflow-hidden border border-slate-700">
+        <div className="flex rounded-xl overflow-x-auto border border-slate-700 scrollbar-none">
           <button
             onClick={() => setTab('posiciones')}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            className={`flex-none min-w-[90px] flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
             <Trophy className="w-3.5 h-3.5" /> Posiciones
           </button>
           <button
             onClick={() => setTab('pronosticos')}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            className={`flex-none min-w-[90px] flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
             ⚽ Pronósticos
           </button>
           <button
             onClick={() => setTab('acuerdos')}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition relative ${tab === 'acuerdos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            className={`flex-none min-w-[90px] flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition relative ${tab === 'acuerdos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
             📄 Acuerdos
             {pendingAgreements > 0 && tab !== 'acuerdos' && (
@@ -449,7 +449,7 @@ export default function LeagueClient({
           </button>
           <button
             onClick={() => setTab('gestion')}
-            className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition relative ${tab === 'gestion' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+            className={`flex-none min-w-[90px] flex items-center justify-center gap-1 py-2.5 text-xs font-semibold transition relative ${tab === 'gestion' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
           >
             <LayoutList className="w-3.5 h-3.5" /> Gestión
             {pendingCount > 0 && (
@@ -462,7 +462,7 @@ export default function LeagueClient({
 
         {/* Tab: Posiciones */}
         {tab === 'posiciones' && (
-          <div className="space-y-2 pb-24 md:pb-0">
+          <div className="space-y-2 pb-32 md:pb-6">
             {leaderboard.map((entry, i) => (
               <div
                 key={entry.user_id}
@@ -665,19 +665,19 @@ export default function LeagueClient({
       <div className="flex rounded-xl overflow-hidden border border-slate-700">
         <button
           onClick={() => setTab('posiciones')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+          className={`flex-none min-w-[90px] flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'posiciones' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
         >
           <Trophy className="w-3.5 h-3.5" /> Posiciones
         </button>
         <button
           onClick={() => setTab('pronosticos')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+          className={`flex-none min-w-[90px] flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition ${tab === 'pronosticos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
         >
           ⚽ Pronósticos
         </button>
         <button
           onClick={() => setTab('acuerdos')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition relative ${tab === 'acuerdos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+          className={`flex-none min-w-[90px] flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition relative ${tab === 'acuerdos' ? 'bg-yellow-500 text-slate-900' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
         >
           📄 Acuerdos
           {pendingAgreements > 0 && tab !== 'acuerdos' && (
@@ -689,7 +689,7 @@ export default function LeagueClient({
       </div>
 
       {tab === 'posiciones' && (
-        <div className="space-y-2 pb-24 md:pb-0">
+        <div className="space-y-2 pb-32 md:pb-6">
           {leaderboard.map((entry, i) => (
             <div key={entry.user_id} className={`flex items-center gap-4 rounded-xl px-4 py-3 ${entry.user_id === userId ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800'}`}>
               <span className={`w-6 text-center font-bold ${MEDAL_COLORS[i] ?? 'text-slate-400'}`}>
