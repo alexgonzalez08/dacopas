@@ -42,6 +42,28 @@ async function runSync(request: Request) {
     console.warn('API-Football fetch failed (network error)', err)
   }
 
+  if (fixtures.length === 0) {
+    return NextResponse.json({ pointsCalculated: [], notified1h: [], notifiedStart: [], notified15min: [], notifiedFinished: [] })
+  }
+
+  // Batch-fetch todos los matches existentes de una sola vez
+  const externalIds = fixtures.map(f => String(f.fixture.id))
+  const { data: existingMatches } = await supabase
+    .from('matches')
+    .select('id, external_id, home_score, away_score, notified_finished')
+    .in('external_id', externalIds)
+
+  const existingMap = new Map((existingMatches ?? []).map(m => [m.external_id, m]))
+
+  // Perfil IDs cacheados — se cargan una sola vez si hacen falta
+  let cachedProfileIds: string[] | null = null
+  async function getProfileIds(): Promise<string[]> {
+    if (cachedProfileIds) return cachedProfileIds
+    const { data } = await supabase.from('profiles').select('id')
+    cachedProfileIds = (data ?? []).map(p => p.id)
+    return cachedProfileIds
+  }
+
   for (const f of fixtures) {
     const externalId = String(f.fixture.id)
     const matchDate = f.fixture.date
@@ -50,11 +72,7 @@ async function runSync(request: Request) {
     const awayScore = f.goals.away ?? null
     const stage = mapStage(f.league.round ?? '')
 
-    const { data: existing } = await supabase
-      .from('matches')
-      .select('id, home_score, away_score')
-      .eq('external_id', externalId)
-      .single()
+    const existing = existingMap.get(externalId)
 
     if (existing) {
       const resultChanged = existing.home_score !== homeScore || existing.away_score !== awayScore
@@ -83,16 +101,15 @@ async function runSync(request: Request) {
           const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
           const notifType = isCorrection ? 'goal_cancelled' : 'goal_scored'
 
+          const profileIds = await getProfileIds()
           await sendPushToAllUsers(supabase, {
             title, body,
             data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-score-${existing.id}-${homeScore}-${awayScore}` },
           })
-
-          const { data: profiles } = await supabase.from('profiles').select('id')
-          if (profiles?.length) {
+          if (profileIds.length) {
             await supabase.from('notifications').insert(
-              profiles.map(p => ({
-                user_id: p.id,
+              profileIds.map(id => ({
+                user_id: id,
                 type: notifType,
                 metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
               }))
@@ -101,37 +118,33 @@ async function runSync(request: Request) {
         }
       }
 
-      if (resultChanged && status === 'finished' && homeScore !== null) {
+      if (resultChanged && status === 'finished' && homeScore !== null && !existing.notified_finished) {
         const { data: matchInfo } = await supabase
           .from('matches')
-          .select('id, home_team, away_team, notified_finished')
+          .select('id, home_team, away_team')
           .eq('id', existing.id)
           .single()
 
-        if (matchInfo && !matchInfo.notified_finished) {
+        if (matchInfo) {
           await supabase.rpc('calculate_match_points', { p_match_id: existing.id })
           updatedIds.push(existing.id)
 
-          const title = '🏁 Resultado final'
-          const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
           const url = `/matches/${existing.id}`
-
+          const profileIds = await getProfileIds()
           await sendPushToAllUsers(supabase, {
-            title, body,
+            title: '🏁 Resultado final',
+            body: `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`,
             data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-finished-${existing.id}` },
           })
-
-          const { data: profiles } = await supabase.from('profiles').select('id')
-          if (profiles?.length) {
+          if (profileIds.length) {
             await supabase.from('notifications').insert(
-              profiles.map(p => ({
-                user_id: p.id,
+              profileIds.map(id => ({
+                user_id: id,
                 type: 'match_finished',
                 metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
               }))
             )
           }
-
           await supabase.from('matches').update({ notified_finished: true }).eq('id', existing.id)
         }
       }
@@ -173,16 +186,16 @@ async function runSync(request: Request) {
   const notified1h: string[] = []
   for (const match of upcoming1h ?? []) {
     const url = `/matches/${match.id}`
+    const profileIds = await getProfileIds()
     await sendPushToAllUsers(supabase, {
       title: '⚽ ¡Partido en 1 hora!',
       body: `${match.home_team} vs ${match.away_team} — ¡No olvides registrar tu pronóstico!`,
       data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-1h-${match.id}` },
     })
-    const { data: allUsers } = await supabase.from('profiles').select('id')
-    if (allUsers) {
+    if (profileIds.length) {
       await supabase.from('notifications').insert(
-        allUsers.map(u => ({
-          user_id: u.id,
+        profileIds.map(uid => ({
+          user_id: uid,
           type: 'match_starting_soon',
           metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
         }))
@@ -207,16 +220,16 @@ async function runSync(request: Request) {
   const notifiedStart: string[] = []
   for (const match of startingMatches ?? []) {
     const url = `/matches/${match.id}`
+    const profileIds = await getProfileIds()
     await sendPushToAllUsers(supabase, {
       title: '🟢 ¡El partido está comenzando!',
       body: `${match.home_team} vs ${match.away_team} — ¡Seguilo en vivo!`,
       data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-start-${match.id}` },
     })
-    const { data: allUsers } = await supabase.from('profiles').select('id')
-    if (allUsers) {
+    if (profileIds.length) {
       await supabase.from('notifications').insert(
-        allUsers.map(u => ({
-          user_id: u.id,
+        profileIds.map(uid => ({
+          user_id: uid,
           type: 'match_started',
           metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
         }))
@@ -276,17 +289,16 @@ async function runSync(request: Request) {
     updatedIds.push(match.id)
 
     const url = `/matches/${match.id}`
+    const profileIds = await getProfileIds()
     await sendPushToAllUsers(supabase, {
       title: '🏁 Resultado final',
       body: `${match.home_team} ${match.home_score} - ${match.away_score} ${match.away_team}`,
       data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-finished-${match.id}` },
     })
-
-    const { data: profiles } = await supabase.from('profiles').select('id')
-    if (profiles?.length) {
+    if (profileIds.length) {
       await supabase.from('notifications').insert(
-        profiles.map(p => ({
-          user_id: p.id,
+        profileIds.map(id => ({
+          user_id: id,
           type: 'match_finished',
           metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, home_score: match.home_score, away_score: match.away_score, url },
         }))

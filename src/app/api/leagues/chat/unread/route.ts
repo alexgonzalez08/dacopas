@@ -25,28 +25,25 @@ export async function GET() {
 
   const readMap = new Map((reads ?? []).map(r => [r.league_id, r.last_read_at]))
 
-  // Contar mensajes nuevos por liga (excluyendo los propios)
-  const results = await Promise.all(
-    leagueIds.map(async (leagueId) => {
-      const lastRead = readMap.get(leagueId)
-      let query = supabase
-        .from('league_chat_messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('league_id', leagueId)
-        .neq('user_id', user.id)
-
-      if (lastRead) query = query.gt('created_at', lastRead)
-
-      const { count } = await query
-      return { leagueId, count: count ?? 0 }
-    })
-  )
-
+  // Contar mensajes nuevos: una query por liga pero en serie para no saturar conexiones
   const counts: Record<string, number> = {}
   let total = 0
-  for (const { leagueId, count } of results) {
-    if (count > 0) counts[leagueId] = count
-    total += count
+
+  for (const leagueId of leagueIds) {
+    const lastRead = readMap.get(leagueId)
+    let query = supabase
+      .from('league_chat_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('league_id', leagueId)
+      .neq('user_id', user.id)
+
+    if (lastRead) query = query.gt('created_at', lastRead)
+
+    const { count } = await query
+    if (count && count > 0) {
+      counts[leagueId] = count
+      total += count
+    }
   }
 
   return NextResponse.json({ counts, total })
