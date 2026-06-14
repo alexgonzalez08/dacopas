@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToAllUsers, sendPushToUsers } from '@/lib/push-server'
 
+export const maxDuration = 60
+
 const API_FOOTBALL = 'https://v3.football.api-sports.io'
 const LEAGUE_ID = 1      // FIFA World Cup
 const SEASON = 2026

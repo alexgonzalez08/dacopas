@@ -87,7 +87,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, fetchUnread)
       .subscribe()
 
-    const interval = setInterval(fetchUnread, 15000)
+    const interval = setInterval(fetchUnread, 120_000) // 2min fallback — realtime cubre el resto
 
     return () => {
       supabase.removeChannel(channel)
@@ -110,7 +110,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
       .channel('chat-unread-badge')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'league_chat_messages' }, fetchChatUnread)
       .subscribe()
-    const interval = setInterval(fetchChatUnread, 30000)
+    const interval = setInterval(fetchChatUnread, 300_000) // 5min fallback — realtime cubre el resto
 
     return () => {
       supabase.removeChannel(channel)
