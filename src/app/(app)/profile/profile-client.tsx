@@ -49,14 +49,52 @@ export default function ProfileClient({
   const [posts, setPosts] = useState<Post[]>(initialPosts)
   const avatarRef = useRef<HTMLInputElement>(null)
 
+  async function compressImage(file: File, maxBytes = 3 * 1024 * 1024): Promise<File> {
+    if (file.size <= maxBytes) return file
+    return new Promise((resolve) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        // Reducir dimensiones si son muy grandes
+        const MAX_DIM = 1200
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height)
+          width = Math.round(width * ratio)
+          height = Math.round(height * ratio)
+        }
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        // Bajar calidad hasta que entre en maxBytes
+        let quality = 0.85
+        const tryCompress = () => {
+          canvas.toBlob(blob => {
+            if (!blob) { resolve(file); return }
+            if (blob.size <= maxBytes || quality <= 0.3) {
+              resolve(new File([blob], file.name, { type: 'image/jpeg' }))
+            } else {
+              quality -= 0.1
+              tryCompress()
+            }
+          }, 'image/jpeg', quality)
+        }
+        tryCompress()
+      }
+      img.src = url
+    })
+  }
+
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 3 * 1024 * 1024) { setError('La imagen no puede superar 3MB'); return }
     setUploadingAvatar(true)
     setError('')
+    const compressed = await compressImage(file)
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     const res = await fetch('/api/avatar', { method: 'POST', body: formData })
     const data = await res.json()
     if (!res.ok) { setError(data.error ?? 'Error al subir imagen'); setAvatarError(true); setUploadingAvatar(false); return }
