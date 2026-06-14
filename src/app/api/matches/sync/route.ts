@@ -6,6 +6,8 @@ const API_FOOTBALL = 'https://v3.football.api-sports.io'
 const LEAGUE_ID = 1      // FIFA World Cup
 const SEASON = 2026
 
+const BROADCAST_TYPES = new Set(['goal_scored', 'goal_cancelled', 'match_finished', 'match_starting_soon', 'match_started'])
+
 async function runSync(request: Request) {
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -55,15 +57,6 @@ async function runSync(request: Request) {
 
   const existingMap = new Map((existingMatches ?? []).map(m => [m.external_id, m]))
 
-  // Perfil IDs cacheados — se cargan una sola vez si hacen falta
-  let cachedProfileIds: string[] | null = null
-  async function getProfileIds(): Promise<string[]> {
-    if (cachedProfileIds) return cachedProfileIds
-    const { data } = await supabase.from('profiles').select('id')
-    cachedProfileIds = (data ?? []).map(p => p.id)
-    return cachedProfileIds
-  }
-
   for (const f of fixtures) {
     const externalId = String(f.fixture.id)
     const matchDate = f.fixture.date
@@ -101,20 +94,17 @@ async function runSync(request: Request) {
           const body = `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`
           const notifType = isCorrection ? 'goal_cancelled' : 'goal_scored'
 
-          const profileIds = await getProfileIds()
           await sendPushToAllUsers(supabase, {
             title, body,
             data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-score-${existing.id}-${homeScore}-${awayScore}` },
           })
-          if (profileIds.length) {
-            await supabase.from('notifications').insert(
-              profileIds.map(id => ({
-                user_id: id,
-                type: notifType,
-                metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
-              }))
-            )
-          }
+
+          await supabase.from('notifications').insert({
+            user_id: null,
+            is_global: true,
+            type: notifType,
+            metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
+          })
         }
       }
 
@@ -130,21 +120,19 @@ async function runSync(request: Request) {
           updatedIds.push(existing.id)
 
           const url = `/matches/${existing.id}`
-          const profileIds = await getProfileIds()
           await sendPushToAllUsers(supabase, {
             title: '🏁 Resultado final',
             body: `${matchInfo.home_team} ${homeScore} - ${awayScore} ${matchInfo.away_team}`,
             data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-finished-${existing.id}` },
           })
-          if (profileIds.length) {
-            await supabase.from('notifications').insert(
-              profileIds.map(id => ({
-                user_id: id,
-                type: 'match_finished',
-                metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
-              }))
-            )
-          }
+
+          await supabase.from('notifications').insert({
+            user_id: null,
+            is_global: true,
+            type: 'match_finished',
+            metadata: { match_id: existing.id, home_team: matchInfo.home_team, away_team: matchInfo.away_team, home_score: homeScore, away_score: awayScore, url },
+          })
+
           await supabase.from('matches').update({ notified_finished: true }).eq('id', existing.id)
         }
       }
@@ -186,21 +174,17 @@ async function runSync(request: Request) {
   const notified1h: string[] = []
   for (const match of upcoming1h ?? []) {
     const url = `/matches/${match.id}`
-    const profileIds = await getProfileIds()
     await sendPushToAllUsers(supabase, {
       title: '⚽ ¡Partido en 1 hora!',
       body: `${match.home_team} vs ${match.away_team} — ¡No olvides registrar tu pronóstico!`,
       data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-1h-${match.id}` },
     })
-    if (profileIds.length) {
-      await supabase.from('notifications').insert(
-        profileIds.map(uid => ({
-          user_id: uid,
-          type: 'match_starting_soon',
-          metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
-        }))
-      )
-    }
+    await supabase.from('notifications').insert({
+      user_id: null,
+      is_global: true,
+      type: 'match_starting_soon',
+      metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
+    })
     await supabase.from('matches').update({ notified_1h: true }).eq('id', match.id)
     notified1h.push(match.id)
   }
@@ -220,21 +204,17 @@ async function runSync(request: Request) {
   const notifiedStart: string[] = []
   for (const match of startingMatches ?? []) {
     const url = `/matches/${match.id}`
-    const profileIds = await getProfileIds()
     await sendPushToAllUsers(supabase, {
       title: '🟢 ¡El partido está comenzando!',
       body: `${match.home_team} vs ${match.away_team} — ¡Seguilo en vivo!`,
       data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-start-${match.id}` },
     })
-    if (profileIds.length) {
-      await supabase.from('notifications').insert(
-        profileIds.map(uid => ({
-          user_id: uid,
-          type: 'match_started',
-          metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
-        }))
-      )
-    }
+    await supabase.from('notifications').insert({
+      user_id: null,
+      is_global: true,
+      type: 'match_started',
+      metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
+    })
     await supabase.from('matches').update({ notified_start: true }).eq('id', match.id)
     notifiedStart.push(match.id)
   }
@@ -266,6 +246,7 @@ async function runSync(request: Request) {
       await supabase.from('notifications').insert(
         userIds.map(uid => ({
           user_id: uid,
+          is_global: false,
           type: 'prediction_locked',
           metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, url },
         }))
@@ -289,24 +270,36 @@ async function runSync(request: Request) {
     updatedIds.push(match.id)
 
     const url = `/matches/${match.id}`
-    const profileIds = await getProfileIds()
     await sendPushToAllUsers(supabase, {
       title: '🏁 Resultado final',
       body: `${match.home_team} ${match.home_score} - ${match.away_score} ${match.away_team}`,
       data: { url, image: 'https://www.dacopas.com/og-image.png', tag: `match-finished-${match.id}` },
     })
-    if (profileIds.length) {
-      await supabase.from('notifications').insert(
-        profileIds.map(id => ({
-          user_id: id,
-          type: 'match_finished',
-          metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, home_score: match.home_score, away_score: match.away_score, url },
-        }))
-      )
-    }
+
+    await supabase.from('notifications').insert({
+      user_id: null,
+      is_global: true,
+      type: 'match_finished',
+      metadata: { match_id: match.id, home_team: match.home_team, away_team: match.away_team, home_score: match.home_score, away_score: match.away_score, url },
+    })
+
     await supabase.from('matches').update({ notified_finished: true }).eq('id', match.id)
     notifiedFinished.push(match.id)
   }
+
+  // Limpieza periódica de datos acumulados
+  const cutoffRead = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const cutoffOld = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  await Promise.all([
+    // Notificaciones personales leídas > 7 días
+    supabase.from('notifications').delete().eq('is_global', false).eq('read', true).lt('created_at', cutoffRead),
+    // Notificaciones personales no leídas > 30 días
+    supabase.from('notifications').delete().eq('is_global', false).lt('created_at', cutoffOld),
+    // Notificaciones globales > 30 días
+    supabase.from('notifications').delete().eq('is_global', true).lt('created_at', cutoffOld),
+    // Feed events > 30 días
+    supabase.from('feed_events').delete().lt('created_at', cutoffOld),
+  ])
 
   return NextResponse.json({ pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min, notifiedFinished })
 }
@@ -337,7 +330,6 @@ function mapStatus(short: string): string {
 }
 
 function parseGroup(round: string): string | null {
-  // Solo matchea letra suelta: "Group A", "Group B" — NO "Group Stage"
   const match = round.match(/Group\s+([A-Z])\b(?!.*[a-z])/i)
   return match ? match[1].toUpperCase() : null
 }

@@ -20,6 +20,7 @@ export type Notification = {
   from_user: Profile | null
   from_user_id: string | null
   metadata: Record<string, any>
+  is_global?: boolean
   alreadyJoined?: boolean
   alreadyAccepted?: boolean
   alreadyDeclined?: boolean
@@ -30,6 +31,14 @@ export type Notification = {
 
 function timeAgo(date: string) {
   return formatDistanceToNow(new Date(date), { addSuffix: true, locale: es })
+}
+
+function getGlobalReadBefore(): string {
+  try { return localStorage.getItem('global_notif_read_before') ?? '' } catch { return '' }
+}
+
+function setGlobalReadBefore(ts: string) {
+  try { localStorage.setItem('global_notif_read_before', ts) } catch {}
 }
 
 function NotificationIcon({ type }: { type: string }) {
@@ -437,15 +446,31 @@ export default function NotificationsPanel({
 
   const fetchNotifications = useCallback(async () => {
     const supabase = createClient()
+    const globalReadBefore = getGlobalReadBefore()
+    const now = new Date().toISOString()
+
     const { data } = await supabase
       .from('notifications')
       .select('*, from_user:from_user_id(id, username, full_name, avatar_url)')
-      .eq('user_id', userId)
+      .or(`user_id.eq.${userId},is_global.eq.true`)
       .order('created_at', { ascending: false })
-      .limit(50)
-    setNotifications((data ?? []).map(n => ({ ...n, alreadyJoined: false, alreadyAccepted: false, alreadyDeclined: false })))
+      .limit(60)
+
+    const mapped = (data ?? []).map(n => ({
+      ...n,
+      read: n.is_global
+        ? (globalReadBefore ? n.created_at <= globalReadBefore : false)
+        : n.read,
+      alreadyJoined: false,
+      alreadyAccepted: false,
+      alreadyDeclined: false,
+    }))
+
+    setNotifications(mapped)
     setLoading(false)
-    // Marcar todas como leídas
+
+    // Marcar personales como leídas y actualizar timestamp global
+    setGlobalReadBefore(now)
     await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false)
   }, [userId])
 
@@ -502,7 +527,6 @@ export default function NotificationsPanel({
       const { data: { user } } = await supabase.auth.getUser()
       const league = await joinLeague(notif.metadata.league_code, user!.id)
 
-      // Notificar a quien hizo la invitación
       if (notif.from_user_id) {
         const { data: profile } = await supabase.from('profiles').select('username').eq('id', user!.id).single()
         await supabase.from('notifications').insert({
@@ -605,6 +629,13 @@ export default function NotificationsPanel({
 
   async function handleDelete(id: string) {
     setDeleting(id)
+    const notif = notifications.find(n => n.id === id)
+    if (notif?.is_global) {
+      // Las globales no se pueden borrar individualmente, solo se ocultan localmente
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      setDeleting(null)
+      return
+    }
     const supabase = createClient()
     await supabase.from('notifications').delete().eq('id', id)
     setNotifications(prev => prev.filter(n => n.id !== id))
@@ -614,8 +645,11 @@ export default function NotificationsPanel({
   async function handleClearAll() {
     setClearingAll(true)
     const supabase = createClient()
+    // Solo borrar notificaciones personales; las globales se limpian via cron
     await supabase.from('notifications').delete().eq('user_id', userId)
-    setNotifications([])
+    setGlobalReadBefore(new Date().toISOString())
+    // Mantener globales en estado pero marcarlas como leídas
+    setNotifications(prev => prev.filter(n => n.is_global).map(n => ({ ...n, read: true })))
     setClearingAll(false)
   }
 

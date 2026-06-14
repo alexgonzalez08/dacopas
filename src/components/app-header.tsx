@@ -65,14 +65,16 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
     const supabase = createClient()
 
     async function fetchUnread() {
-      const { data } = await supabase
-        .from('notifications')
-        .select('id, type')
-        .eq('user_id', userId)
-        .eq('read', false)
+      const globalReadBefore = (() => { try { return localStorage.getItem('global_notif_read_before') ?? new Date(0).toISOString() } catch { return new Date(0).toISOString() } })()
 
-      const notifs = data ?? []
-      setUnread(notifs.length)
+      const [personalResult, globalResult] = await Promise.all([
+        supabase.from('notifications').select('id, type').eq('user_id', userId).eq('read', false),
+        supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('is_global', true).gt('created_at', globalReadBefore),
+      ])
+
+      const notifs = personalResult.data ?? []
+      const globalCount = globalResult.count ?? 0
+      setUnread(notifs.length + globalCount)
       setTorneosUnread(notifs.filter(n => TORNEOS_TYPES.has(n.type)).length)
       setAmistаdesUnread(notifs.filter(n => AMISTADES_TYPES.has(n.type)).length)
     }
@@ -127,6 +129,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
       setUnread(0)
       setTorneosUnread(0)
       setAmistаdesUnread(0)
+      try { localStorage.setItem('global_notif_read_before', new Date().toISOString()) } catch {}
     }
     if (pathname.startsWith('/leagues')) setChatUnread(0)
     if (pathname.startsWith('/friends')) setAmistаdesUnread(0)
