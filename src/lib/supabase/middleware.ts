@@ -21,7 +21,6 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Si llega un code de Supabase (recovery, confirmation) redirigir al callback
   const code = request.nextUrl.searchParams.get('code')
   if (code && !request.nextUrl.pathname.startsWith('/auth/callback')) {
     const callbackUrl = new URL('/auth/callback', request.url)
@@ -29,7 +28,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(callbackUrl)
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // ✅ getSession() lee el token del cookie — sin llamada a Supabase Auth API
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register') ||
@@ -46,7 +47,6 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Si el usuario está logueado y visita la home, redirigir al dashboard
   if (user && request.nextUrl.pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
