@@ -4,6 +4,7 @@ import Feed, { FeedItem } from '@/components/feed'
 import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
 import StatsAnnouncementModal from '@/components/stats-announcement-modal'
+import StatsHypeModal from '@/components/stats-hype-modal'
 import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
 import { initPushNotifications } from '@/lib/push'
 import { Bell, X } from 'lucide-react'
@@ -123,6 +124,7 @@ export default function DashboardClient({
       )}
 
       {showWelcome && <WelcomeCard username={username} userId={userId} />}
+      <StatsHypeModal />
       <StatsAnnouncementModal
         statsPosts={feed.filter(i => i.kind === 'user_post' && (i as any).post_type === 'stats') as any}
         username={username}
