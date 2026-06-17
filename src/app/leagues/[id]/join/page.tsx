@@ -76,15 +76,18 @@ export default async function JoinPage({ params }: Props) {
   // Obtener puntos para mostrar top 3
   const { data: points } = await adminSupabase
     .from('league_points')
-    .select('user_id, points')
+    .select('user_id, points, exact_results, correct_winner')
     .eq('league_id', id)
-    .order('points', { ascending: false })
-    .limit(3)
 
-  const pointsMap = new Map((points ?? []).map(p => [p.user_id, p.points]))
+  const pointsMap = new Map((points ?? []).map(p => [p.user_id, p]))
   const top3 = members
-    .map(m => ({ ...m, points: pointsMap.get(m.user_id) ?? 0 }))
-    .sort((a, b) => b.points - a.points)
+    .map(m => ({
+      ...m,
+      points: pointsMap.get(m.user_id)?.points ?? 0,
+      exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
+      correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
+    }))
+    .sort((a, b) => b.points - a.points || b.exact_results - a.exact_results || b.correct_winner - a.correct_winner)
     .slice(0, 3)
 
   // Verificar si el usuario ya está logueado

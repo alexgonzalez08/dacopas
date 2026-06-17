@@ -145,7 +145,7 @@ export async function getLeagueLeaderboard(leagueId: string) {
     correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
   }))
 
-  leaderboard.sort((a, b) => b.points - a.points)
+  leaderboard.sort((a, b) => b.points - a.points || b.exact_results - a.exact_results || b.correct_winner - a.correct_winner)
 
   return leaderboard.map((entry, i) => ({ ...entry, rank: i + 1 }))
 }

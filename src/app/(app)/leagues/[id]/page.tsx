@@ -105,7 +105,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
         correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
       }))
-      .sort((a, b) => b.points - a.points)
+      .sort((a, b) => b.points - a.points || b.exact_results - a.exact_results || b.correct_winner - a.correct_winner)
 
     const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
 
@@ -260,7 +260,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
       correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
     }))
-    .sort((a, b) => b.points - a.points)
+    .sort((a, b) => b.points - a.points || b.exact_results - a.exact_results || b.correct_winner - a.correct_winner)
 
   // Partidos + predicciones de todos los miembros
   const memberIds = members.map(m => m.user_id)
