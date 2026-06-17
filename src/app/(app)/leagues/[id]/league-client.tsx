@@ -195,6 +195,15 @@ export default function LeagueClient({
   const [tab, setTab] = useState<'gestion' | 'posiciones' | 'pronosticos' | 'acuerdos'>(
     initialTab === 'acuerdos' ? 'acuerdos' : 'posiciones'
   )
+  const lastMatchRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (tab === 'pronosticos' && lastMatchRef.current) {
+      setTimeout(() => {
+        lastMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+    }
+  }, [tab])
 
   // Swipe derecha → volver a lista de torneos
   const touchStartX = useRef<number | null>(null)
@@ -493,8 +502,10 @@ export default function LeagueClient({
             {matches.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
             ) : (
-              matches.map(match => (
-                <MatchPredictionCard key={match.id} match={match} currentUserId={userId} />
+              matches.map((match, i) => (
+                <div key={match.id} ref={i === matches.length - 1 ? lastMatchRef : undefined}>
+                  <MatchPredictionCard match={match} currentUserId={userId} />
+                </div>
               ))
             )}
           </div>
@@ -714,8 +725,10 @@ export default function LeagueClient({
           {matches.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
           ) : (
-            matches.map(match => (
-              <MatchPredictionCard key={match.id} match={match} currentUserId={userId} />
+            matches.map((match, i) => (
+              <div key={match.id} ref={i === matches.length - 1 ? lastMatchRef : undefined}>
+                <MatchPredictionCard match={match} currentUserId={userId} />
+              </div>
             ))
           )}
         </div>
