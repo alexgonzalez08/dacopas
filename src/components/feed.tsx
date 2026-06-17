@@ -7,6 +7,7 @@ import { es } from 'date-fns/locale'
 import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight, Save, CheckCircle } from 'lucide-react'
 import PostInteractions from './post-interactions'
 import UserPostCard from './user-post-card'
+import StatsPostCard from './stats-post-card'
 import UserAvatar from './user-avatar'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { upsertPrediction } from '@/lib/predictions'
@@ -61,6 +62,8 @@ type UserPostItem = {
   image_url: string | null
   created_at: string
   is_system?: boolean
+  post_type?: string | null
+  metadata?: Record<string, any> | null
   profiles?: { username: string; full_name?: string | null; avatar_url?: string | null } | null
   post_reactions?: { id: string; emoji: string; user_id: string }[]
   post_comments?: { id: string; content: string; user_id: string; created_at: string; profiles?: { username: string } }[]
@@ -450,15 +453,25 @@ export default function Feed({
     <div className="space-y-3">
       {items.map(item => {
         if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} userId={userId} now={serverNow} onDirtyChange={handleDirtyChange} onNavigate={handleNavigate} />
-        if (item.kind === 'user_post') return (
-          <UserPostCard
-            key={item.id}
-            post={item as any}
-            userId={userId}
-            userAvatarUrl={userAvatarUrl}
-            onDelete={onDeletePost ?? (() => {})}
-          />
-        )
+        if (item.kind === 'user_post') {
+          if ((item as any).post_type === 'stats') return (
+            <StatsPostCard
+              key={item.id}
+              post={item as any}
+              userId={userId}
+              userAvatarUrl={userAvatarUrl}
+            />
+          )
+          return (
+            <UserPostCard
+              key={item.id}
+              post={item as any}
+              userId={userId}
+              userAvatarUrl={userAvatarUrl}
+              onDelete={onDeletePost ?? (() => {})}
+            />
+          )
+        }
         if (item.kind === 'activity') {
           const a = item as ActivityPost
           if (a.type === 'prediction') return <PredictionPost key={a.id} item={a} userId={userId} now={serverNow} />

@@ -29,6 +29,7 @@ export default function PostInteractionsGeneric({
   initialReactions,
   initialComments,
   table,
+  systemMode = false,
 }: {
   postId: string
   userId: string
@@ -38,6 +39,7 @@ export default function PostInteractionsGeneric({
   initialReactions: Reaction[]
   initialComments: Comment[]
   table: 'post' | 'feed'
+  systemMode?: boolean
 }) {
   const reactionsTable = table === 'post' ? 'post_reactions' : 'feed_reactions'
   const commentsTable = table === 'post' ? 'post_comments' : 'feed_comments'
@@ -45,6 +47,7 @@ export default function PostInteractionsGeneric({
 
   const [reactions, setReactions] = useState<Reaction[]>(initialReactions)
   const [comments, setComments] = useState<Comment[]>(initialComments)
+  const [loadingComments, setLoadingComments] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const [comment, setComment] = useState('')
@@ -56,6 +59,28 @@ export default function PostInteractionsGeneric({
   const myReaction = reactions.find(r => r.user_id === userId)
 
   async function handleReaction(emoji: string) {
+    if (systemMode) {
+      if (myReaction) {
+        await fetch('/api/posts/system-interactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'remove_reaction', reactionId: myReaction.id }),
+        })
+        if (myReaction.emoji === emoji) {
+          setReactions(r => r.filter(x => x.id !== myReaction.id))
+          return
+        }
+      }
+      const res = await fetch('/api/posts/system-interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'react', postId, emoji }),
+      })
+      const { reaction } = await res.json()
+      if (reaction) setReactions(r => [...r.filter(x => x.id !== myReaction?.id), reaction])
+      return
+    }
+
     const supabase = createClient()
     if (myReaction) {
       await supabase.from(reactionsTable).delete().eq('id', myReaction.id)
@@ -72,7 +97,6 @@ export default function PostInteractionsGeneric({
     if (data) {
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single()
       setReactions(r => [...r.filter(x => x.id !== myReaction?.id), { ...data, profiles: { username: profile?.username ?? '…' } }])
-      // Notificar al dueño del post (no a uno mismo)
       if (postOwnerId && postOwnerId !== userId && table === 'post') {
         const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single()
         const username = profile?.username ?? 'Alguien'
@@ -96,6 +120,22 @@ export default function PostInteractionsGeneric({
     e.preventDefault()
     if (!comment.trim()) return
     setSubmitting(true)
+
+    if (systemMode) {
+      const res = await fetch('/api/posts/system-interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'comment', postId, content: comment.trim() }),
+      })
+      const { comment: newComment } = await res.json()
+      if (newComment) {
+        setComments(c => [...c, newComment])
+        setComment('')
+      }
+      setSubmitting(false)
+      return
+    }
+
     const supabase = createClient()
     const { data } = await supabase
       .from(commentsTable)
@@ -105,7 +145,6 @@ export default function PostInteractionsGeneric({
     if (data) {
       setComments(c => [...c, data])
       setComment('')
-      // Notificar al dueño del post (no a uno mismo)
       if (postOwnerId && postOwnerId !== userId && table === 'post') {
         const username = data.profiles?.username ?? 'Alguien'
         await supabase.from('notifications').insert({
@@ -126,6 +165,15 @@ export default function PostInteractionsGeneric({
   }
 
   async function handleDeleteComment(commentId: string) {
+    if (systemMode) {
+      await fetch('/api/posts/system-interactions', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId }),
+      })
+      setComments(c => c.filter(x => x.id !== commentId))
+      return
+    }
     const supabase = createClient()
     await supabase.from(commentsTable).delete().eq('id', commentId)
     setComments(c => c.filter(x => x.id !== commentId))
@@ -219,10 +267,20 @@ export default function PostInteractionsGeneric({
         </div>
 
         <button
-          onClick={() => setShowComments(v => !v)}
+          onClick={async () => {
+            if (!showComments && systemMode) {
+              setLoadingComments(true)
+              const res = await fetch(`/api/posts/system-interactions?postId=${postId}`)
+              const data = await res.json()
+              if (data.reactions) setReactions(data.reactions)
+              if (data.comments) setComments(data.comments)
+              setLoadingComments(false)
+            }
+            setShowComments(v => !v)
+          }}
           className="flex items-center gap-1 ml-auto text-xs text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-700"
         >
-          <MessageCircle className="w-3.5 h-3.5" /> Opinar
+          <MessageCircle className="w-3.5 h-3.5" /> {loadingComments ? '...' : 'Opinar'}
         </button>
       </div>
 

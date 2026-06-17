@@ -92,7 +92,7 @@ export default async function DashboardPage() {
     // Posts de sistema (visibles para todos, usa admin para bypassear RLS)
     supabaseAdmin
       .from('user_posts')
-      .select('*, profiles!user_posts_user_id_fkey(username, full_name, avatar_url), post_reactions(id, emoji, user_id, profiles(username)), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
+      .select('*, post_type, metadata, profiles!user_posts_user_id_fkey(username, full_name, avatar_url), post_reactions(id, emoji, user_id, profiles(username)), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
       .eq('is_system', true)
       .order('created_at', { ascending: false })
       .limit(10),
