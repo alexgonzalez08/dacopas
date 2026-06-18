@@ -41,6 +41,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicPage = request.nextUrl.pathname === '/' ||
     request.nextUrl.pathname === '/privacy' ||
     request.nextUrl.pathname === '/security' ||
+    request.nextUrl.pathname === '/support' ||
     /^\/leagues\/[^/]+\/join/.test(request.nextUrl.pathname)
 
   if (!user && !isAuthPage && !isPublicPage) {
