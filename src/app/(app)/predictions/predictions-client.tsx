@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { Match, Prediction } from '@/types'
 import { Lock, Clock, ChevronDown, ChevronRight } from 'lucide-react'
@@ -117,6 +117,13 @@ export default function PredictionsClient({
     setOpenDays(v => ({ ...v, [day]: !v[day] }))
   }
 
+  const todayRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [])
+
   return (
     <>
     <UnsavedChangesGuard isDirty={isDirty} id="predictions" />
@@ -127,7 +134,7 @@ export default function PredictionsClient({
       </div>
 
       {days.map(day => (
-        <div key={day}>
+        <div key={day} ref={day === todayStr ? todayRef : undefined}>
           <button
             onClick={() => toggleDay(day)}
             className="w-full flex items-center justify-between px-4 py-3 mb-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
