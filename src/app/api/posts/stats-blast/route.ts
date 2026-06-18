@@ -130,44 +130,8 @@ export async function GET(request: Request) {
     .slice(0, 3)
     .map(r => ({ user_id: r.user_id, username: (r.profiles as any)?.username ?? r.user_id, total: r.exact_results }))
 
-  // ── 4. Top 3 partidos con menos resultados exactos ───────────────────────
-  const { data: finishedMatches } = await supabase
-    .from('matches')
-    .select('id, home_team, away_team, home_score, away_score, home_team_flag, away_team_flag')
-    .eq('status', 'finished')
-    .not('home_score', 'is', null)
-    .not('away_score', 'is', null)
-
-  const { data: lockedPreds } = await supabase
-    .from('predictions')
-    .select('match_id, home_score, away_score')
-    .eq('status', 'locked')
-
-  type MatchExact = { id: number; label: string; exactCount: number; totalPreds: number }
-  const matchExactMap = new Map<number, MatchExact>()
-  for (const m of finishedMatches ?? []) {
-    matchExactMap.set(m.id, {
-      id: m.id,
-      label: `${m.home_team} ${m.home_score}-${m.away_score} ${m.away_team}`,
-      exactCount: 0,
-      totalPreds: 0,
-    })
-  }
-  for (const p of lockedPreds ?? []) {
-    const matchEntry = matchExactMap.get(p.match_id)
-    if (!matchEntry) continue
-    const match = finishedMatches!.find(m => m.id === p.match_id)!
-    matchEntry.totalPreds += 1
-    if (Number(p.home_score) === match.home_score && Number(p.away_score) === match.away_score) {
-      matchEntry.exactCount += 1
-    }
-  }
-
-  // Only include matches that had at least one prediction, sort by fewest exact
-  const top3LeastExact = Array.from(matchExactMap.values())
-    .filter(m => m.totalPreds > 0)
-    .sort((a, b) => a.exactCount - b.exactCount || a.totalPreds - b.totalPreds)
-    .slice(0, 3)
+  // ── 4. Top 3 partidos con menos resultados exactos (via RPC) ────────────
+  const { data: hardestMatches } = await supabase.rpc('get_hardest_matches')
 
   // ── Build 4 blocks (one post each) ───────────────────────────────────────
   const blocks: StatsPostMetadata['blocks'] = [
@@ -206,11 +170,11 @@ export async function GET(request: Request) {
     {
       title: 'Partidos más difíciles de adivinar',
       emoji: '🤯',
-      entries: top3LeastExact.map((r, i) => ({
+      entries: (hardestMatches ?? []).map((r: any, i: number) => ({
         rank: i + 1,
         label: r.label,
-        sublabel: `${r.totalPreds} pronósticos`,
-        value: String(r.exactCount),
+        sublabel: `${r.total_preds} pronósticos`,
+        value: String(r.exact_count),
         valueLabel: 'exactos',
       })),
     },
