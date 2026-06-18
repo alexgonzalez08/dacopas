@@ -112,21 +112,23 @@ export async function GET(request: Request) {
     .sort((a, b) => b.ratio - a.ratio)
     .slice(0, 3)
 
-  // ── 3. Top 3 usuarios con más resultados exactos globales ────────────────
+  // ── 3. Top 3 usuarios con más exactos en un mismo torneo ────────────────
   const { data: allExacts } = await supabase
     .from('league_points')
     .select('user_id, exact_results, profiles(username)')
+    .order('exact_results', { ascending: false })
+    .limit(50)
 
-  type ExactEntry = { user_id: string; username: string; total: number }
-  const exactMap = new Map<string, ExactEntry>()
-  for (const r of allExacts ?? []) {
-    const username = (r.profiles as any)?.username ?? r.user_id
-    if (!exactMap.has(r.user_id)) exactMap.set(r.user_id, { user_id: r.user_id, username, total: 0 })
-    exactMap.get(r.user_id)!.total += r.exact_results
-  }
-  const top3Exacts = Array.from(exactMap.values())
-    .sort((a, b) => b.total - a.total)
+  // Mejor marca por usuario (un solo torneo)
+  const seenUsers3 = new Set<string>()
+  const top3Exacts = (allExacts ?? [])
+    .filter(r => {
+      if (seenUsers3.has(r.user_id)) return false
+      seenUsers3.add(r.user_id)
+      return true
+    })
     .slice(0, 3)
+    .map(r => ({ user_id: r.user_id, username: (r.profiles as any)?.username ?? r.user_id, total: r.exact_results }))
 
   // ── 4. Top 3 partidos con menos resultados exactos ───────────────────────
   const { data: finishedMatches } = await supabase
