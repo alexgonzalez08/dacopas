@@ -16,13 +16,13 @@ export async function GET(req: NextRequest) {
     .from('league_chat_messages')
     .select('id, content, created_at, user_id, profiles(username, avatar_url)')
     .eq('league_id', leagueId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(100)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Desencriptar contenido de cada mensaje
-  const messages = (data ?? []).map(m => ({
+  // Desencriptar y revertir para mostrar en orden cronológico
+  const messages = (data ?? []).reverse().map(m => ({
     ...m,
     content: decryptMessage(m.content),
   }))
