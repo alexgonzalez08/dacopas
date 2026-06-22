@@ -2,7 +2,8 @@
 -- Llamar con: supabase.rpc('get_chat_unread_counts', { p_user_id: '<uuid>' })
 CREATE OR REPLACE FUNCTION get_chat_unread_counts(p_user_id uuid)
 RETURNS TABLE(league_id uuid, unread_count bigint)
-AS $func$
+LANGUAGE sql
+AS $$
   SELECT
     m.league_id,
     COUNT(*) AS unread_count
@@ -18,4 +19,4 @@ AS $func$
     AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)
   GROUP BY m.league_id
   HAVING COUNT(*) > 0
-$func$ LANGUAGE sql STABLE SECURITY DEFINER;
+$$;
