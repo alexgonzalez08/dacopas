@@ -96,23 +96,29 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   }, [userId])
 
   useEffect(() => {
-    async function fetchChatUnread() {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    async function doFetchChatUnread() {
       const res = await fetch('/api/leagues/chat/unread')
       if (res.ok) {
         const { total } = await res.json()
         setChatUnread(total ?? 0)
       }
     }
+    function fetchChatUnread() {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(doFetchChatUnread, 2000)
+    }
 
-    fetchChatUnread()
+    doFetchChatUnread() // carga inicial sin debounce
     const supabase = createClient()
     const channel = supabase
       .channel('chat-unread-badge')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'league_chat_messages' }, fetchChatUnread)
       .subscribe()
-    const interval = setInterval(fetchChatUnread, 300_000) // 5min fallback — realtime cubre el resto
+    const interval = setInterval(doFetchChatUnread, 300_000) // 5min fallback
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
       supabase.removeChannel(channel)
       clearInterval(interval)
     }

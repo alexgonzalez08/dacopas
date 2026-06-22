@@ -34,12 +34,16 @@ export default function LeaguesClient({
   const leagueIds = leagues.map(l => l.id)
 
   useEffect(() => {
-    async function refreshUnread() {
-      const res = await fetch('/api/leagues/chat/unread')
-      if (res.ok) {
-        const { counts } = await res.json()
-        setChatUnread(counts ?? {})
-      }
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    function refreshUnread() {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(async () => {
+        const res = await fetch('/api/leagues/chat/unread')
+        if (res.ok) {
+          const { counts } = await res.json()
+          setChatUnread(counts ?? {})
+        }
+      }, 2000)
     }
     async function refreshNotifs() {
       const supabase = createClient()
@@ -66,6 +70,7 @@ export default function LeaguesClient({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, refreshNotifs)
       .subscribe()
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
       supabase.removeChannel(chatChannel)
       supabase.removeChannel(notifChannel)
     }
