@@ -382,6 +382,12 @@ export default function LeaguesClient({
           </div>
         </div>
       )}
+
+      <div className="text-center pt-2">
+        <Link href="/support" className="text-xs text-slate-500 hover:text-yellow-400 transition">
+          ¿Tenés un problema? Reportalo aquí
+        </Link>
+      </div>
     </div>
   )
 }

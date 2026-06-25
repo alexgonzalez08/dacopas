@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { Match, Prediction } from '@/types'
 import { Lock, Clock, ChevronDown, ChevronRight } from 'lucide-react'
@@ -131,6 +132,12 @@ export default function PredictionsClient({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Mis Predicciones</h1>
         <PredictionsInfoModal userId={userId} autoOpen={!predictionsInfoSeen} />
+      </div>
+
+      <div className="text-center">
+        <Link href="/support" className="text-xs text-slate-500 hover:text-yellow-400 transition">
+          ¿Tenés un problema? Reportalo aquí
+        </Link>
       </div>
 
       {days.map(day => (

@@ -394,6 +394,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             </div>
             <ShareButton leagueId={id} leagueName={league.name} />
           </div>
+          <Link href="/support" className="text-xs text-slate-500 hover:text-yellow-400 transition">
+            ¿Tenés un problema? Reportalo aquí
+          </Link>
         </div>
       </div>
 
