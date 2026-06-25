@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import Feed, { FeedItem } from '@/components/feed'
 import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
@@ -100,7 +101,12 @@ export default function DashboardClient({
 
   return (
     <div className="space-y-4">
-<h2 className="font-semibold text-lg">Los Temas Actuales</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-lg">Los Temas Actuales</h2>
+        <Link href="/support" className="text-xs text-slate-500 hover:text-yellow-400 transition">
+          ¿Tenés un problema? Reportalo aquí
+        </Link>
+      </div>
 
       {showPushBanner && (
         <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
