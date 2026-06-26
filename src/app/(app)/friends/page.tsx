@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from '@/lib/supabase/server'
 import FriendsClient from './friends-client'
 import { getSuggestedFriends } from '@/lib/suggested-friends'
