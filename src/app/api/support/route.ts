@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData()
@@ -30,7 +28,7 @@ export async function POST(req: NextRequest) {
     `
   }
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendEmail({
     from: 'Dacopas <noreply@dacopas.com>',
     to: 'alex@dacopas.com',
     replyTo: email,
