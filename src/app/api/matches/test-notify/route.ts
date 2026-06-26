@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { match_id, type = '1h', email = 'alexgf08@gmail.com' } = await request.json()
+  const { match_id, type = '1h', email = 'alex@dacopas.com' } = await request.json()
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

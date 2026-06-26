@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   await resend.emails.send({
     from: 'Dacopas <noreply@dacopas.com>',
-    to: 'alexgf08@gmail.com',
+    to: 'alex@dacopas.com',
     subject: `⚠️ Nuevo reporte en Dacopas — ${typeLabel[type] ?? type}`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">

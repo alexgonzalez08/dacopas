@@ -78,7 +78,7 @@ export default function PrivacyPage() {
             <li>Está estrictamente prohibido compartir, distribuir o promover contenido de abuso sexual infantil a través de Dacopas.</li>
             <li>Cualquier cuenta que publique o comparta dicho contenido será suspendida de forma inmediata y permanente.</li>
             <li>Reportaremos todo contenido o actividad de este tipo a las autoridades competentes y a los organismos de seguridad infantil correspondientes.</li>
-            <li>Los usuarios pueden reportar contenido inapropiado contactando a <a href="mailto:alexgf08@gmail.com" className="text-yellow-400 hover:underline">alexgf08@gmail.com</a>.</li>
+            <li>Los usuarios pueden reportar contenido inapropiado contactando a <a href="mailto:alex@dacopas.com" className="text-yellow-400 hover:underline">alex@dacopas.com</a>.</li>
           </ul>
           <p className="text-slate-400 mt-3">
             Dacopas es una aplicación de pronósticos deportivos destinada a adultos y jóvenes mayores de 13 años bajo supervisión. No está diseñada para compartir contenido de ningún tipo fuera del contexto de los torneos de predicciones.
@@ -89,8 +89,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-white mb-2">9. Contacto</h2>
           <p className="text-slate-400">
             Si tenés preguntas sobre esta política de privacidad, contactanos en:{' '}
-            <a href="mailto:alexgf08@gmail.com" className="text-yellow-400 hover:underline">
-              alexgf08@gmail.com
+            <a href="mailto:alex@dacopas.com" className="text-yellow-400 hover:underline">
+              alex@dacopas.com
             </a>
           </p>
         </div>

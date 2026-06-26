@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await resend.emails.send({
     from: 'Dacopas <noreply@dacopas.com>',
-    to: 'alexgf08@gmail.com',
+    to: 'alex@dacopas.com',
     replyTo: email,
     subject: `🐛 Reporte de problema — ${subject}`,
     attachments,

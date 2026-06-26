@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
         <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.7">
           ¿Sos usuario de Android y querés instalar Dacopas como app?
           Escribile directamente a <strong style="color:#f1f5f9">Alex González</strong>, desarrollador y creador de Dacopas,
-          a <a href="mailto:alexgf08@gmail.com" style="color:#eab308;text-decoration:none">alexgf08@gmail.com</a>
+          a <a href="mailto:alex@dacopas.com" style="color:#eab308;text-decoration:none">alex@dacopas.com</a>
           y con gusto te ayuda a instalarlo. 🙌
         </p>
       </div>

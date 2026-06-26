@@ -50,7 +50,7 @@ export default function SecurityPage() {
               <p className="font-semibold text-white mb-2">Opción 2 — Por correo electrónico</p>
               <p className="text-slate-400">
                 Enviá un email a{' '}
-                <a href="mailto:alexgf08@gmail.com" className="text-yellow-400 hover:underline">alexgf08@gmail.com</a>
+                <a href="mailto:alex@dacopas.com" className="text-yellow-400 hover:underline">alex@dacopas.com</a>
                 {' '}con el asunto <span className="text-white font-mono">"Eliminar cuenta Dacopas"</span> e indicá el alias o correo de tu cuenta.
                 Procesaremos tu solicitud dentro de los 30 días hábiles.
               </p>
@@ -101,7 +101,7 @@ export default function SecurityPage() {
           <h2 className="text-lg font-semibold text-white mb-3">Contacto</h2>
           <p className="text-slate-400">
             Para cualquier consulta sobre privacidad o seguridad de tus datos:{' '}
-            <a href="mailto:alexgf08@gmail.com" className="text-yellow-400 hover:underline">alexgf08@gmail.com</a>
+            <a href="mailto:alex@dacopas.com" className="text-yellow-400 hover:underline">alex@dacopas.com</a>
           </p>
         </div>
 
