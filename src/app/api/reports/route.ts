@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -40,7 +38,7 @@ export async function POST(req: NextRequest) {
     post: 'Post',
   }
 
-  await resend.emails.send({
+  await sendEmail({
     from: 'Dacopas <noreply@dacopas.com>',
     to: 'alex@dacopas.com',
     subject: `⚠️ Nuevo reporte en Dacopas — ${typeLabel[type] ?? type}`,

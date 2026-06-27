@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const { email, username } = await req.json()
@@ -9,7 +7,7 @@ export async function POST(req: NextRequest) {
 
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
 
-  const { error } = await resend.emails.send({
+  const { error } = await sendEmail({
     from: process.env.RESEND_FROM_EMAIL!,
     to: email,
     subject: '¡Bienvenido/a a Dacopas! 🏆',

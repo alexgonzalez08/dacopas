@@ -113,7 +113,7 @@ begin
   from matches m
   where p.match_id = m.id
     and p.status = 'draft'
-    and m.match_date <= now() + interval '1 hour';
+    and (m.match_date <= now() + interval '1 hour' or m.status in ('live', 'finished'));
 end;
 $$;
 

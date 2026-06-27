@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -27,7 +25,7 @@ export async function POST(req: NextRequest) {
   else if (/iphone|ipad/i.test(userAgent)) dispositivo = 'iPhone / iPad'
   else if (/mobile/i.test(userAgent)) dispositivo = 'Dispositivo móvil'
 
-  await resend.emails.send({
+  await sendEmail({
     from: process.env.RESEND_FROM_EMAIL!,
     to: user.email!,
     subject: 'Nuevo inicio de sesión en Dacopas',

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/email'
 import crypto from 'crypto'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json()
@@ -38,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`
 
-  const { error: emailError } = await resend.emails.send({
+  const { error: emailError } = await sendEmail({
     from: process.env.RESEND_FROM_EMAIL!,
     to: email,
     subject: 'Recuperar contraseña — Dacopas',
