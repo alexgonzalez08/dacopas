@@ -1,5 +1,6 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
 
@@ -24,8 +25,14 @@ const MEDAL_STYLES: Record<number, { medal: string; bg: string }> = {
 }
 
 export default function StatsClient({ leaderboard, currentUserId }: { leaderboard: Entry[]; currentUserId: string }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(() => {
+    const p = parseInt(searchParams.get('page') ?? '1')
+    return isNaN(p) || p < 1 ? 0 : p - 1
+  })
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -39,10 +46,25 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const pageEntries = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
+  function goToPage(p: number) {
+    setPage(p)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', String(p + 1))
+    router.replace(`/stats?${params.toString()}`, { scroll: false })
+  }
+
   function handleSearch(val: string) {
     setSearch(val)
     setPage(0)
+    const params = new URLSearchParams()
+    if (val) params.set('q', val)
+    router.replace(`/stats?${params.toString()}`, { scroll: false })
   }
+
+  useEffect(() => {
+    const q = searchParams.get('q') ?? ''
+    setSearch(q)
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -93,7 +115,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <button
-            onClick={() => setPage(p => Math.max(0, p - 1))}
+            onClick={() => goToPage(Math.max(0, page - 1))}
             disabled={page === 0}
             className="flex items-center gap-1 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed"
           >
@@ -103,7 +125,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
             Página {page + 1} de {totalPages} · {filtered.length} jugadores
           </span>
           <button
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            onClick={() => goToPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
             className="flex items-center gap-1 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed"
           >
