@@ -268,13 +268,30 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const memberIds = members.map(m => m.user_id)
   const usernameMap = new Map(members.map(m => [m.user_id, m.profiles?.username ?? 'Usuario']))
 
-  const [{ data: allMatches }, { data: allPredictions }, { data: userProfile }] = await Promise.all([
+  // Fetch predicciones paginado para superar el límite de PostgREST (1000 rows)
+  async function fetchAllPredictions(userIds: string[]) {
+    const PAGE = 1000
+    let offset = 0
+    const all: any[] = []
+    while (true) {
+      const { data } = await adminSupabase
+        .from('predictions')
+        .select('user_id, match_id, home_score, away_score, penalty_winner')
+        .in('user_id', userIds)
+        .eq('status', 'locked')
+        .range(offset, offset + PAGE - 1)
+      if (!data || data.length === 0) break
+      all.push(...data)
+      if (data.length < PAGE) break
+      offset += PAGE
+    }
+    return all
+  }
+
+  const [{ data: allMatches }, allPredictions, { data: userProfile }] = await Promise.all([
     supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score, penalty_home, penalty_away, stage, group_name')
       .order('match_date', { ascending: true }),
-    adminSupabase.from('predictions').select('user_id, match_id, home_score, away_score, penalty_winner, status')
-      .in('user_id', memberIds)
-      .eq('status', 'locked')
-      .limit(50000),
+    fetchAllPredictions(memberIds),
     supabase.from('profiles').select('leagues_info_seen').eq('id', user!.id).single(),
   ])
 
