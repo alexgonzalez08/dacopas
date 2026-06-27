@@ -85,7 +85,7 @@ export default function SupportPage() {
       <div className="max-w-lg mx-auto pt-12 px-4 text-center space-y-4">
         <CheckCircle2 className="w-14 h-14 text-green-400 mx-auto" />
         <h1 className="text-xl font-bold text-white">¡Reporte enviado!</h1>
-        <p className="text-slate-400 text-sm">Recibimos tu mensaje. Te responderemos a <span className="text-white">{email}</span> a la brevedad.</p>
+        <p className="text-slate-400 text-sm">Recibimos tu mensaje. Te responderemos a la brevedad desde <span className="text-white">alex@dacopas.com</span>.</p>
         <button
           onClick={() => router.back()}
           className="mt-4 px-6 py-2.5 bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-600 transition"
