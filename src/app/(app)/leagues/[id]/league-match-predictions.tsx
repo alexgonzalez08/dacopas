@@ -10,6 +10,7 @@ type MatchPrediction = {
   username: string
   home_score: number | null
   away_score: number | null
+  penalty_winner: 'home' | 'away' | null
   points: number | null
 }
 
@@ -23,6 +24,8 @@ type MatchWithPredictions = {
   status: string
   home_score: number | null
   away_score: number | null
+  penalty_home: number | null
+  penalty_away: number | null
   predictions: MatchPrediction[]
 }
 
@@ -61,6 +64,8 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
               <span className="text-sm font-bold text-yellow-400">{match.home_score} - {match.away_score}</span>
             ) : isLive ? (
               <span className="text-sm font-bold text-green-400 animate-pulse">{match.home_score} - {match.away_score}</span>
+            ) : isFinished && match.penalty_home !== null ? (
+              <span className="text-sm font-bold text-yellow-400">{match.home_score} - {match.away_score} <span className="text-xs font-normal text-slate-400">(pen. {match.penalty_home}-{match.penalty_away})</span></span>
             ) : (
               <span className="text-xs text-slate-500">vs</span>
             )}
@@ -90,6 +95,11 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
                 match.predictions.map(pred => {
                   const isMe = pred.user_id === currentUserId
                   const hasPred = pred.home_score !== null && pred.away_score !== null
+                  const matchHadPenalties = match.penalty_home !== null && match.penalty_away !== null
+                  const actualPenaltyWinner = matchHadPenalties
+                    ? (match.penalty_home! > match.penalty_away! ? 'home' : 'away')
+                    : null
+                  const hitPenalty = matchHadPenalties && pred.penalty_winner === actualPenaltyWinner
                   return (
                     <div
                       key={pred.user_id}
@@ -99,14 +109,23 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
                         @{pred.username}
                       </span>
                       {hasPred ? (
-                        <span className="text-sm font-bold text-white shrink-0">
-                          {pred.home_score} - {pred.away_score}
-                        </span>
+                        <div className="shrink-0 text-right">
+                          <span className="text-sm font-bold text-white">
+                            {pred.home_score} - {pred.away_score}
+                          </span>
+                          {pred.penalty_winner && (
+                            <p className={`text-xs ${isFinished && matchHadPenalties ? (hitPenalty ? 'text-green-400 font-semibold' : 'text-slate-500 line-through') : 'text-slate-400'}`}>
+                              🥅 {pred.penalty_winner === 'home' ? match.home_team.split(' ').slice(-1)[0] : match.away_team.split(' ').slice(-1)[0]}
+                              {isFinished && matchHadPenalties && hitPenalty && ' ✓'}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-xs text-slate-500 shrink-0">Sin pronóstico</span>
                       )}
                       {isFinished && (
                         <span className={`text-xs font-bold shrink-0 w-12 text-right ${
+                          pred.points === 5 ? 'text-purple-400' :
                           pred.points === 3 ? 'text-yellow-400' :
                           pred.points === 1 ? 'text-green-400' :
                           pred.points === 0 ? 'text-slate-500' : 'text-slate-600'

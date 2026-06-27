@@ -18,6 +18,7 @@ type MatchPrediction = {
   username: string
   home_score: number | null
   away_score: number | null
+  penalty_winner: 'home' | 'away' | null
   points: number | null
 }
 
@@ -31,6 +32,10 @@ type MatchWithPredictions = {
   status: string
   home_score: number | null
   away_score: number | null
+  penalty_home: number | null
+  penalty_away: number | null
+  stage: string
+  group_name: string | null
   predictions: MatchPrediction[]
 }
 
@@ -85,18 +90,36 @@ function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredict
               {match.predictions.map(pred => {
                 const isMe = pred.user_id === currentUserId
                 const hasPred = pred.home_score !== null && pred.away_score !== null
+                const matchHadPenalties = match.penalty_home !== null && match.penalty_away !== null
+                const actualPenaltyWinner = matchHadPenalties
+                  ? (match.penalty_home! > match.penalty_away! ? 'home' : 'away')
+                  : null
+                const hitPenalty = matchHadPenalties && pred.penalty_winner === actualPenaltyWinner
                 return (
                   <div key={pred.user_id} className={`flex items-center gap-3 px-3 py-2 rounded-xl ${isMe ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-slate-700/40'}`}>
                     <span className={`text-xs font-medium flex-1 truncate ${isMe ? 'text-yellow-400' : 'text-slate-300'}`}>
                       @{pred.username}
                     </span>
                     {hasPred ? (
-                      <span className="text-sm font-bold text-white shrink-0">{pred.home_score} - {pred.away_score}</span>
+                      <div className="shrink-0 text-right">
+                        <span className="text-sm font-bold text-white">{pred.home_score} - {pred.away_score}</span>
+                        {pred.penalty_winner && (
+                          <p className={`text-xs ${isFinished && matchHadPenalties ? (hitPenalty ? 'text-green-400 font-semibold' : 'text-slate-500 line-through') : 'text-slate-400'}`}>
+                            🥅 {pred.penalty_winner === 'home' ? match.home_team.split(' ').slice(-1)[0] : match.away_team.split(' ').slice(-1)[0]}
+                            {isFinished && matchHadPenalties && hitPenalty && ' ✓'}
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-xs text-slate-500 shrink-0">Sin pronóstico</span>
                     )}
                     {isFinished && (
-                      <span className={`text-xs font-bold shrink-0 w-12 text-right ${pred.points === 3 ? 'text-green-400' : pred.points === 1 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      <span className={`text-xs font-bold shrink-0 w-12 text-right ${
+                        pred.points === 5 ? 'text-purple-400' :
+                        pred.points === 3 ? 'text-yellow-400' :
+                        pred.points === 1 ? 'text-green-400' :
+                        pred.points === 0 ? 'text-slate-500' : 'text-slate-600'
+                      }`}>
                         {pred.points !== null ? `${pred.points} pts` : '— pts'}
                       </span>
                     )}
@@ -198,12 +221,51 @@ export default function LeagueClient({
   const lastMatchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (tab === 'pronosticos' && lastMatchRef.current) {
+    if (tab === 'pronosticos') {
       setTimeout(() => {
-        lastMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        lastMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
       }, 50)
     }
   }, [tab])
+
+  const STAGE_ORDER = ['group', 'round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final']
+  const STAGE_LABELS: Record<string, string> = {
+    group: 'Fase de Grupos',
+    round_of_32: 'Ronda de 32',
+    round_of_16: 'Octavos de Final',
+    quarter: 'Cuartos de Final',
+    semi: 'Semifinales',
+    third_place: 'Tercer Puesto',
+    final: 'Final',
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  const sortedMatches = [...matches].sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
+
+  const byStage = sortedMatches.reduce<Record<string, MatchWithPredictions[]>>((acc, m) => {
+    if (!acc[m.stage]) acc[m.stage] = []
+    acc[m.stage].push(m)
+    return acc
+  }, {})
+  const stageList = STAGE_ORDER.filter(s => byStage[s])
+
+  const activeStage = (() => {
+    const withToday = stageList.find(s => byStage[s].some(m => m.match_date.slice(0, 10) === todayStr))
+    if (withToday) return withToday
+    return stageList.find(s => byStage[s].some(m => m.match_date.slice(0, 10) >= todayStr)) ?? stageList[stageList.length - 1]
+  })()
+
+  const [openStages, setOpenStages] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(stageList.map(s => [s, s === activeStage]))
+  )
+  function toggleStage(stage: string) {
+    setOpenStages(v => ({ ...v, [stage]: !v[stage] }))
+  }
+
+  // Último partido de la fase activa (para scroll)
+  const activeStageMatches = byStage[activeStage] ?? []
+  const lastActiveMatchId = activeStageMatches[activeStageMatches.length - 1]?.id ?? null
 
   // Swipe derecha → volver a lista de torneos
   const touchStartX = useRef<number | null>(null)
@@ -498,16 +560,34 @@ export default function LeagueClient({
 
         {/* Tab: Pronósticos */}
         {tab === 'pronosticos' && (
-          <div className="space-y-2 pb-32 md:pb-6">
+          <div className="space-y-3 pb-32 md:pb-6">
             {matches.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
-            ) : (
-              matches.map((match, i) => (
-                <div key={match.id} ref={i === matches.length - 1 ? lastMatchRef : undefined}>
-                  <MatchPredictionCard match={match} currentUserId={userId} />
-                </div>
-              ))
-            )}
+            ) : stageList.map(stage => (
+              <div key={stage}>
+                <button
+                  onClick={() => toggleStage(stage)}
+                  className="w-full flex items-center justify-between px-4 py-3 mb-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
+                >
+                  <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
+                    {STAGE_LABELS[stage] ?? stage}
+                  </span>
+                  {openStages[stage]
+                    ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                    : <ChevronUp className="w-4 h-4 text-slate-400 rotate-180" />
+                  }
+                </button>
+                {openStages[stage] && (
+                  <div className="space-y-2">
+                    {byStage[stage].map((match, i) => (
+                      <div key={match.id} ref={match.id === lastActiveMatchId ? lastMatchRef : undefined}>
+                        <MatchPredictionCard match={match} currentUserId={userId} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
@@ -721,16 +801,34 @@ export default function LeagueClient({
       )}
 
       {tab === 'pronosticos' && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {matches.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
-          ) : (
-            matches.map((match, i) => (
-              <div key={match.id} ref={i === matches.length - 1 ? lastMatchRef : undefined}>
-                <MatchPredictionCard match={match} currentUserId={userId} />
-              </div>
-            ))
-          )}
+          ) : stageList.map(stage => (
+            <div key={stage}>
+              <button
+                onClick={() => toggleStage(stage)}
+                className="w-full flex items-center justify-between px-4 py-3 mb-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
+              >
+                <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
+                  {STAGE_LABELS[stage] ?? stage}
+                </span>
+                {openStages[stage]
+                  ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                  : <ChevronUp className="w-4 h-4 text-slate-400 rotate-180" />
+                }
+              </button>
+              {openStages[stage] && (
+                <div className="space-y-2">
+                  {byStage[stage].map((match, i) => (
+                    <div key={match.id} ref={match.id === lastActiveMatchId ? lastMatchRef : undefined}>
+                      <MatchPredictionCard match={match} currentUserId={userId} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

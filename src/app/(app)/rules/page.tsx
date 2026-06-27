@@ -25,7 +25,7 @@ export default function RulesPage() {
             <span className="text-xl">🎯</span>
             <div>
               <p className="text-sm font-semibold text-white">Marcador exacto → <span className="text-yellow-400">3 puntos</span></p>
-              <p className="text-xs text-slate-400 mt-0.5">Predecís el marcador exacto del partido. También aplica para empates exactos (ej: 1-1 = 1-1).</p>
+              <p className="text-xs text-slate-400 mt-0.5">Predecís el marcador exacto del partido.</p>
             </div>
           </div>
 
@@ -33,15 +33,7 @@ export default function RulesPage() {
             <span className="text-xl">✅</span>
             <div>
               <p className="text-sm font-semibold text-white">Ganador correcto → <span className="text-yellow-400">1 punto</span></p>
-              <p className="text-xs text-slate-400 mt-0.5">Acertás quién gana el partido pero no el marcador exacto.</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
-            <span className="text-xl">✅</span>
-            <div>
-              <p className="text-sm font-semibold text-white">Empate no exacto → <span className="text-yellow-400">1 punto</span></p>
-              <p className="text-xs text-slate-400 mt-0.5">Predecís empate y hay empate, pero los goles no coinciden exactamente.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Acertás quién gana o que hay empate, pero no el marcador exacto.</p>
             </div>
           </div>
 
@@ -50,6 +42,39 @@ export default function RulesPage() {
             <div>
               <p className="text-sm font-semibold text-white">Pronóstico incorrecto → <span className="text-slate-400">0 puntos</span></p>
               <p className="text-xs text-slate-400 mt-0.5">No acertás el resultado ni el ganador.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Penales — eliminatorias */}
+      <div className="bg-slate-800 rounded-2xl p-5 space-y-4">
+        <h2 className="font-semibold text-white flex items-center gap-2">
+          <span className="text-yellow-400">🥅</span> Penales en eliminatorias
+        </h2>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          A partir de la Ronda de 32, los partidos que terminen empatados van a penales. Si predecís empate, debés elegir además quién gana la tanda.
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+            <span className="text-xl">⭐</span>
+            <div>
+              <p className="text-sm font-semibold text-white">Marcador exacto + penales correctos → <span className="text-purple-400">5 puntos</span></p>
+              <p className="text-xs text-slate-400 mt-0.5">Acertás el empate exacto Y quién gana en penales.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+            <span className="text-xl">🎯</span>
+            <div>
+              <p className="text-sm font-semibold text-white">Marcador exacto + penales incorrectos → <span className="text-yellow-400">3 puntos</span></p>
+              <p className="text-xs text-slate-400 mt-0.5">Acertás el empate exacto pero no el ganador en penales.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 bg-slate-700/50 rounded-xl p-3">
+            <span className="text-xl">✅</span>
+            <div>
+              <p className="text-sm font-semibold text-white">Solo penales correctos → <span className="text-yellow-400">3 puntos</span></p>
+              <p className="text-xs text-slate-400 mt-0.5">No acertás el marcador exacto pero sí quién gana en penales.</p>
             </div>
           </div>
         </div>

@@ -17,7 +17,12 @@ const STEPS = [
   {
     emoji: '📊',
     title: 'Ranking en tiempo real',
-    text: 'Cada vez que acertás un resultado acumulás puntos. El ranking del torneo se actualiza automáticamente después de cada partido.',
+    text: 'Cada vez que acertás un resultado acumulás puntos. El ranking del torneo se actualiza automáticamente después de cada partido.\n\nMarcador exacto → 3 pts · Ganador correcto → 1 pt',
+  },
+  {
+    emoji: '🥅',
+    title: 'Penales en eliminatorias',
+    text: 'En partidos de Ronda de 32 en adelante, si predecís empate debés elegir quién gana en penales.\n\nMarcador exacto + penales correctos → 5 pts\nSolo penales correctos → 3 pts\nMarcador exacto + penales incorrectos → 3 pts',
   },
   {
     emoji: '🛡️',

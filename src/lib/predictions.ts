@@ -11,13 +11,14 @@ export async function upsertPrediction(
   userId: string,
   matchId: number,
   homeScore: number,
-  awayScore: number
+  awayScore: number,
+  penaltyWinner: 'home' | 'away' | null = null
 ) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('predictions')
     .upsert(
-      { user_id: userId, match_id: matchId, home_score: homeScore, away_score: awayScore, status: 'draft', updated_at: new Date().toISOString() },
+      { user_id: userId, match_id: matchId, home_score: homeScore, away_score: awayScore, penalty_winner: penaltyWinner, status: 'draft', updated_at: new Date().toISOString() },
       { onConflict: 'user_id,match_id' }
     )
     .select()

@@ -6,6 +6,7 @@ import Feed, { FeedItem } from '@/components/feed'
 import { isPredictionLocked } from '@/lib/predictions'
 import DashboardClient from './dashboard-client'
 import { getSuggestedFriends } from '@/lib/suggested-friends'
+import PenaltyInfoModal from '@/components/penalty-info-modal'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -17,7 +18,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, avatar_url, welcome_seen')
+    .select('username, avatar_url, welcome_seen, penalty_info_seen')
     .eq('id', user!.id)
     .single()
 
@@ -186,6 +187,11 @@ export default async function DashboardPage() {
   const serverNow = new Date().toISOString()
 
   return (
+    <>
+    <PenaltyInfoModal
+      userId={user!.id}
+      autoOpen={!(profile?.penalty_info_seen ?? false)}
+    />
     <DashboardClient
       userId={user!.id}
       username={profile?.username ?? ''}
@@ -197,5 +203,6 @@ export default async function DashboardPage() {
       showWelcome={!profile?.welcome_seen}
       suggestedFriends={suggestedFriends}
     />
+    </>
   )
 }
