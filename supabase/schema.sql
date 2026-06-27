@@ -20,6 +20,8 @@ create table matches (
   status text default 'scheduled', -- 'scheduled', 'live', 'finished'
   home_score integer,
   away_score integer,
+  penalty_home integer,
+  penalty_away integer,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -48,6 +50,7 @@ create table predictions (
   match_id integer references matches(id) on delete cascade,
   home_score integer not null,
   away_score integer not null,
+  penalty_winner text, -- 'home', 'away', null
   status text default 'draft', -- 'draft', 'locked'
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
@@ -123,9 +126,13 @@ returns void language plpgsql security definer as $$
 declare
   v_home_score integer;
   v_away_score integer;
+  v_penalty_home integer;
+  v_penalty_away integer;
   v_actual_winner text; -- 'home', 'away', 'draw'
+  v_penalty_winner text; -- 'home', 'away', null
 begin
-  select home_score, away_score into v_home_score, v_away_score
+  select home_score, away_score, penalty_home, penalty_away
+  into v_home_score, v_away_score, v_penalty_home, v_penalty_away
   from matches where id = p_match_id;
 
   if v_home_score is null then return; end if;
@@ -136,26 +143,41 @@ begin
     else 'draw'
   end;
 
+  v_penalty_winner := case
+    when v_penalty_home is not null and v_penalty_away is not null then
+      case when v_penalty_home > v_penalty_away then 'home' else 'away' end
+    else null
+  end;
+
   -- Calculate points for each prediction of this match
   with pred_points as (
     select
       p.user_id,
       case
+        -- Marcador exacto + ganador penales correcto = 5 pts
+        when p.home_score = v_home_score and p.away_score = v_away_score
+          and v_penalty_winner is not null and p.penalty_winner = v_penalty_winner then 5
+        -- Marcador exacto (sin penales o penales incorrectos) = 3 pts
         when p.home_score = v_home_score and p.away_score = v_away_score then 3
+        -- Marcador incorrecto pero ganador penales correcto = 3 pts
+        when v_penalty_winner is not null and p.penalty_winner = v_penalty_winner then 3
+        -- Ganador correcto en tiempo regular (sin empate) = 1 pt
         when case
           when p.home_score > p.away_score then 'home'
           when p.away_score > p.home_score then 'away'
           else 'draw'
-        end = v_actual_winner then 1
+        end = v_actual_winner and v_actual_winner != 'draw' then 1
         else 0
       end as pts,
       case when p.home_score = v_home_score and p.away_score = v_away_score then 1 else 0 end as exact,
       case
-        when case
+        when (case
           when p.home_score > p.away_score then 'home'
           when p.away_score > p.home_score then 'away'
           else 'draw'
-        end = v_actual_winner and not (p.home_score = v_home_score and p.away_score = v_away_score) then 1
+        end = v_actual_winner and not (p.home_score = v_home_score and p.away_score = v_away_score))
+        or (v_penalty_winner is not null and p.penalty_winner = v_penalty_winner
+          and not (p.home_score = v_home_score and p.away_score = v_away_score)) then 1
         else 0
       end as winner_only
     from predictions p

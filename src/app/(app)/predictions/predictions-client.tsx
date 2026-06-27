@@ -40,6 +40,8 @@ export default function PredictionsClient({
     return () => clearInterval(interval)
   }, [])
 
+  const KNOCKOUT_STAGES = new Set(['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
+
   const initScores = () => {
     const init: Record<number, { home: string; away: string }> = {}
     matches.forEach(m => {
@@ -49,8 +51,15 @@ export default function PredictionsClient({
     })
     return init
   }
+  const initPenalty = () => {
+    const init: Record<number, 'home' | 'away' | null> = {}
+    matches.forEach(m => { init[m.id] = m.prediction?.penalty_winner ?? null })
+    return init
+  }
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>(initScores)
   const [committed, setCommitted] = useState<Record<number, { home: string; away: string }>>(initScores)
+  const [penaltyWinner, setPenaltyWinner] = useState<Record<number, 'home' | 'away' | null>>(initPenalty)
+  const [committedPenalty, setCommittedPenalty] = useState<Record<number, 'home' | 'away' | null>>(initPenalty)
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
   const [errors, setErrors] = useState<Record<number, string>>({})
@@ -64,7 +73,9 @@ export default function PredictionsClient({
     if (isPredictionLocked(m)) return false
     const s = scores[m.id]
     const c = committed[m.id]
-    return s && c && (s.home !== c.home || s.away !== c.away)
+    if (s && c && (s.home !== c.home || s.away !== c.away)) return true
+    if (penaltyWinner[m.id] !== committedPenalty[m.id]) return true
+    return false
   })
 
   function handleCardNav(href: string) {
@@ -79,11 +90,19 @@ export default function PredictionsClient({
       setErrors(e => ({ ...e, [match.id]: 'Ingresá un resultado válido' }))
       return
     }
+    const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+    const isDraw = home === away
+    const pw = isKnockout && isDraw ? penaltyWinner[match.id] : null
+    if (isKnockout && isDraw && !pw) {
+      setErrors(e => ({ ...e, [match.id]: 'Seleccioná el ganador en penales' }))
+      return
+    }
     setSaving(v => ({ ...v, [match.id]: true }))
     setErrors(e => ({ ...e, [match.id]: '' }))
     try {
-      await upsertPrediction(userId, match.id, home, away)
+      await upsertPrediction(userId, match.id, home, away, pw)
       setCommitted(v => ({ ...v, [match.id]: { home: String(home), away: String(away) } }))
+      setCommittedPenalty(v => ({ ...v, [match.id]: pw }))
       setHasPrediction(v => ({ ...v, [match.id]: true }))
       setSaved(v => ({ ...v, [match.id]: true }))
       setTimeout(() => setSaved(v => ({ ...v, [match.id]: false })), 2000)
@@ -159,7 +178,12 @@ export default function PredictionsClient({
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
               const c = committed[match.id] ?? { home: '', away: '' }
-              const matchDirty = !locked && (s.home !== c.home || s.away !== c.away)
+              const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+              const homeNum = parseInt(s.home)
+              const awayNum = parseInt(s.away)
+              const showPenalty = isKnockout && !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum
+              const pw = penaltyWinner[match.id]
+              const matchDirty = !locked && (s.home !== c.home || s.away !== c.away || pw !== committedPenalty[match.id])
               return (
                 <div key={match.id} onClick={() => handleCardNav(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
                   <div className="flex items-center justify-between mb-3">
@@ -217,7 +241,36 @@ export default function PredictionsClient({
                       {match.status === 'finished' && match.home_score !== null && (
                         <span className="text-xs text-green-400 font-semibold text-center sm:text-right">
                           Resultado: {match.home_score} - {match.away_score}
+                          {match.penalty_home !== null && ` (pen. ${match.penalty_home}-${match.penalty_away})`}
                         </span>
+                      )}
+                      {showPenalty && (
+                        <div className="mt-1" onClick={e => e.stopPropagation()}>
+                          <p className="text-xs text-slate-400 text-center mb-1.5">⚽ Ganador en penales</p>
+                          <div className="flex gap-2">
+                            <button
+                              disabled={locked}
+                              onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: 'home' }))}
+                              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition ${pw === 'home' ? 'bg-yellow-500 text-slate-900 border-yellow-500' : 'bg-slate-700 text-slate-300 border-slate-600 hover:border-yellow-500'}`}
+                            >
+                              {match.home_team.split(' ').slice(-1)[0]}
+                            </button>
+                            <button
+                              disabled={locked}
+                              onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: 'away' }))}
+                              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition ${pw === 'away' ? 'bg-yellow-500 text-slate-900 border-yellow-500' : 'bg-slate-700 text-slate-300 border-slate-600 hover:border-yellow-500'}`}
+                            >
+                              {match.away_team.split(' ').slice(-1)[0]}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {locked && match.prediction?.penalty_winner && (
+                        <p className="text-xs text-slate-400 text-center sm:text-right">
+                          Penales: <span className="text-yellow-400 font-semibold">
+                            {match.prediction.penalty_winner === 'home' ? match.home_team : match.away_team}
+                          </span>
+                        </p>
                       )}
                       {!locked && errors[match.id] && <span className="text-xs text-red-400 sm:text-right">{errors[match.id]}</span>}
                       <button

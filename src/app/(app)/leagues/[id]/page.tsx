@@ -269,9 +269,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const usernameMap = new Map(members.map(m => [m.user_id, m.profiles?.username ?? 'Usuario']))
 
   const [{ data: allMatches }, { data: allPredictions }, { data: userProfile }] = await Promise.all([
-    supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score')
+    supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score, penalty_home, penalty_away')
       .order('match_date', { ascending: true }),
-    adminSupabase.from('predictions').select('user_id, match_id, home_score, away_score, status')
+    adminSupabase.from('predictions').select('user_id, match_id, home_score, away_score, penalty_winner, status')
       .in('user_id', memberIds)
       .limit(5000),
     supabase.from('profiles').select('leagues_info_seen').eq('id', user!.id).single(),
@@ -283,15 +283,26 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     predsByMatch.get(pred.match_id)!.push(pred)
   }
 
-  function calcPoints(pred: { home_score: number | null; away_score: number | null }, match: { home_score: number | null; away_score: number | null }) {
+  function calcPoints(
+    pred: { home_score: number | null; away_score: number | null; penalty_winner?: string | null },
+    match: { home_score: number | null; away_score: number | null; penalty_home?: number | null; penalty_away?: number | null }
+  ) {
     if (pred.home_score === null || pred.away_score === null) return null
     if (match.home_score === null || match.away_score === null) return null
     const ph = Number(pred.home_score), pa = Number(pred.away_score)
     const mh = Number(match.home_score), ma = Number(match.away_score)
-    if (ph === mh && pa === ma) return 3
+    const penaltyWinner = match.penalty_home != null && match.penalty_away != null
+      ? (match.penalty_home > match.penalty_away ? 'home' : 'away')
+      : null
+    const exactScore = ph === mh && pa === ma
     const predWinner = ph > pa ? 'home' : pa > ph ? 'away' : 'draw'
     const realWinner = mh > ma ? 'home' : ma > mh ? 'away' : 'draw'
-    return predWinner === realWinner ? 1 : 0
+    const correctPenalty = penaltyWinner !== null && pred.penalty_winner === penaltyWinner
+    if (exactScore && correctPenalty) return 5
+    if (exactScore) return 3
+    if (correctPenalty) return 3
+    if (predWinner === realWinner && realWinner !== 'draw') return 1
+    return 0
   }
 
   const matchesWithPredictions = (allMatches ?? [])
@@ -303,6 +314,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         username: usernameMap.get(p.user_id) ?? 'Usuario',
         home_score: p.home_score,
         away_score: p.away_score,
+        penalty_winner: (p.penalty_winner as 'home' | 'away' | null) ?? null,
         points: calcPoints(p, m),
       })),
     }))

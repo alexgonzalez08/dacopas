@@ -17,6 +17,8 @@ export type Match = {
   status: 'scheduled' | 'live' | 'finished'
   home_score: number | null
   away_score: number | null
+  penalty_home: number | null
+  penalty_away: number | null
   tournament: string | null
 }
 
@@ -41,6 +43,7 @@ export type Prediction = {
   match_id: number
   home_score: number
   away_score: number
+  penalty_winner: 'home' | 'away' | null
   status: 'draft' | 'locked'
   created_at: string
   updated_at: string

@@ -65,6 +65,8 @@ async function runSync(request: Request) {
     const status = mapStatus(f.fixture.status.short)
     const homeScore = f.goals.home ?? null
     const awayScore = f.goals.away ?? null
+    const penaltyHome = f.score?.penalty?.home ?? null
+    const penaltyAway = f.score?.penalty?.away ?? null
     const stage = mapStage(f.league.round ?? '')
 
     const existing = existingMap.get(externalId)
@@ -75,6 +77,8 @@ async function runSync(request: Request) {
         status,
         home_score: homeScore,
         away_score: awayScore,
+        penalty_home: penaltyHome,
+        penalty_away: penaltyAway,
         updated_at: new Date().toISOString(),
       }).eq('id', existing.id)
 
@@ -151,6 +155,8 @@ async function runSync(request: Request) {
         status,
         home_score: homeScore,
         away_score: awayScore,
+        penalty_home: penaltyHome,
+        penalty_away: penaltyAway,
         tournament: f.league.name ?? null,
       })
     }
