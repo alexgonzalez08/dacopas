@@ -189,8 +189,22 @@ export default function PredictionsClient({
               : <ChevronRight className="w-4 h-4 text-slate-400" />
             }
           </button>
-          {isOpen && <div className="space-y-3">
-            {stageMatches.map(match => {
+          {isOpen && <div className="space-y-5">
+            {(() => {
+              const byDay = stageMatches.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
+                const d = m.match_date.slice(0, 10)
+                if (!acc[d]) acc[d] = []
+                acc[d].push(m)
+                return acc
+              }, {})
+              const stageDays = Object.keys(byDay).sort()
+              return stageDays.map(day => (
+                <div key={day}>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 mb-2">
+                    {new Date(day + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </p>
+                  <div className="space-y-3">
+                    {byDay[day].map(match => {
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
               const c = committed[match.id] ?? { home: '', away: '' }
@@ -330,7 +344,11 @@ export default function PredictionsClient({
                   </div>
                 </div>
               )
-            })}
+                    })}
+                  </div>
+                </div>
+              ))
+            })()}
           </div>}
         </div>
       )
