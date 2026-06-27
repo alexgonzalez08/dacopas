@@ -14,7 +14,7 @@ type Entry = {
   avatar_url: string | null
 }
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
 const MEDAL_STYLES: Record<number, { medal: string; bg: string }> = {
   0: { medal: '🥇', bg: 'bg-yellow-500/10 border-yellow-500/30' },
