@@ -269,7 +269,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const usernameMap = new Map(members.map(m => [m.user_id, m.profiles?.username ?? 'Usuario']))
 
   const [{ data: allMatches }, { data: allPredictions }, { data: userProfile }] = await Promise.all([
-    supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score, penalty_home, penalty_away')
+    supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score, penalty_home, penalty_away, stage, group_name')
       .order('match_date', { ascending: true }),
     adminSupabase.from('predictions').select('user_id, match_id, home_score, away_score, penalty_winner, status')
       .in('user_id', memberIds)

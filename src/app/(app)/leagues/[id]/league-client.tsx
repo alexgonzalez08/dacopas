@@ -34,6 +34,8 @@ type MatchWithPredictions = {
   away_score: number | null
   penalty_home: number | null
   penalty_away: number | null
+  stage: string
+  group_name: string | null
   predictions: MatchPrediction[]
 }
 
@@ -225,6 +227,41 @@ export default function LeagueClient({
       }, 50)
     }
   }, [tab])
+
+  const STAGE_ORDER = ['group', 'round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final']
+  const STAGE_LABELS: Record<string, string> = {
+    group: 'Fase de Grupos',
+    round_of_32: 'Ronda de 32',
+    round_of_16: 'Octavos de Final',
+    quarter: 'Cuartos de Final',
+    semi: 'Semifinales',
+    third_place: 'Tercer Puesto',
+    final: 'Final',
+  }
+
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  const sortedMatches = [...matches].sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
+
+  const byStage = sortedMatches.reduce<Record<string, MatchWithPredictions[]>>((acc, m) => {
+    if (!acc[m.stage]) acc[m.stage] = []
+    acc[m.stage].push(m)
+    return acc
+  }, {})
+  const stageList = STAGE_ORDER.filter(s => byStage[s])
+
+  const activeStage = (() => {
+    const withToday = stageList.find(s => byStage[s].some(m => m.match_date.slice(0, 10) === todayStr))
+    if (withToday) return withToday
+    return stageList.find(s => byStage[s].some(m => m.match_date.slice(0, 10) >= todayStr)) ?? stageList[stageList.length - 1]
+  })()
+
+  const [openStages, setOpenStages] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(stageList.map(s => [s, s === activeStage]))
+  )
+  function toggleStage(stage: string) {
+    setOpenStages(v => ({ ...v, [stage]: !v[stage] }))
+  }
 
   // Swipe derecha → volver a lista de torneos
   const touchStartX = useRef<number | null>(null)
@@ -519,16 +556,34 @@ export default function LeagueClient({
 
         {/* Tab: Pronósticos */}
         {tab === 'pronosticos' && (
-          <div className="space-y-2 pb-32 md:pb-6">
+          <div className="space-y-3 pb-32 md:pb-6">
             {matches.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
-            ) : (
-              matches.map((match, i) => (
-                <div key={match.id} ref={i === matches.length - 1 ? lastMatchRef : undefined}>
-                  <MatchPredictionCard match={match} currentUserId={userId} />
-                </div>
-              ))
-            )}
+            ) : stageList.map(stage => (
+              <div key={stage}>
+                <button
+                  onClick={() => toggleStage(stage)}
+                  className="w-full flex items-center justify-between px-4 py-3 mb-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
+                >
+                  <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
+                    {STAGE_LABELS[stage] ?? stage}
+                  </span>
+                  {openStages[stage]
+                    ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                    : <ChevronUp className="w-4 h-4 text-slate-400 rotate-180" />
+                  }
+                </button>
+                {openStages[stage] && (
+                  <div className="space-y-2">
+                    {byStage[stage].map((match, i) => (
+                      <div key={match.id} ref={i === byStage[stage].length - 1 && stage === stageList[stageList.length - 1] ? lastMatchRef : undefined}>
+                        <MatchPredictionCard match={match} currentUserId={userId} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
 
@@ -742,16 +797,34 @@ export default function LeagueClient({
       )}
 
       {tab === 'pronosticos' && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {matches.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
-          ) : (
-            matches.map((match, i) => (
-              <div key={match.id} ref={i === matches.length - 1 ? lastMatchRef : undefined}>
-                <MatchPredictionCard match={match} currentUserId={userId} />
-              </div>
-            ))
-          )}
+          ) : stageList.map(stage => (
+            <div key={stage}>
+              <button
+                onClick={() => toggleStage(stage)}
+                className="w-full flex items-center justify-between px-4 py-3 mb-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
+              >
+                <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
+                  {STAGE_LABELS[stage] ?? stage}
+                </span>
+                {openStages[stage]
+                  ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                  : <ChevronUp className="w-4 h-4 text-slate-400 rotate-180" />
+                }
+              </button>
+              {openStages[stage] && (
+                <div className="space-y-2">
+                  {byStage[stage].map((match, i) => (
+                    <div key={match.id} ref={i === byStage[stage].length - 1 && stage === stageList[stageList.length - 1] ? lastMatchRef : undefined}>
+                      <MatchPredictionCard match={match} currentUserId={userId} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
