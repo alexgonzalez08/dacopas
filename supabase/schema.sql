@@ -92,10 +92,15 @@ create policy "leagues_read" on leagues for select using (
 );
 create policy "leagues_insert" on leagues for insert with check (auth.uid() = created_by);
 
+-- Helper function to check league membership without triggering RLS recursion
+create or replace function is_league_member(p_league_id uuid)
+returns boolean language sql security definer stable as $$
+  select exists (select 1 from league_members where league_id = p_league_id and user_id = auth.uid())
+$$;
+
 -- League members: members can see their leagues
 create policy "league_members_read" on league_members for select using (
-  user_id = auth.uid() or
-  exists (select 1 from league_members lm where lm.league_id = league_members.league_id and lm.user_id = auth.uid())
+  user_id = auth.uid() or is_league_member(league_id)
 );
 create policy "league_members_insert" on league_members for insert with check (auth.uid() = user_id);
 
