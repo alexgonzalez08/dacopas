@@ -221,9 +221,9 @@ export default function LeagueClient({
   const lastMatchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (tab === 'pronosticos' && lastMatchRef.current) {
+    if (tab === 'pronosticos') {
       setTimeout(() => {
-        lastMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        lastMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
       }, 50)
     }
   }, [tab])
@@ -262,6 +262,10 @@ export default function LeagueClient({
   function toggleStage(stage: string) {
     setOpenStages(v => ({ ...v, [stage]: !v[stage] }))
   }
+
+  // Último partido de la fase activa (para scroll)
+  const activeStageMatches = byStage[activeStage] ?? []
+  const lastActiveMatchId = activeStageMatches[activeStageMatches.length - 1]?.id ?? null
 
   // Swipe derecha → volver a lista de torneos
   const touchStartX = useRef<number | null>(null)
@@ -576,7 +580,7 @@ export default function LeagueClient({
                 {openStages[stage] && (
                   <div className="space-y-2">
                     {byStage[stage].map((match, i) => (
-                      <div key={match.id} ref={i === byStage[stage].length - 1 && stage === stageList[stageList.length - 1] ? lastMatchRef : undefined}>
+                      <div key={match.id} ref={match.id === lastActiveMatchId ? lastMatchRef : undefined}>
                         <MatchPredictionCard match={match} currentUserId={userId} />
                       </div>
                     ))}
@@ -817,7 +821,7 @@ export default function LeagueClient({
               {openStages[stage] && (
                 <div className="space-y-2">
                   {byStage[stage].map((match, i) => (
-                    <div key={match.id} ref={i === byStage[stage].length - 1 && stage === stageList[stageList.length - 1] ? lastMatchRef : undefined}>
+                    <div key={match.id} ref={match.id === lastActiveMatchId ? lastMatchRef : undefined}>
                       <MatchPredictionCard match={match} currentUserId={userId} />
                     </div>
                   ))}

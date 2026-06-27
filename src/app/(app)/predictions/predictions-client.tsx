@@ -165,10 +165,16 @@ export default function PredictionsClient({
     setOpenDays(v => ({ ...v, [day]: !v[day] }))
   }
 
-  const activeRef = useRef<HTMLDivElement>(null)
+  // Primer partido próximo (hoy o futuro, no bloqueado)
+  const nextMatch = sorted.find(m => m.match_date.slice(0, 10) >= todayStr && m.status !== 'finished')
+  const nextMatchId = nextMatch?.id ?? null
+
+  const nextMatchRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (activeRef.current) {
-      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (nextMatchRef.current) {
+      setTimeout(() => {
+        nextMatchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 100)
     }
   }, [])
 
@@ -194,7 +200,7 @@ export default function PredictionsClient({
         const done = stageMatches.filter(m => m.status === 'finished').length
         const hasPred = stageMatches.filter(m => hasPrediction[m.id]).length
         return (
-        <div key={stage} ref={stage === activeStage ? activeRef : undefined}>
+        <div key={stage}>
           <button
             onClick={() => toggleStage(stage)}
             className="w-full flex items-center justify-between px-4 py-3 mb-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
@@ -246,7 +252,7 @@ export default function PredictionsClient({
               const pw = penaltyWinner[match.id]
               const matchDirty = !locked && (s.home !== c.home || s.away !== c.away || pw !== committedPenalty[match.id])
               return (
-                <div key={match.id} onClick={() => handleCardNav(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
+                <div key={match.id} ref={match.id === nextMatchId ? nextMatchRef : undefined} onClick={() => handleCardNav(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
