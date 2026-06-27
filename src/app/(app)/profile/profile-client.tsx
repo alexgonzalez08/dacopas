@@ -1,7 +1,8 @@
 'use client'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Camera, Check, Pencil, X, Loader2 } from 'lucide-react'
+import { Camera, Check, Pencil, X, Loader2, Users } from 'lucide-react'
+import Link from 'next/link'
 import CreatePost from '@/components/create-post'
 import UserPostCard from '@/components/user-post-card'
 
@@ -244,6 +245,17 @@ export default function ProfileClient({
           )}
         </div>
       </div>
+
+      {/* Amistades */}
+      <Link href="/friends" className="flex items-center justify-between bg-slate-800 hover:bg-slate-700 transition rounded-2xl px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center">
+            <Users className="w-4 h-4 text-blue-400" />
+          </div>
+          <span className="text-sm font-semibold text-white">Amistades</span>
+        </div>
+        <span className="text-slate-500 text-sm">→</span>
+      </Link>
 
       {/* Crear post */}
       <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />

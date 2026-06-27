@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check, BookOpen, MessageSquareWarning, Rss } from 'lucide-react'
+import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check, BookOpen, MessageSquareWarning, Rss, BarChart2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
@@ -23,14 +23,14 @@ const AMISTADES_TYPES = new Set([
 const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Predicciones', icon: Star },
   { href: '/leagues/new', label: 'Torneos', icon: TorneosIcon },
-  { href: '/friends', label: 'Amistades', icon: FriendsIcon },
+  { href: '/stats', label: 'Estadísticas', icon: BarChart2 },
 ]
 
 const BOTTOM_NAV = [
   { href: '/dashboard', label: 'Feed', icon: Rss },
   { href: '/predictions', label: 'Predicciones', icon: Star },
   { href: '/leagues', label: 'Torneos', icon: TorneosIcon },
-  { href: '/friends', label: 'Amistades', icon: FriendsIcon },
+  { href: '/stats', label: 'Estadísticas', icon: BarChart2 },
 ]
 
 function Badge({ count }: { count: number }) {
