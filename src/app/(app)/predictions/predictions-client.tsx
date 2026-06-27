@@ -209,26 +209,69 @@ export default function PredictionsClient({
                           <span className="text-xs text-slate-300 text-center max-w-[80px] leading-tight">{match.home_team}</span>
                         </div>
                       </span>
-                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          disabled={locked}
-                          value={s.home}
-                          onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], home: e.target.value } }))}
-                          className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
-                        />
-                        <span className="text-slate-500 font-bold">-</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          disabled={locked}
-                          value={s.away}
-                          onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], away: e.target.value } }))}
-                          className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
-                        />
+                      <div className="flex flex-col items-center gap-1" onClick={e => e.stopPropagation()}>
+                        {isKnockout && (
+                          <div className="flex items-center gap-2 w-full">
+                            <button
+                              disabled={locked || !showPenalty}
+                              onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: pw === 'home' ? null : 'home' }))}
+                              className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
+                                ${!showPenalty || locked ? 'opacity-30 cursor-default text-slate-500' :
+                                  pw === 'home' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                              <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition
+                                ${pw === 'home' ? 'border-yellow-400 bg-yellow-400' : 'border-slate-500'}`}>
+                                {pw === 'home' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />}
+                              </span>
+                              pen
+                            </button>
+                            <div className="w-2" />
+                            <button
+                              disabled={locked || !showPenalty}
+                              onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: pw === 'away' ? null : 'away' }))}
+                              className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
+                                ${!showPenalty || locked ? 'opacity-30 cursor-default text-slate-500' :
+                                  pw === 'away' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                              pen
+                              <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition
+                                ${pw === 'away' ? 'border-yellow-400 bg-yellow-400' : 'border-slate-500'}`}>
+                                {pw === 'away' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />}
+                              </span>
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            disabled={locked}
+                            value={s.home}
+                            onChange={e => {
+                              const val = e.target.value
+                              setScores(v => ({ ...v, [match.id]: { ...v[match.id], home: val } }))
+                              const h = parseInt(val), a = parseInt(s.away)
+                              if (!isNaN(h) && !isNaN(a) && h !== a) setPenaltyWinner(v => ({ ...v, [match.id]: null }))
+                            }}
+                            className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
+                          />
+                          <span className="text-slate-500 font-bold">-</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            disabled={locked}
+                            value={s.away}
+                            onChange={e => {
+                              const val = e.target.value
+                              setScores(v => ({ ...v, [match.id]: { ...v[match.id], away: val } }))
+                              const h = parseInt(s.home), a = parseInt(val)
+                              if (!isNaN(h) && !isNaN(a) && h !== a) setPenaltyWinner(v => ({ ...v, [match.id]: null }))
+                            }}
+                            className="w-12 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
+                          />
+                        </div>
                       </div>
                       <span className="flex-1 flex justify-start">
                         <div className="flex flex-col items-center gap-1">
@@ -243,27 +286,6 @@ export default function PredictionsClient({
                           Resultado: {match.home_score} - {match.away_score}
                           {match.penalty_home !== null && ` (pen. ${match.penalty_home}-${match.penalty_away})`}
                         </span>
-                      )}
-                      {showPenalty && (
-                        <div className="mt-1" onClick={e => e.stopPropagation()}>
-                          <p className="text-xs text-slate-400 text-center mb-1.5">⚽ Ganador en penales</p>
-                          <div className="flex gap-2">
-                            <button
-                              disabled={locked}
-                              onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: 'home' }))}
-                              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition ${pw === 'home' ? 'bg-yellow-500 text-slate-900 border-yellow-500' : 'bg-slate-700 text-slate-300 border-slate-600 hover:border-yellow-500'}`}
-                            >
-                              {match.home_team.split(' ').slice(-1)[0]}
-                            </button>
-                            <button
-                              disabled={locked}
-                              onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: 'away' }))}
-                              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition ${pw === 'away' ? 'bg-yellow-500 text-slate-900 border-yellow-500' : 'bg-slate-700 text-slate-300 border-slate-600 hover:border-yellow-500'}`}
-                            >
-                              {match.away_team.split(' ').slice(-1)[0]}
-                            </button>
-                          </div>
-                        </div>
                       )}
                       {locked && match.prediction?.penalty_winner && (
                         <p className="text-xs text-slate-400 text-center sm:text-right">
