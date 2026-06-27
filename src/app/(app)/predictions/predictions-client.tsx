@@ -125,15 +125,17 @@ export default function PredictionsClient({
     acc[m.stage].push(m)
     return acc
   }, {})
+
   const stages = STAGE_ORDER.filter(s => byStage[s])
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD en timezone local
+  const matchDay = (date: string) => new Date(date).toLocaleDateString('en-CA')
 
   // Fase activa: la que tiene partidos hoy, o la más próxima con partidos futuros
   const activeStage = (() => {
-    const withToday = stages.find(s => byStage[s].some(m => m.match_date.slice(0, 10) === todayStr))
+    const withToday = stages.find(s => byStage[s].some(m => matchDay(m.match_date) === todayStr))
     if (withToday) return withToday
-    return stages.find(s => byStage[s].some(m => m.match_date.slice(0, 10) >= todayStr)) ?? stages[stages.length - 1]
+    return stages.find(s => byStage[s].some(m => matchDay(m.match_date) >= todayStr)) ?? stages[stages.length - 1]
   })()
 
   const [openStages, setOpenStages] = useState<Record<string, boolean>>(() =>
@@ -145,10 +147,10 @@ export default function PredictionsClient({
 
   // Día activo por fase: el que tiene partidos hoy, o el más próximo con partidos futuros
   function getActiveDay(stageMatches: MatchWithPrediction[]) {
-    const withToday = stageMatches.find(m => m.match_date.slice(0, 10) === todayStr)
-    if (withToday) return withToday.match_date.slice(0, 10)
-    const future = stageMatches.find(m => m.match_date.slice(0, 10) > todayStr)
-    if (future) return future.match_date.slice(0, 10)
+    const withToday = stageMatches.find(m => matchDay(m.match_date) === todayStr)
+    if (withToday) return matchDay(withToday.match_date)
+    const future = stageMatches.find(m => matchDay(m.match_date) > todayStr)
+    if (future) return matchDay(future.match_date)
     return null
   }
 
@@ -156,7 +158,7 @@ export default function PredictionsClient({
     const init: Record<string, boolean> = {}
     stages.forEach(stage => {
       const activeDay = getActiveDay(byStage[stage])
-      const days = [...new Set(byStage[stage].map(m => m.match_date.slice(0, 10)))].sort()
+      const days = [...new Set(byStage[stage].map(m => matchDay(m.match_date)))].sort()
       days.forEach(d => { init[d] = d === activeDay })
     })
     return init
@@ -166,7 +168,7 @@ export default function PredictionsClient({
   }
 
   // Primer partido próximo (hoy o futuro, no bloqueado)
-  const nextMatch = sorted.find(m => m.match_date.slice(0, 10) >= todayStr && m.status !== 'finished')
+  const nextMatch = sorted.find(m => matchDay(m.match_date) >= todayStr && m.status !== 'finished')
   const nextMatchId = nextMatch?.id ?? null
 
   const nextMatchRef = useRef<HTMLDivElement>(null)
@@ -220,7 +222,7 @@ export default function PredictionsClient({
           {isOpen && <div className="space-y-5">
             {(() => {
               const byDay = stageMatches.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
-                const d = m.match_date.slice(0, 10)
+                const d = matchDay(m.match_date)
                 if (!acc[d]) acc[d] = []
                 acc[d].push(m)
                 return acc
