@@ -53,7 +53,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
           type="text"
           value={search}
           onChange={e => handleSearch(e.target.value)}
-          placeholder="Buscar jugador..."
+          placeholder="Buscar por nombre o alias..."
           className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500 transition"
         />
       </div>
