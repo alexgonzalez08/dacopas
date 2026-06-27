@@ -143,6 +143,28 @@ export default function PredictionsClient({
     setOpenStages(v => ({ ...v, [stage]: !v[stage] }))
   }
 
+  // Día activo por fase: el que tiene partidos hoy, o el más próximo con partidos futuros
+  function getActiveDay(stageMatches: MatchWithPrediction[]) {
+    const withToday = stageMatches.find(m => m.match_date.slice(0, 10) === todayStr)
+    if (withToday) return withToday.match_date.slice(0, 10)
+    const future = stageMatches.find(m => m.match_date.slice(0, 10) > todayStr)
+    if (future) return future.match_date.slice(0, 10)
+    return null
+  }
+
+  const [openDays, setOpenDays] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    stages.forEach(stage => {
+      const activeDay = getActiveDay(byStage[stage])
+      const days = [...new Set(byStage[stage].map(m => m.match_date.slice(0, 10)))].sort()
+      days.forEach(d => { init[d] = d === activeDay })
+    })
+    return init
+  })
+  function toggleDay(day: string) {
+    setOpenDays(v => ({ ...v, [day]: !v[day] }))
+  }
+
   const activeRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (activeRef.current) {
@@ -200,10 +222,19 @@ export default function PredictionsClient({
               const stageDays = Object.keys(byDay).sort()
               return stageDays.map(day => (
                 <div key={day}>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 mb-2">
-                    {new Date(day + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  </p>
-                  <div className="space-y-3">
+                  <button
+                    onClick={() => toggleDay(day)}
+                    className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition group"
+                  >
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-slate-200 transition">
+                      {new Date(day + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </span>
+                    {openDays[day]
+                      ? <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                      : <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                    }
+                  </button>
+                  {openDays[day] && <div className="space-y-3">
                     {byDay[day].map(match => {
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
@@ -345,7 +376,7 @@ export default function PredictionsClient({
                 </div>
               )
                     })}
-                  </div>
+                  </div>}
                 </div>
               ))
             })()}
