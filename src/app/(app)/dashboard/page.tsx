@@ -97,6 +97,7 @@ export default async function DashboardPage() {
       .from('user_posts')
       .select('*, post_type, metadata, profiles!user_posts_user_id_fkey(username, full_name, avatar_url), post_reactions(id, emoji, user_id, profiles(username)), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
       .eq('is_system', true)
+      .neq('post_type', 'stats')
       .order('created_at', { ascending: false })
       .limit(10),
     // Posts de sistema ocultados por este usuario
