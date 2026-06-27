@@ -12,6 +12,7 @@ type Entry = {
   username: string
   full_name: string | null
   avatar_url: string | null
+  rank: number
 }
 
 const PAGE_SIZE = 10
@@ -61,15 +62,15 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
       <div className="space-y-2">
         {pageEntries.length === 0 ? (
           <p className="text-center text-slate-500 text-sm py-8">No se encontraron resultados.</p>
-        ) : pageEntries.map((entry, i) => {
-          const globalRank = page * PAGE_SIZE + i
-          const style = MEDAL_STYLES[globalRank] ?? { medal: null, bg: 'bg-slate-800 border-slate-700/50' }
+        ) : pageEntries.map((entry) => {
+          const r = entry.rank
+          const style = MEDAL_STYLES[r] ?? { medal: null, bg: 'bg-slate-800 border-slate-700/50' }
           const isMe = entry.uid === currentUserId
           return (
             <div key={entry.uid} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${isMe ? 'bg-yellow-500/10 border-yellow-500/30' : style.bg}`}>
               <span className="w-7 text-center shrink-0">
-                <span className={`text-xs font-bold ${globalRank === 0 ? 'text-yellow-400' : globalRank === 1 ? 'text-slate-300' : globalRank === 2 ? 'text-amber-500' : 'text-slate-500'}`}>
-                  #{globalRank + 1}
+                <span className={`text-xs font-bold ${r === 0 ? 'text-yellow-400' : r === 1 ? 'text-slate-300' : r === 2 ? 'text-amber-500' : 'text-slate-500'}`}>
+                  #{r + 1}
                 </span>
               </span>
               <UserAvatar username={entry.username} avatarUrl={entry.avatar_url} size="sm" />

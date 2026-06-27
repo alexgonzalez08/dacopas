@@ -102,7 +102,8 @@ export default async function StatsPage() {
       return { uid, ...stats, username: profile.username, full_name: profile.full_name, avatar_url: profile.avatar_url }
     })
     .filter(Boolean)
-    .sort((a, b) => b!.points - a!.points || b!.exact - a!.exact || b!.winner - a!.winner) as any[]
+    .sort((a, b) => b!.points - a!.points || b!.exact - a!.exact || b!.winner - a!.winner)
+    .map((e, i) => ({ ...e!, rank: i })) as any[]
 
   return (
     <div className="max-w-lg mx-auto space-y-6 pb-8">
