@@ -96,7 +96,15 @@ function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredict
                   : null
                 const hitPenalty = matchHadPenalties && pred.penalty_winner === actualPenaltyWinner
                 return (
-                  <div key={pred.user_id} className={`flex items-center gap-3 px-3 py-2 rounded-xl ${isMe ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-slate-700/40'}`}>
+                  <div key={pred.user_id} className={`flex items-center gap-3 px-3 py-2 rounded-xl ${
+                    isFinished && pred.points !== null
+                      ? pred.points === 5 ? 'bg-purple-500/10 border border-purple-500/20'
+                      : pred.points === 3 ? 'bg-green-500/10 border border-green-500/20'
+                      : pred.points === 1 ? 'bg-yellow-500/10 border border-yellow-500/20'
+                      : pred.points === 0 ? 'bg-red-500/10 border border-red-500/20'
+                      : 'bg-slate-700/40'
+                    : isMe ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-slate-700/40'
+                  }`}>
                     <span className={`text-xs font-medium flex-1 truncate ${isMe ? 'text-yellow-400' : 'text-slate-300'}`}>
                       @{pred.username}
                     </span>
@@ -116,9 +124,9 @@ function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredict
                     {isFinished && (
                       <span className={`text-xs font-bold shrink-0 w-12 text-right ${
                         pred.points === 5 ? 'text-purple-400' :
-                        pred.points === 3 ? 'text-yellow-400' :
-                        pred.points === 1 ? 'text-green-400' :
-                        pred.points === 0 ? 'text-slate-500' : 'text-slate-600'
+                        pred.points === 3 ? 'text-green-400' :
+                        pred.points === 1 ? 'text-yellow-400' :
+                        pred.points === 0 ? 'text-red-400' : 'text-slate-600'
                       }`}>
                         {pred.points !== null ? `${pred.points} pts` : '— pts'}
                       </span>
