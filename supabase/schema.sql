@@ -172,7 +172,7 @@ begin
           when p.home_score > p.away_score then 'home'
           when p.away_score > p.home_score then 'away'
           else 'draw'
-        end = v_actual_winner and v_actual_winner != 'draw' then 1
+        end = v_actual_winner then 1
         else 0
       end as pts,
       case when p.home_score = v_home_score and p.away_score = v_away_score then 1 else 0 end as exact,

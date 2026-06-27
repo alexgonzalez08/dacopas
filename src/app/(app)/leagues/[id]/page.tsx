@@ -301,7 +301,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     if (exactScore && correctPenalty) return 5
     if (exactScore) return 3
     if (correctPenalty) return 3
-    if (predWinner === realWinner && realWinner !== 'draw') return 1
+    if (predWinner === realWinner) return 1
     return 0
   }
 
