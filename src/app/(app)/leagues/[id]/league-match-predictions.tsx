@@ -95,6 +95,11 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
                 match.predictions.map(pred => {
                   const isMe = pred.user_id === currentUserId
                   const hasPred = pred.home_score !== null && pred.away_score !== null
+                  const matchHadPenalties = match.penalty_home !== null && match.penalty_away !== null
+                  const actualPenaltyWinner = matchHadPenalties
+                    ? (match.penalty_home! > match.penalty_away! ? 'home' : 'away')
+                    : null
+                  const hitPenalty = matchHadPenalties && pred.penalty_winner === actualPenaltyWinner
                   return (
                     <div
                       key={pred.user_id}
@@ -109,8 +114,9 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
                             {pred.home_score} - {pred.away_score}
                           </span>
                           {pred.penalty_winner && (
-                            <p className="text-xs text-slate-400">
-                              pen: {pred.penalty_winner === 'home' ? match.home_team.split(' ').slice(-1)[0] : match.away_team.split(' ').slice(-1)[0]}
+                            <p className={`text-xs ${isFinished && matchHadPenalties ? (hitPenalty ? 'text-green-400 font-semibold' : 'text-slate-500 line-through') : 'text-slate-400'}`}>
+                              🥅 {pred.penalty_winner === 'home' ? match.home_team.split(' ').slice(-1)[0] : match.away_team.split(' ').slice(-1)[0]}
+                              {isFinished && matchHadPenalties && hitPenalty && ' ✓'}
                             </p>
                           )}
                         </div>
