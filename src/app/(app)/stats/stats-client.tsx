@@ -67,8 +67,10 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
           const isMe = entry.uid === currentUserId
           return (
             <div key={entry.uid} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${isMe ? 'bg-yellow-500/10 border-yellow-500/30' : style.bg}`}>
-              <span className="w-7 text-center shrink-0 text-sm">
-                {style.medal ?? <span className="text-xs text-slate-500 font-bold">#{globalRank + 1}</span>}
+              <span className="w-7 text-center shrink-0">
+                <span className={`text-xs font-bold ${globalRank === 0 ? 'text-yellow-400' : globalRank === 1 ? 'text-slate-300' : globalRank === 2 ? 'text-amber-500' : 'text-slate-500'}`}>
+                  #{globalRank + 1}
+                </span>
               </span>
               <UserAvatar username={entry.username} avatarUrl={entry.avatar_url} size="sm" />
               <div className="flex-1 min-w-0">
