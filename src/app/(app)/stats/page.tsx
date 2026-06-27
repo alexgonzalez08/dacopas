@@ -61,6 +61,8 @@ export default async function StatsPage() {
       .select('user_id, match_id, home_score, away_score, penalty_winner')
       .in('match_id', finishedIds)
       .eq('status', 'locked')
+      .order('user_id')
+      .order('match_id')
       .range(offset, offset + PAGE - 1)
     if (!data || data.length === 0) break
     allPreds.push(...data)
