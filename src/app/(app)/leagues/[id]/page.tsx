@@ -273,7 +273,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       .order('match_date', { ascending: true }),
     adminSupabase.from('predictions').select('user_id, match_id, home_score, away_score, penalty_winner, status')
       .in('user_id', memberIds)
-      .limit(5000),
+      .eq('status', 'locked')
+      .limit(50000),
     supabase.from('profiles').select('leagues_info_seen').eq('id', user!.id).single(),
   ])
 
