@@ -336,32 +336,36 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
     }
   }
 
-  const byStage = (stage: string) =>
-    matches.filter(m => m.stage === stage).sort((a, b) => {
-      const ap = a.bracket_position
-      const bp = b.bracket_position
-      if (ap != null && bp != null) return ap - bp
-      if (ap != null) return -1
-      if (bp != null) return 1
-      return new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
-    })
+  // Construye un array de `len` slots. Si el match tiene bracket_position lo ubica
+  // en el slot correcto (1-based → 0-based). Los sin posición van al primer slot libre.
+  const byStageSlotted = (stage: string, len: number): (MatchWithPred | null)[] => {
+    const arr: (MatchWithPred | null)[] = Array(len).fill(null)
+    const stageMatches = matches.filter(m => m.stage === stage)
+    const unpositioned: MatchWithPred[] = []
+    for (const m of stageMatches) {
+      if (m.bracket_position != null) {
+        const idx = m.bracket_position - 1
+        if (idx >= 0 && idx < len) arr[idx] = m
+      } else {
+        unpositioned.push(m)
+      }
+    }
+    // Partidos sin posición: primer slot libre
+    for (const m of unpositioned) {
+      const idx = arr.indexOf(null)
+      if (idx !== -1) arr[idx] = m
+    }
+    return arr
+  }
 
-  const r32 = byStage('round_of_32')
-  const r16 = byStage('round_of_16')
-  const qf  = byStage('quarter')
-  const sf  = byStage('semi')
-  const tp  = byStage('third_place')
-  const fin = byStage('final')
+  const r32P = byStageSlotted('round_of_32', 16)
+  const r16P = byStageSlotted('round_of_16', 8)
+  const qfP  = byStageSlotted('quarter', 4)
+  const sfP  = byStageSlotted('semi', 2)
+  const tp   = matches.filter(m => m.stage === 'third_place')
+  const fin  = matches.filter(m => m.stage === 'final')
 
-  const has32 = r32.length > 0 || matches.length === 0
-
-  const pad = <T,>(arr: T[], len: number, fill: T): T[] =>
-    [...arr, ...Array(Math.max(0, len - arr.length)).fill(fill)]
-
-  const r32P = pad<MatchWithPred | null>(r32, 16, null)
-  const r16P = pad<MatchWithPred | null>(r16, 8, null)
-  const qfP  = pad<MatchWithPred | null>(qf, 4, null)
-  const sfP  = pad<MatchWithPred | null>(sf, 2, null)
+  const has32 = r32P.some(m => m !== null) || matches.length === 0
 
   const r32L  = r32P.slice(0, 8)
   const r32RL = r32P.slice(8)
