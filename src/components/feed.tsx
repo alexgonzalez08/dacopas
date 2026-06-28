@@ -27,7 +27,7 @@ type MatchPost = {
   match_date: string
   group_name: string | null
   stage: string
-  prediction: { home_score: number; away_score: number } | null
+  prediction: { home_score: number; away_score: number; penalty_winner?: 'home' | 'away' | null } | null
   sortDate: Date
 }
 
@@ -118,24 +118,33 @@ function MatchPost({ item, userId, now, onDirtyChange, onNavigate }: {
   const { label, accent } = getUrgencyLabel(matchDate, now)
   const stage = item.group_name ? `Grupo ${item.group_name}` : (STAGE_LABELS[item.stage] ?? item.stage)
 
+  const KNOCKOUT_STAGES = new Set(['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
+  const isKnockout = KNOCKOUT_STAGES.has(item.stage)
+
   const initialHome = item.prediction ? String(item.prediction.home_score) : ''
   const initialAway = item.prediction ? String(item.prediction.away_score) : ''
+  const initialPenalty = item.prediction?.penalty_winner ?? null
 
   const [home, setHome] = useState(initialHome)
   const [away, setAway] = useState(initialAway)
+  const [penaltyWinner, setPenaltyWinner] = useState<'home' | 'away' | null>(initialPenalty)
   const [committedHome, setCommittedHome] = useState(initialHome)
   const [committedAway, setCommittedAway] = useState(initialAway)
+  const [committedPenalty, setCommittedPenalty] = useState<'home' | 'away' | null>(initialPenalty)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
-  const isDirty = home !== committedHome || away !== committedAway
+  const homeNum = parseInt(home)
+  const awayNum = parseInt(away)
+  const isDraw = !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum
+  const showPenalty = isKnockout && isDraw
+  const isDirty = home !== committedHome || away !== committedAway || penaltyWinner !== committedPenalty
 
   useEffect(() => {
     onDirtyChange(item.id, isDirty)
   }, [isDirty, item.id, onDirtyChange])
 
-  // Limpiar al desmontar
   useEffect(() => () => onDirtyChange(item.id, false), [item.id, onDirtyChange])
 
   async function handleSave() {
@@ -145,12 +154,18 @@ function MatchPost({ item, userId, now, onDirtyChange, onNavigate }: {
       setError('Ingresá un resultado válido')
       return
     }
+    const pw = isKnockout && h === a ? penaltyWinner : null
+    if (isKnockout && h === a && !pw) {
+      setError('Seleccioná el ganador en penales')
+      return
+    }
     setSaving(true)
     setError('')
     try {
-      await upsertPrediction(userId, item.id, h, a)
+      await upsertPrediction(userId, item.id, h, a, pw)
       setCommittedHome(String(h))
       setCommittedAway(String(a))
+      setCommittedPenalty(pw)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -189,20 +204,59 @@ function MatchPost({ item, userId, now, onDirtyChange, onNavigate }: {
               <TeamCrest name={item.home_team} flagUrl={item.home_team_flag} />
               <span className="text-xs font-semibold text-center leading-tight">{item.home_team}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="number" min="0" max="20"
-                value={home}
-                onChange={e => setHome(e.target.value)}
-                className="w-11 text-center bg-slate-600 border border-slate-500 rounded-lg py-1.5 text-lg font-bold focus:outline-none focus:border-yellow-500"
-              />
-              <span className="text-slate-500 font-bold">-</span>
-              <input
-                type="number" min="0" max="20"
-                value={away}
-                onChange={e => setAway(e.target.value)}
-                className="w-11 text-center bg-slate-600 border border-slate-500 rounded-lg py-1.5 text-lg font-bold focus:outline-none focus:border-yellow-500"
-              />
+            <div className="flex flex-col items-center gap-1.5">
+              {showPenalty && (
+                <div className="flex items-center gap-2 w-full">
+                  <button
+                    onClick={() => setPenaltyWinner(v => v === 'home' ? null : 'home')}
+                    className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
+                      ${penaltyWinner === 'home' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition
+                      ${penaltyWinner === 'home' ? 'border-yellow-400 bg-yellow-400' : 'border-slate-500'}`}>
+                      {penaltyWinner === 'home' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />}
+                    </span>
+                    pen
+                  </button>
+                  <div className="w-2" />
+                  <button
+                    onClick={() => setPenaltyWinner(v => v === 'away' ? null : 'away')}
+                    className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
+                      ${penaltyWinner === 'away' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    pen
+                    <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition
+                      ${penaltyWinner === 'away' ? 'border-yellow-400 bg-yellow-400' : 'border-slate-500'}`}>
+                      {penaltyWinner === 'away' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />}
+                    </span>
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number" min="0" max="20"
+                  value={home}
+                  onChange={e => {
+                    const val = e.target.value
+                    setHome(val)
+                    const h = parseInt(val), a = parseInt(away)
+                    if (!isNaN(h) && !isNaN(a) && h !== a) setPenaltyWinner(null)
+                  }}
+                  className="w-11 text-center bg-slate-600 border border-slate-500 rounded-lg py-1.5 text-lg font-bold focus:outline-none focus:border-yellow-500"
+                />
+                <span className="text-slate-500 font-bold">-</span>
+                <input
+                  type="number" min="0" max="20"
+                  value={away}
+                  onChange={e => {
+                    const val = e.target.value
+                    setAway(val)
+                    const h = parseInt(home), a = parseInt(val)
+                    if (!isNaN(h) && !isNaN(a) && h !== a) setPenaltyWinner(null)
+                  }}
+                  className="w-11 text-center bg-slate-600 border border-slate-500 rounded-lg py-1.5 text-lg font-bold focus:outline-none focus:border-yellow-500"
+                />
+              </div>
             </div>
             <div className="flex flex-col items-center gap-1 flex-1">
               <TeamCrest name={item.away_team} flagUrl={item.away_team_flag} />

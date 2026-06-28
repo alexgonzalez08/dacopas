@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Match, Prediction } from '@/types'
 import TeamFlag from '@/components/team-flag'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
-import { CheckCircle2, Lock, Loader2, Trophy } from 'lucide-react'
+import { CheckCircle2, Lock, Loader2 } from 'lucide-react'
 
 const SLOT_H = 160
 
@@ -397,7 +397,7 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
         {/* CENTER */}
         <div className="flex flex-col items-center shrink-0 w-[200px]">
           <div className="flex flex-col items-center gap-1 pb-2">
-            <Trophy className="w-4 h-4 text-yellow-400" />
+            <img src="/logo.png" alt="Dacopas" className="w-7 h-7 object-contain" />
             <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">{STAGE_LABELS.final}</span>
           </div>
           <div className="flex flex-col justify-center gap-4 w-full px-1" style={{ height: totalH }}>
