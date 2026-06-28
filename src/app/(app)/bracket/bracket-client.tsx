@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Match } from '@/types'
 import TeamFlag from '@/components/team-flag'
 
-const SLOT_H = 96 // px height per base (R32) slot
+const SLOT_H = 120 // px height per base (R32) slot
 
 const STAGE_LABELS: Record<string, string> = {
   round_of_32: '16avos',
@@ -218,7 +218,7 @@ export default function BracketClient({ matches }: { matches: Match[] }) {
 
   return (
     <div className="w-full overflow-x-auto">
-      <div className="flex items-start w-full min-w-[640px]">
+      <div className="flex items-start w-full min-w-[900px]">
 
         {/* LEFT SIDE */}
         {has32 && (
@@ -238,7 +238,7 @@ export default function BracketClient({ matches }: { matches: Match[] }) {
         <Connector matchCount={1} slotH={ssf} dir="right" />
 
         {/* CENTER */}
-        <div className="flex flex-col items-center shrink-0 min-w-[120px] max-w-[160px] flex-1">
+        <div className="flex flex-col items-center shrink-0 min-w-[160px] max-w-[200px] flex-1">
           <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider pb-2">
             {STAGE_LABELS.final}
           </div>
