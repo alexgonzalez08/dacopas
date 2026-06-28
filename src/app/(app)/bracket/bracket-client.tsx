@@ -205,7 +205,7 @@ function RoundColumn({ matches, label, slotH, userId, scores, penalty, onScoreCh
 }) {
   const totalH = matches.length * slotH
   return (
-    <div className="flex flex-col flex-1 min-w-0">
+    <div className="flex flex-col shrink-0 w-[200px]">
       <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider text-center pb-2">
         {label}
       </div>
@@ -371,7 +371,7 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
 
   return (
     <div className="w-full overflow-x-auto">
-      <div className="flex items-start" style={{ minWidth: has32 ? 1400 : 900 }}>
+      <div className="flex items-start" style={{ minWidth: has32 ? 2000 : 1560 }}>
 
         {has32 && (
           <>
@@ -387,7 +387,7 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
         <Connector matchCount={1} slotH={ssf} dir="right" />
 
         {/* CENTER */}
-        <div className="flex flex-col items-center shrink-0 w-[140px]">
+        <div className="flex flex-col items-center shrink-0 w-[200px]">
           <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider pb-2 text-center">
             {STAGE_LABELS.final}
           </div>
