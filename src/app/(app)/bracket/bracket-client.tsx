@@ -70,8 +70,8 @@ function MatchCard({
     <div className="w-full rounded-lg border border-slate-700 bg-slate-800 overflow-hidden">
       {/* Home row */}
       <div className={`flex items-center gap-1.5 px-2 py-2 ${homeWins ? 'bg-yellow-500/10' : ''}`}>
-        <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="sm" showName={false} />
-        <Link href={`/matches/${match.id}`} className="text-xs truncate flex-1 hover:text-yellow-400 transition">
+        <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="md" showName={false} />
+        <Link href={`/matches/${match.id}`} className="text-xs truncate flex-1 hover:text-yellow-400 transition hidden md:block">
           <span className={homeWins ? 'text-white font-bold' : 'text-slate-300'}>{match.home_team}</span>
         </Link>
         {finished ? (
@@ -100,8 +100,8 @@ function MatchCard({
 
       {/* Away row */}
       <div className={`flex items-center gap-1.5 px-2 py-2 ${awayWins ? 'bg-yellow-500/10' : ''}`}>
-        <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="sm" showName={false} />
-        <Link href={`/matches/${match.id}`} className="text-xs truncate flex-1 hover:text-yellow-400 transition">
+        <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="md" showName={false} />
+        <Link href={`/matches/${match.id}`} className="text-xs truncate flex-1 hover:text-yellow-400 transition hidden md:block">
           <span className={awayWins ? 'text-white font-bold' : 'text-slate-300'}>{match.away_team}</span>
         </Link>
         {finished ? (
