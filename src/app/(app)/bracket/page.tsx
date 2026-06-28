@@ -13,6 +13,7 @@ export default async function BracketPage() {
       .from('matches')
       .select('*')
       .in('stage', ['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
+      .order('bracket_position', { ascending: true, nullsFirst: false })
       .order('match_date', { ascending: true }),
     supabase
       .from('predictions')
