@@ -337,7 +337,14 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
   }
 
   const byStage = (stage: string) =>
-    matches.filter(m => m.stage === stage).sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
+    matches.filter(m => m.stage === stage).sort((a, b) => {
+      const ap = a.bracket_position
+      const bp = b.bracket_position
+      if (ap != null && bp != null) return ap - bp
+      if (ap != null) return -1
+      if (bp != null) return 1
+      return new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
+    })
 
   const r32 = byStage('round_of_32')
   const r16 = byStage('round_of_16')

@@ -20,6 +20,7 @@ export type Match = {
   penalty_home: number | null
   penalty_away: number | null
   tournament: string | null
+  bracket_position: number | null
 }
 
 export type League = {
