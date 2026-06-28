@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     user_id: anyProfile.id,
     is_system: true,
     post_type: 'bracket_announcement',
-    visibility: 'public',
+    visibility: 'leagues',
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
