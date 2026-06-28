@@ -396,11 +396,11 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
 
         {/* CENTER */}
         <div className="flex flex-col items-center shrink-0 w-[200px]">
+          <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider pb-2">{STAGE_LABELS.final}</div>
           <div className="flex flex-col justify-center gap-4 w-full px-1" style={{ height: totalH }}>
             <div className="flex flex-col gap-1">
-              <div className="flex flex-col items-center gap-1 pb-1">
-                <img src="/logo.png" alt="Dacopas" className="w-7 h-7 object-contain" />
-                <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider">{STAGE_LABELS.final}</span>
+              <div className="flex justify-center pb-1">
+                <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />
               </div>
               <MatchCard match={fin[0] ?? null} {...colProps} />
             </div>
