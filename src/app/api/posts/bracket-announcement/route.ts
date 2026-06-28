@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     user_id: anyProfile.id,
     is_system: true,
     post_type: 'bracket_announcement',
-    visibility: 'leagues',
+    content: '¡Ya están disponibles las llaves de la Segunda Ronda Eliminatoria!',
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
