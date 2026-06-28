@@ -142,17 +142,15 @@ function MatchCard({
           <span className="text-[9px] text-slate-500 shrink-0">Pen:</span>
           <button
             onClick={() => onPenaltyChange(match.id, pw === 'home' ? null : 'home')}
-            className={`flex-1 text-[9px] font-semibold py-0.5 rounded transition ${pw === 'home' ? 'bg-yellow-500/20 text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`flex-1 flex justify-center py-0.5 rounded transition ${pw === 'home' ? 'bg-yellow-500/20 ring-1 ring-yellow-500/40' : 'opacity-50 hover:opacity-80'}`}
           >
-            <span className="hidden md:inline">{match.home_team}</span>
             <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="sm" showName={false} />
           </button>
           <button
             onClick={() => onPenaltyChange(match.id, pw === 'away' ? null : 'away')}
-            className={`flex-1 text-[9px] font-semibold py-0.5 rounded transition ${pw === 'away' ? 'bg-yellow-500/20 text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`flex-1 flex justify-center py-0.5 rounded transition ${pw === 'away' ? 'bg-yellow-500/20 ring-1 ring-yellow-500/40' : 'opacity-50 hover:opacity-80'}`}
           >
             <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="sm" showName={false} />
-            <span className="hidden md:inline">{match.away_team}</span>
           </button>
         </div>
       )}
