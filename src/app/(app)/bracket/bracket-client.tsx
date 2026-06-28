@@ -6,7 +6,7 @@ import TeamFlag from '@/components/team-flag'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { CheckCircle2, Lock, Loader2 } from 'lucide-react'
 
-const SLOT_H = 120
+const SLOT_H = 160
 
 const STAGE_LABELS: Record<string, string> = {
   round_of_32: '2da Ronda Eliminatoria',
@@ -32,14 +32,13 @@ type CardSharedProps = {
 
 function MatchCard({
   match,
-  mobile = false,
   ...shared
-}: CardSharedProps & { match: MatchWithPred | null; mobile?: boolean }) {
+}: CardSharedProps & { match: MatchWithPred | null }) {
   const { scores, penalty, onScoreChange, onPenaltyChange, onSave, saving, saved } = shared
 
   if (!match) {
     const row = (
-      <div className={`flex items-center gap-2 ${mobile ? 'px-4 py-3' : 'px-3 py-2.5'}`}>
+      <div className="flex items-center gap-2 px-3 py-3">
         <span className="text-slate-700 text-xs">—</span>
         <span className="text-slate-600 text-xs">Por definir</span>
       </div>
@@ -73,30 +72,20 @@ function MatchCard({
     (match.away_score > match.home_score ||
       (match.home_score === match.away_score && match.penalty_home !== null && match.penalty_away !== null && match.penalty_away > match.penalty_home))
 
-  const px = mobile ? 'px-4' : 'px-2'
-  const py = mobile ? 'py-3' : 'py-2'
-  const gap = mobile ? 'gap-3' : 'gap-1.5'
-  const flagSize = mobile ? 'lg' : 'md'
-  const nameClass = mobile
-    ? 'text-sm truncate flex-1'
-    : 'text-xs truncate flex-1 hidden md:block'
-  const scoreW = mobile ? 'w-8 text-base' : 'w-5 text-xs'
-  const inputW = mobile ? 'w-10 text-base py-1' : 'w-7 text-xs py-0.5'
-
   return (
     <div className="w-full rounded-lg border border-slate-700 bg-slate-800 overflow-hidden">
       {/* Home row */}
-      <div className={`flex items-center ${gap} ${px} ${py} ${homeWins ? 'bg-yellow-500/10' : ''}`}>
-        <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size={flagSize} showName={false} />
-        <Link href={`/matches/${match.id}`} className={`${nameClass} hover:text-yellow-400 transition`}>
+      <div className={`flex items-center gap-2 px-3 py-3 ${homeWins ? 'bg-yellow-500/10' : ''}`}>
+        <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="lg" showName={false} />
+        <Link href={`/matches/${match.id}`} className="text-xs truncate flex-1 hover:text-yellow-400 transition">
           <span className={homeWins ? 'text-white font-bold' : 'text-slate-300'}>{match.home_team}</span>
         </Link>
         {finished ? (
-          <span className={`font-bold tabular-nums text-right shrink-0 ${scoreW} ${homeWins ? 'text-yellow-400' : 'text-slate-400'}`}>
+          <span className={`text-sm font-bold tabular-nums w-6 text-right shrink-0 ${homeWins ? 'text-yellow-400' : 'text-slate-400'}`}>
             {match.home_score}
           </span>
         ) : locked ? (
-          <span className={`tabular-nums text-right shrink-0 text-slate-500 ${scoreW}`}>
+          <span className="text-sm tabular-nums w-6 text-right shrink-0 text-slate-500">
             {match.prediction?.home_score ?? '—'}
           </span>
         ) : (
@@ -107,7 +96,7 @@ function MatchCard({
             value={s.home}
             onChange={e => onScoreChange(match.id, 'home', e.target.value)}
             onBlur={() => canSave && onSave(match)}
-            className={`shrink-0 bg-slate-700 border border-slate-600 rounded text-center text-white tabular-nums focus:outline-none focus:border-yellow-500 ${inputW}`}
+            className="w-9 shrink-0 bg-slate-700 border border-slate-600 rounded text-sm text-center text-white tabular-nums focus:outline-none focus:border-yellow-500 py-1"
             placeholder="—"
           />
         )}
@@ -116,17 +105,17 @@ function MatchCard({
       <div className="border-t border-slate-700" />
 
       {/* Away row */}
-      <div className={`flex items-center ${gap} ${px} ${py} ${awayWins ? 'bg-yellow-500/10' : ''}`}>
-        <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size={flagSize} showName={false} />
-        <Link href={`/matches/${match.id}`} className={`${nameClass} hover:text-yellow-400 transition`}>
+      <div className={`flex items-center gap-2 px-3 py-3 ${awayWins ? 'bg-yellow-500/10' : ''}`}>
+        <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="lg" showName={false} />
+        <Link href={`/matches/${match.id}`} className="text-xs truncate flex-1 hover:text-yellow-400 transition">
           <span className={awayWins ? 'text-white font-bold' : 'text-slate-300'}>{match.away_team}</span>
         </Link>
         {finished ? (
-          <span className={`font-bold tabular-nums text-right shrink-0 ${scoreW} ${awayWins ? 'text-yellow-400' : 'text-slate-400'}`}>
+          <span className={`text-sm font-bold tabular-nums w-6 text-right shrink-0 ${awayWins ? 'text-yellow-400' : 'text-slate-400'}`}>
             {match.away_score}
           </span>
         ) : locked ? (
-          <span className={`tabular-nums text-right shrink-0 text-slate-500 ${scoreW}`}>
+          <span className="text-sm tabular-nums w-6 text-right shrink-0 text-slate-500">
             {match.prediction?.away_score ?? '—'}
           </span>
         ) : (
@@ -137,7 +126,7 @@ function MatchCard({
             value={s.away}
             onChange={e => onScoreChange(match.id, 'away', e.target.value)}
             onBlur={() => canSave && onSave(match)}
-            className={`shrink-0 bg-slate-700 border border-slate-600 rounded text-center text-white tabular-nums focus:outline-none focus:border-yellow-500 ${inputW}`}
+            className="w-9 shrink-0 bg-slate-700 border border-slate-600 rounded text-sm text-center text-white tabular-nums focus:outline-none focus:border-yellow-500 py-1"
             placeholder="—"
           />
         )}
@@ -145,8 +134,8 @@ function MatchCard({
 
       {/* Penalty winner selector */}
       {showPenalty && (
-        <div className={`flex items-center gap-1 ${px} py-1.5 border-t border-slate-700/50`}>
-          <span className={`${mobile ? 'text-xs' : 'text-[9px]'} text-slate-500 shrink-0`}>Pen:</span>
+        <div className="flex items-center gap-1 px-3 py-1.5 border-t border-slate-700/50">
+          <span className="text-[10px] text-slate-500 shrink-0">Pen:</span>
           <button
             onClick={() => onPenaltyChange(match.id, pw === 'home' ? null : 'home')}
             className={`flex-1 flex justify-center py-0.5 rounded transition ${pw === 'home' ? 'bg-yellow-500/20 ring-1 ring-yellow-500/40' : 'opacity-50 hover:opacity-80'}`}
@@ -164,15 +153,15 @@ function MatchCard({
 
       {/* Penalty result (finished match) */}
       {finished && match.penalty_home !== null && match.penalty_away !== null && (
-        <div className={`${px} py-1 border-t border-slate-700/50`}>
-          <span className={`${mobile ? 'text-xs' : 'text-[9px]'} text-slate-500`}>Pen. {match.penalty_home}-{match.penalty_away}</span>
+        <div className="px-3 py-1 border-t border-slate-700/50">
+          <span className="text-[10px] text-slate-500">Pen. {match.penalty_home}-{match.penalty_away}</span>
         </div>
       )}
 
       {/* Locked penalty info */}
       {locked && !finished && match.prediction?.penalty_winner && (
-        <div className={`${px} py-1 border-t border-slate-700/50`}>
-          <span className={`${mobile ? 'text-xs' : 'text-[9px]'} text-slate-500`}>
+        <div className="px-3 py-1 border-t border-slate-700/50">
+          <span className="text-[10px] text-slate-500">
             Pen: <span className="text-yellow-400">
               {match.prediction.penalty_winner === 'home' ? match.home_team : match.away_team}
             </span>
@@ -182,56 +171,29 @@ function MatchCard({
 
       {/* Save indicator */}
       {!finished && !locked && (
-        <div className={`flex items-center justify-end ${px} py-1 border-t border-slate-700/50`}>
+        <div className="flex items-center justify-end px-3 py-1 border-t border-slate-700/50">
           {saving[match.id] ? (
-            <Loader2 size={mobile ? 12 : 10} className="animate-spin text-slate-500" />
+            <Loader2 size={11} className="animate-spin text-slate-500" />
           ) : saved[match.id] ? (
-            <CheckCircle2 size={mobile ? 12 : 10} className="text-green-400" />
+            <CheckCircle2 size={11} className="text-green-400" />
           ) : canSave ? (
-            <button
-              onClick={() => onSave(match)}
-              className={`${mobile ? 'text-xs' : 'text-[9px]'} text-yellow-400 hover:text-yellow-300 font-medium`}
-            >
+            <button onClick={() => onSave(match)} className="text-[10px] text-yellow-400 hover:text-yellow-300 font-medium">
               Guardar
             </button>
           ) : match.prediction ? (
-            <CheckCircle2 size={mobile ? 12 : 10} className="text-slate-600" />
+            <CheckCircle2 size={11} className="text-slate-600" />
           ) : (
-            <span className={`${mobile ? 'text-xs' : 'text-[9px]'} text-slate-600`}>Sin predicción</span>
+            <span className="text-[10px] text-slate-600">Sin predicción</span>
           )}
         </div>
       )}
 
       {locked && !finished && (
-        <div className={`flex items-center gap-1 ${px} py-1 border-t border-slate-700/50`}>
-          <Lock size={mobile ? 11 : 9} className="text-slate-600" />
-          <span className={`${mobile ? 'text-xs' : 'text-[9px]'} text-slate-600`}>Cerrado</span>
+        <div className="flex items-center gap-1 px-3 py-1 border-t border-slate-700/50">
+          <Lock size={10} className="text-slate-600" />
+          <span className="text-[10px] text-slate-600">Cerrado</span>
         </div>
       )}
-    </div>
-  )
-}
-
-function MobileBracket({ rounds, shared }: {
-  rounds: { label: string; matches: (MatchWithPred | null)[] }[]
-  shared: CardSharedProps
-}) {
-  return (
-    <div className="space-y-6 md:hidden">
-      {rounds.map(({ label, matches }) => {
-        const hasMatches = matches.some(m => m !== null)
-        if (!hasMatches) return null
-        return (
-          <div key={label}>
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{label}</h3>
-            <div className="space-y-2">
-              {matches.map((match, i) => (
-                <MatchCard key={match?.id ?? `e-${label}-${i}`} match={match} mobile {...shared} />
-              ))}
-            </div>
-          </div>
-        )
-      })}
     </div>
   )
 }
@@ -407,22 +369,9 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
 
   const colProps: CardSharedProps = { userId, scores, penalty, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved }
 
-  const mobileRounds = [
-    ...(has32 ? [{ label: STAGE_LABELS.round_of_32, matches: r32P }] : []),
-    { label: STAGE_LABELS.round_of_16, matches: r16P },
-    { label: STAGE_LABELS.quarter, matches: qfP },
-    { label: STAGE_LABELS.semi, matches: sfP },
-    { label: STAGE_LABELS.final, matches: [...fin.map(m => m as MatchWithPred | null), ...tp.map(m => m as MatchWithPred | null)] },
-  ]
-
   return (
-    <div className="w-full">
-      {/* Mobile: rondas apiladas verticalmente */}
-      <MobileBracket rounds={mobileRounds} shared={colProps} />
-
-      {/* Desktop: bracket horizontal */}
-      <div className="hidden md:block overflow-x-auto">
-      <div className="flex items-start" style={{ minWidth: 900 }}>
+    <div className="w-full overflow-x-auto">
+      <div className="flex items-start" style={{ minWidth: has32 ? 1400 : 900 }}>
 
         {has32 && (
           <>
@@ -466,7 +415,6 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
           </>
         )}
 
-      </div>
       </div>
     </div>
   )
