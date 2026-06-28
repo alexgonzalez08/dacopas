@@ -39,10 +39,16 @@ export default function DashboardMatches({
     })
     return init
   })
+  const [penaltyWinner, setPenaltyWinner] = useState<Record<number, 'home' | 'away' | null>>(() => {
+    const init: Record<number, 'home' | 'away' | null> = {}
+    matches.forEach(m => { init[m.id] = m.prediction?.penalty_winner ?? null })
+    return init
+  })
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
   const [errors, setErrors] = useState<Record<number, string>>({})
   const router = useRouter()
+  const KNOCKOUT_STAGES = new Set(['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
 
   // Auto-refresh cuando el próximo partido se bloquea (15 min antes del kickoff)
   useEffect(() => {
@@ -64,10 +70,16 @@ export default function DashboardMatches({
       setErrors(e => ({ ...e, [match.id]: 'Ingresá un resultado válido' }))
       return
     }
+    const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+    const pw = isKnockout && home === away ? penaltyWinner[match.id] : null
+    if (isKnockout && home === away && !pw) {
+      setErrors(e => ({ ...e, [match.id]: 'Seleccioná el ganador en penales' }))
+      return
+    }
     setSaving(v => ({ ...v, [match.id]: true }))
     setErrors(e => ({ ...e, [match.id]: '' }))
     try {
-      await upsertPrediction(userId, match.id, home, away)
+      await upsertPrediction(userId, match.id, home, away, pw)
       setSaved(v => ({ ...v, [match.id]: true }))
       setTimeout(() => setSaved(v => ({ ...v, [match.id]: false })), 2000)
     } catch {
@@ -123,6 +135,11 @@ export default function DashboardMatches({
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
               const hasPrediction = match.prediction !== null
+              const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+              const homeNum = parseInt(s.home)
+              const awayNum = parseInt(s.away)
+              const showPenalty = isKnockout && !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum
+              const pw = penaltyWinner[match.id]
 
               return (
                 <div key={match.id} className="bg-slate-800 rounded-xl p-4">
@@ -148,6 +165,7 @@ export default function DashboardMatches({
                       {match.status === 'finished' && (
                         <span className="text-xs text-green-400 font-semibold">
                           {match.home_score} - {match.away_score}
+                          {match.penalty_home !== null && ` (pen. ${match.penalty_home}-${match.penalty_away})`}
                         </span>
                       )}
                       {locked && match.status === 'scheduled' && (
@@ -168,31 +186,83 @@ export default function DashboardMatches({
                     <span className="flex-1 text-right text-sm font-medium">
                       <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} />
                     </span>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        disabled={locked}
-                        value={s.home}
-                        onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], home: e.target.value } }))}
-                        className="w-11 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
-                      />
-                      <span className="text-slate-500 font-bold">-</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        disabled={locked}
-                        value={s.away}
-                        onChange={e => setScores(v => ({ ...v, [match.id]: { ...v[match.id], away: e.target.value } }))}
-                        className="w-11 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
-                      />
+                    <div className="flex flex-col items-center gap-1">
+                      {isKnockout && (
+                        <div className="flex items-center gap-2 w-full">
+                          <button
+                            disabled={locked || !showPenalty}
+                            onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: pw === 'home' ? null : 'home' }))}
+                            className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
+                              ${!showPenalty || locked ? 'opacity-30 cursor-default text-slate-500' :
+                                pw === 'home' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+                          >
+                            <span className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 transition
+                              ${pw === 'home' ? 'border-yellow-400 bg-yellow-400' : 'border-slate-500'}`}>
+                              {pw === 'home' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />}
+                            </span>
+                            pen
+                          </button>
+                          <div className="w-1" />
+                          <button
+                            disabled={locked || !showPenalty}
+                            onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: pw === 'away' ? null : 'away' }))}
+                            className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
+                              ${!showPenalty || locked ? 'opacity-30 cursor-default text-slate-500' :
+                                pw === 'away' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+                          >
+                            pen
+                            <span className={`w-3 h-3 rounded-full border flex items-center justify-center shrink-0 transition
+                              ${pw === 'away' ? 'border-yellow-400 bg-yellow-400' : 'border-slate-500'}`}>
+                              {pw === 'away' && <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          disabled={locked}
+                          value={s.home}
+                          onChange={e => {
+                            const val = e.target.value
+                            setScores(v => ({ ...v, [match.id]: { ...v[match.id], home: val } }))
+                            const h = parseInt(val), a = parseInt(s.away)
+                            if (!isNaN(h) && !isNaN(a) && h !== a) setPenaltyWinner(v => ({ ...v, [match.id]: null }))
+                          }}
+                          className="w-11 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
+                        />
+                        <span className="text-slate-500 font-bold">-</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          disabled={locked}
+                          value={s.away}
+                          onChange={e => {
+                            const val = e.target.value
+                            setScores(v => ({ ...v, [match.id]: { ...v[match.id], away: val } }))
+                            const h = parseInt(s.home), a = parseInt(val)
+                            if (!isNaN(h) && !isNaN(a) && h !== a) setPenaltyWinner(v => ({ ...v, [match.id]: null }))
+                          }}
+                          className="w-11 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-lg font-bold disabled:opacity-50 focus:outline-none focus:border-yellow-500"
+                        />
+                      </div>
                     </div>
                     <span className="flex-1 text-left text-sm font-medium">
                       <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} />
                     </span>
                   </div>
+
+                  {/* Penales bloqueados */}
+                  {locked && match.prediction?.penalty_winner && (
+                    <p className="text-xs text-slate-400 text-center mt-2">
+                      Penales: <span className="text-yellow-400 font-semibold">
+                        {match.prediction.penalty_winner === 'home' ? match.home_team : match.away_team}
+                      </span>
+                    </p>
+                  )}
 
                   {/* Botón guardar + ver más */}
                   <div className="mt-3 flex items-center justify-between">
