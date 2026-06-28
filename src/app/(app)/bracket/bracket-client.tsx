@@ -6,7 +6,7 @@ import TeamFlag from '@/components/team-flag'
 const SLOT_H = 120 // px height per base (R32) slot
 
 const STAGE_LABELS: Record<string, string> = {
-  round_of_32: '16avos',
+  round_of_32: '2da Ronda Eliminatoria',
   round_of_16: 'Octavos',
   quarter: 'Cuartos',
   semi: 'Semifinal',
@@ -113,15 +113,21 @@ function Connector({ matchCount, slotH, dir }: {
   const paths: string[] = []
   for (let i = 0; i < matchCount; i += 2) {
     const y1   = i * slotH + slotH / 2         // center of top match
-    const y2   = (i + 1) * slotH + slotH / 2   // center of bottom match
-    const ymid = (y1 + y2) / 2                  // center between them = input of next round
+    const ymid = i + 1 < matchCount
+      ? ((i + 1) * slotH + slotH / 2 + y1) / 2  // midpoint between pair
+      : y1                                         // single match: straight line
 
-    if (dir === 'right') {
-      // Stub right from top match → vertical bar → stub right from bottom match → output right at ymid
-      paths.push(`M 0 ${y1} H ${half} V ${y2} H 0 M ${half} ${ymid} H ${W}`)
+    if (i + 1 >= matchCount) {
+      // Single match — just a straight horizontal line
+      if (dir === 'right') paths.push(`M 0 ${y1} H ${W}`)
+      else                  paths.push(`M ${W} ${y1} H 0`)
     } else {
-      // Mirror: stubs go left, output goes left
-      paths.push(`M ${W} ${y1} H ${half} V ${y2} H ${W} M ${half} ${ymid} H 0`)
+      const y2 = (i + 1) * slotH + slotH / 2
+      if (dir === 'right') {
+        paths.push(`M 0 ${y1} H ${half} V ${y2} H 0 M ${half} ${ymid} H ${W}`)
+      } else {
+        paths.push(`M ${W} ${y1} H ${half} V ${y2} H ${W} M ${half} ${ymid} H 0`)
+      }
     }
   }
 
