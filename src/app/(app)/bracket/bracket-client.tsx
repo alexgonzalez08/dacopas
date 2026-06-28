@@ -166,27 +166,25 @@ export default function BracketClient({ matches }: { matches: Match[] }) {
   const tp = byStage('third_place')
   const fin = byStage('final')
 
-  const has32 = r32.length > 0
-
-  // Split each stage into left/right halves
-  const half = <T,>(arr: T[]): [T[], T[]] => {
-    const mid = Math.ceil(arr.length / 2)
-    return [arr.slice(0, mid), arr.slice(mid)]
-  }
-
-  const [r32L, r32R] = half(r32)
-  const [r16L, r16R] = half(r16)
-  const [qfL, qfR] = half(qf)
-  const [sfL, sfR] = half(sf)
+  const has32 = r32.length > 0 || matches.length === 0
 
   const pad = <T,>(arr: T[], len: number, fill: T): T[] =>
     [...arr, ...Array(Math.max(0, len - arr.length)).fill(fill)]
 
-  // Pad right side arrays with nulls so they mirror the left
-  const r32RL = pad<Match | null>(r32R, r32L.length, null).reverse()
-  const r16RL = pad<Match | null>(r16R, r16L.length, null).reverse()
-  const qfRL = pad<Match | null>(qfR, qfL.length, null).reverse()
-  const sfRL = pad<Match | null>(sfR, sfL.length, null).reverse()
+  // Pad each stage to its expected size, then split in half
+  const r32Padded = pad<Match | null>(r32, 16, null)
+  const r16Padded = pad<Match | null>(r16, 8, null)
+  const qfPadded  = pad<Match | null>(qf, 4, null)
+  const sfPadded  = pad<Match | null>(sf, 2, null)
+
+  const r32L  = r32Padded.slice(0, 8)
+  const r32R  = r32Padded.slice(8).reverse()
+  const r16L  = r16Padded.slice(0, 4)
+  const r16RL = r16Padded.slice(4).reverse()
+  const qfL   = qfPadded.slice(0, 2)
+  const qfRL  = qfPadded.slice(2).reverse()
+  const sfL   = sfPadded.slice(0, 1)
+  const sfRL  = sfPadded.slice(1).reverse()
 
   return (
     <div className="w-full">
