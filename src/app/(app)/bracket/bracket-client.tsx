@@ -23,7 +23,9 @@ function MatchCard({
   match,
   userId,
   scores,
+  penalty,
   onScoreChange,
+  onPenaltyChange,
   onSave,
   saving,
   saved,
@@ -31,7 +33,9 @@ function MatchCard({
   match: MatchWithPred | null
   userId: string
   scores: Record<number, { home: string; away: string }>
+  penalty: Record<number, 'home' | 'away' | null>
   onScoreChange: (id: number, side: 'home' | 'away', val: string) => void
+  onPenaltyChange: (id: number, winner: 'home' | 'away' | null) => void
   onSave: (match: MatchWithPred) => void
   saving: Record<number, boolean>
   saved: Record<number, boolean>
@@ -55,9 +59,15 @@ function MatchCard({
   const finished = match.status === 'finished'
   const locked = isPredictionLocked(match)
   const s = scores[match.id] ?? { home: '', away: '' }
+  const pw = penalty[match.id] ?? null
+  const homeNum = parseInt(s.home)
+  const awayNum = parseInt(s.away)
+  const isDraw = !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum
+  const showPenalty = !finished && !locked && isDraw
   const isDirty = s.home !== String(match.prediction?.home_score ?? '') ||
-                  s.away !== String(match.prediction?.away_score ?? '')
-  const canSave = s.home !== '' && s.away !== '' && isDirty && !locked
+                  s.away !== String(match.prediction?.away_score ?? '') ||
+                  pw !== (match.prediction?.penalty_winner ?? null)
+  const canSave = s.home !== '' && s.away !== '' && (!isDraw || pw !== null) && isDirty && !locked
 
   const homeWins = finished && match.home_score !== null && match.away_score !== null &&
     (match.home_score > match.away_score ||
@@ -126,6 +136,45 @@ function MatchCard({
         )}
       </div>
 
+      {/* Penalty winner selector */}
+      {showPenalty && (
+        <div className="flex items-center gap-1 px-2 py-1 border-t border-slate-700/50">
+          <span className="text-[9px] text-slate-500 shrink-0">Pen:</span>
+          <button
+            onClick={() => onPenaltyChange(match.id, pw === 'home' ? null : 'home')}
+            className={`flex-1 text-[9px] font-semibold py-0.5 rounded transition ${pw === 'home' ? 'bg-yellow-500/20 text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            <span className="hidden md:inline">{match.home_team}</span>
+            <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="sm" showName={false} />
+          </button>
+          <button
+            onClick={() => onPenaltyChange(match.id, pw === 'away' ? null : 'away')}
+            className={`flex-1 text-[9px] font-semibold py-0.5 rounded transition ${pw === 'away' ? 'bg-yellow-500/20 text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            <TeamFlag name={match.away_team} flagUrl={match.away_team_flag} size="sm" showName={false} />
+            <span className="hidden md:inline">{match.away_team}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Penalty result (finished match) */}
+      {finished && match.penalty_home !== null && match.penalty_away !== null && (
+        <div className="px-2 py-1 border-t border-slate-700/50">
+          <span className="text-[9px] text-slate-500">Pen. {match.penalty_home}-{match.penalty_away}</span>
+        </div>
+      )}
+
+      {/* Locked penalty info */}
+      {locked && !finished && match.prediction?.penalty_winner && (
+        <div className="px-2 py-1 border-t border-slate-700/50">
+          <span className="text-[9px] text-slate-500">
+            Pen: <span className="text-yellow-400">
+              {match.prediction.penalty_winner === 'home' ? match.home_team : match.away_team}
+            </span>
+          </span>
+        </div>
+      )}
+
       {/* Save indicator */}
       {!finished && !locked && (
         <div className="flex items-center justify-end px-2 py-1 border-t border-slate-700/50">
@@ -158,13 +207,15 @@ function MatchCard({
   )
 }
 
-function RoundColumn({ matches, label, slotH, userId, scores, onScoreChange, onSave, saving, saved }: {
+function RoundColumn({ matches, label, slotH, userId, scores, penalty, onScoreChange, onPenaltyChange, onSave, saving, saved }: {
   matches: (MatchWithPred | null)[]
   label: string
   slotH: number
   userId: string
   scores: Record<number, { home: string; away: string }>
+  penalty: Record<number, 'home' | 'away' | null>
   onScoreChange: (id: number, side: 'home' | 'away', val: string) => void
+  onPenaltyChange: (id: number, winner: 'home' | 'away' | null) => void
   onSave: (match: MatchWithPred) => void
   saving: Record<number, boolean>
   saved: Record<number, boolean>
@@ -186,7 +237,9 @@ function RoundColumn({ matches, label, slotH, userId, scores, onScoreChange, onS
               match={match}
               userId={userId}
               scores={scores}
+              penalty={penalty}
               onScoreChange={onScoreChange}
+              onPenaltyChange={onPenaltyChange}
               onSave={onSave}
               saving={saving}
               saved={saved}
@@ -247,6 +300,11 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
     })
     return init
   })
+  const [penalty, setPenalty] = useState<Record<number, 'home' | 'away' | null>>(() => {
+    const init: Record<number, 'home' | 'away' | null> = {}
+    matches.forEach(m => { init[m.id] = m.prediction?.penalty_winner ?? null })
+    return init
+  })
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
 
@@ -255,14 +313,22 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
     setSaved(prev => ({ ...prev, [id]: false }))
   }
 
+  function handlePenaltyChange(id: number, winner: 'home' | 'away' | null) {
+    setPenalty(prev => ({ ...prev, [id]: winner }))
+    setSaved(prev => ({ ...prev, [id]: false }))
+  }
+
   async function handleSave(match: MatchWithPred) {
     const s = scores[match.id]
     const home = parseInt(s.home)
     const away = parseInt(s.away)
     if (isNaN(home) || isNaN(away) || home < 0 || away < 0) return
+    const isDraw = home === away
+    const pw = isDraw ? (penalty[match.id] ?? null) : null
+    if (isDraw && pw === null) return
     setSaving(v => ({ ...v, [match.id]: true }))
     try {
-      await upsertPrediction(userId, match.id, home, away)
+      await upsertPrediction(userId, match.id, home, away, pw)
       setSaved(v => ({ ...v, [match.id]: true }))
       setTimeout(() => setSaved(v => ({ ...v, [match.id]: false })), 2000)
     } catch {
@@ -307,7 +373,7 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
   const ssf = SLOT_H * 8
   const totalH = 8 * SLOT_H
 
-  const colProps = { userId, scores, onScoreChange: handleScoreChange, onSave: handleSave, saving, saved }
+  const colProps = { userId, scores, penalty, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved }
 
   return (
     <div className="w-full overflow-x-auto">
