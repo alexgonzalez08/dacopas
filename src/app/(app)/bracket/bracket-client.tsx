@@ -15,7 +15,7 @@ const STAGE_LABELS: Record<string, string> = {
 function MatchCard({ match }: { match: Match | null }) {
   if (!match) {
     return (
-      <div className="w-44 rounded-xl border border-slate-700/50 bg-slate-800/40 overflow-hidden opacity-50">
+      <div className="w-full rounded-xl border border-slate-700/50 bg-slate-800/40 overflow-hidden opacity-50">
         <div className="px-3 py-2 text-xs text-slate-500">Por definir</div>
         <div className="border-t border-slate-700/50" />
         <div className="px-3 py-2 text-xs text-slate-500">Por definir</div>
@@ -36,7 +36,7 @@ function MatchCard({ match }: { match: Match | null }) {
   return (
     <Link
       href={`/matches/${match.id}`}
-      className="block w-44 rounded-xl border border-slate-700 bg-slate-800 hover:border-yellow-500/40 transition overflow-hidden"
+      className="block w-full rounded-xl border border-slate-700 bg-slate-800 hover:border-yellow-500/40 transition overflow-hidden"
     >
       <div className={`flex items-center justify-between px-3 py-2 gap-2 ${homeWins ? 'bg-yellow-500/10' : ''}`}>
         <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="sm" showName={false} />
@@ -78,7 +78,7 @@ function RoundColumn({
   connectorLeft?: boolean
 }) {
   return (
-    <div className="flex flex-col items-center gap-0 shrink-0">
+    <div className="flex flex-col items-center gap-0 flex-1 min-w-0">
       <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-3">{label}</div>
       <div className="flex flex-col" style={{ gap: 0 }}>
         {matches.map((match, i) => {
@@ -189,8 +189,8 @@ export default function BracketClient({ matches }: { matches: Match[] }) {
   const sfRL = pad<Match | null>(sfR, sfL.length, null).reverse()
 
   return (
-    <div className="overflow-x-auto pb-4 -mx-4 px-4">
-      <div className="inline-flex items-start gap-0 min-w-max">
+    <div className="w-full">
+      <div className="flex items-start gap-0 w-full">
 
         {/* LEFT SIDE */}
         {has32 && (
