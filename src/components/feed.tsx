@@ -8,6 +8,7 @@ import { CheckCircle2, Clock, Star, Trophy, UserPlus, ChevronRight, Save, CheckC
 import PostInteractions from './post-interactions'
 import UserPostCard from './user-post-card'
 import StatsPostCard from './stats-post-card'
+import BracketPostCard from './bracket-post-card'
 import UserAvatar from './user-avatar'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { upsertPrediction } from '@/lib/predictions'
@@ -456,6 +457,14 @@ export default function Feed({
         if (item.kind === 'user_post') {
           if ((item as any).post_type === 'stats') return (
             <StatsPostCard
+              key={item.id}
+              post={item as any}
+              userId={userId}
+              userAvatarUrl={userAvatarUrl}
+            />
+          )
+          if ((item as any).post_type === 'bracket_announcement') return (
+            <BracketPostCard
               key={item.id}
               post={item as any}
               userId={userId}
