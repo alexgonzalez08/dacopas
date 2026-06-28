@@ -364,13 +364,13 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
   const sfP  = pad<MatchWithPred | null>(sf, 2, null)
 
   const r32L  = r32P.slice(0, 8)
-  const r32RL = r32P.slice(8).reverse()
+  const r32RL = r32P.slice(8)
   const r16L  = r16P.slice(0, 4)
-  const r16RL = r16P.slice(4).reverse()
+  const r16RL = r16P.slice(4)
   const qfL   = qfP.slice(0, 2)
-  const qfRL  = qfP.slice(2).reverse()
+  const qfRL  = qfP.slice(2)
   const sfL   = sfP.slice(0, 1)
-  const sfRL  = sfP.slice(1).reverse()
+  const sfRL  = sfP.slice(1)
 
   const s32 = SLOT_H
   const s16 = SLOT_H * 2
