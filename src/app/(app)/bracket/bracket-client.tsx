@@ -9,7 +9,7 @@ import { CheckCircle2, Lock, Loader2 } from 'lucide-react'
 const SLOT_H = 160
 
 const STAGE_LABELS: Record<string, string> = {
-  round_of_32: '2da Ronda Eliminatoria',
+  round_of_32: 'Ronda de 32',
   round_of_16: 'Octavos',
   quarter: 'Cuartos',
   semi: 'Semifinal',
@@ -23,6 +23,7 @@ type CardSharedProps = {
   userId: string
   scores: Record<number, { home: string; away: string }>
   penalty: Record<number, 'home' | 'away' | null>
+  hasPrediction: Record<number, boolean>
   onScoreChange: (id: number, side: 'home' | 'away', val: string) => void
   onPenaltyChange: (id: number, winner: 'home' | 'away' | null) => void
   onSave: (match: MatchWithPred) => void
@@ -34,7 +35,7 @@ function MatchCard({
   match,
   ...shared
 }: CardSharedProps & { match: MatchWithPred | null }) {
-  const { scores, penalty, onScoreChange, onPenaltyChange, onSave, saving, saved } = shared
+  const { scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved } = shared
 
   if (!match) {
     const row = (
@@ -178,9 +179,9 @@ function MatchCard({
             <CheckCircle2 size={11} className="text-green-400" />
           ) : canSave ? (
             <button onClick={() => onSave(match)} className="text-[10px] text-yellow-400 hover:text-yellow-300 font-medium">
-              Guardar
+              {hasPrediction[match.id] ? 'Modificar' : 'Guardar'}
             </button>
-          ) : match.prediction ? (
+          ) : hasPrediction[match.id] ? (
             <CheckCircle2 size={11} className="text-slate-600" />
           ) : (
             <span className="text-[10px] text-slate-600">Sin predicción</span>
@@ -198,7 +199,7 @@ function MatchCard({
   )
 }
 
-function RoundColumn({ matches, label, slotH, userId, scores, penalty, onScoreChange, onPenaltyChange, onSave, saving, saved }: CardSharedProps & {
+function RoundColumn({ matches, label, slotH, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved }: CardSharedProps & {
   matches: (MatchWithPred | null)[]
   label: string
   slotH: number
@@ -221,6 +222,7 @@ function RoundColumn({ matches, label, slotH, userId, scores, penalty, onScoreCh
               userId={userId}
               scores={scores}
               penalty={penalty}
+              hasPrediction={hasPrediction}
               onScoreChange={onScoreChange}
               onPenaltyChange={onPenaltyChange}
               onSave={onSave}
@@ -290,6 +292,11 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
   })
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
+  const [hasPrediction, setHasPrediction] = useState<Record<number, boolean>>(() => {
+    const init: Record<number, boolean> = {}
+    matches.forEach(m => { init[m.id] = !!m.prediction })
+    return init
+  })
 
   function handleScoreChange(id: number, side: 'home' | 'away', val: string) {
     setScores(prev => ({ ...prev, [id]: { ...prev[id], [side]: val } }))
@@ -312,6 +319,7 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
     setSaving(v => ({ ...v, [match.id]: true }))
     try {
       await upsertPrediction(userId, match.id, home, away, pw)
+      setHasPrediction(v => ({ ...v, [match.id]: true }))
       setSaved(v => ({ ...v, [match.id]: true }))
       setTimeout(() => setSaved(v => ({ ...v, [match.id]: false })), 2000)
     } catch {
@@ -367,7 +375,7 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
   const ssf = SLOT_H * 8
   const totalH = 8 * SLOT_H
 
-  const colProps: CardSharedProps = { userId, scores, penalty, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved }
+  const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved }
 
   return (
     <div className="w-full overflow-x-auto">
@@ -388,11 +396,14 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
 
         {/* CENTER */}
         <div className="flex flex-col items-center shrink-0 w-[200px]">
-          <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider pb-2 text-center">
-            {STAGE_LABELS.final}
-          </div>
+          <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider pb-2">{STAGE_LABELS.final}</div>
           <div className="flex flex-col justify-center gap-4 w-full px-1" style={{ height: totalH }}>
-            <MatchCard match={fin[0] ?? null} {...colProps} />
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-center pb-1">
+                <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />
+              </div>
+              <MatchCard match={fin[0] ?? null} {...colProps} />
+            </div>
             <div className="flex flex-col gap-1">
               <div className="text-[9px] text-slate-500 uppercase tracking-wider text-center">
                 {STAGE_LABELS.third_place}
