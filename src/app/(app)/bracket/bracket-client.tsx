@@ -217,8 +217,8 @@ export default function BracketClient({ matches }: { matches: Match[] }) {
   const totalH = 8 * SLOT_H
 
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="flex items-start w-full min-w-[900px]">
+    <div className="w-full">
+      <div className="flex items-start w-full">
 
         {/* LEFT SIDE */}
         {has32 && (
