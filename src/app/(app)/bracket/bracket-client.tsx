@@ -177,8 +177,8 @@ export default function BracketClient({ matches }: { matches: Match[] }) {
   const qfPadded  = pad<Match | null>(qf, 4, null)
   const sfPadded  = pad<Match | null>(sf, 2, null)
 
-  const r32L  = r32Padded.slice(0, 8)
-  const r32R  = r32Padded.slice(8).reverse()
+  const r32L   = r32Padded.slice(0, 8)
+  const r32RL  = r32Padded.slice(8).reverse()
   const r16L  = r16Padded.slice(0, 4)
   const r16RL = r16Padded.slice(4).reverse()
   const qfL   = qfPadded.slice(0, 2)
