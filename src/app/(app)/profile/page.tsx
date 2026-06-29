@@ -30,7 +30,7 @@ export default async function ProfilePage() {
   ])
 
   const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string; competition_name?: string }] : [])
-  const competitions = [...new Set(leagues.map(l => l.competition_name ?? 'Mundial 2026'))]
+  const competitions = [...new Set(leagues.map(l => l.competition_name ?? 'FIFA World Cup'))]
 
   return (
     <ProfileClient
