@@ -8,6 +8,8 @@ import TeamFlag from '@/components/team-flag'
 import MatchPrediction from './match-prediction'
 import GroupStandings from './group-standings'
 import Lineups from './lineups'
+import EliminatoriaSection from './eliminatoria-section'
+import MatchTabsClient from './match-tabs-client'
 import { Calendar, Clock } from 'lucide-react'
 import MatchTime from '@/components/match-time'
 import ShareButton from './share-button'
@@ -65,6 +67,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     .eq('match_id', match.id)
     .single()
 
+  const KNOCKOUT_STAGES = new Set(['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
+  const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+
   // Partidos del grupo para calcular tabla
   let groupMatches: any[] = []
   if (match.stage === 'group') {
@@ -75,7 +80,6 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       .order('match_date', { ascending: true })
 
     if (allGroupMatches) {
-      // Encontrar equipos del mismo grupo conectando por quién jugó contra quién
       const groupTeams = new Set([match.home_team, match.away_team])
       let changed = true
       while (changed) {
@@ -91,6 +95,17 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         m => groupTeams.has(m.home_team) && groupTeams.has(m.away_team)
       )
     }
+  }
+
+  // Partidos de la misma fase eliminatoria
+  let stageMatches: any[] = []
+  if (isKnockout) {
+    const { data: sMatches } = await supabase
+      .from('matches')
+      .select('id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, penalty_home, penalty_away, status, bracket_position, match_date')
+      .eq('stage', match.stage)
+      .order('bracket_position', { ascending: true, nullsFirst: false })
+    stageMatches = sMatches ?? []
   }
 
   const matchDate = new Date(match.match_date)
@@ -151,26 +166,32 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* Predicción */}
-      <MatchPrediction
-        userId={user!.id}
-        match={match}
-        prediction={prediction ?? null}
+      <MatchTabsClient
+        prediccionSection={
+          <MatchPrediction
+            userId={user!.id}
+            match={match}
+            prediction={prediction ?? null}
+          />
+        }
+        alineacionesSection={match.external_id ? (
+          <Lineups externalId={match.external_id} status={match.status} />
+        ) : undefined}
+        bracketSection={isKnockout && stageMatches.length > 0 ? (
+          <EliminatoriaSection
+            stageMatches={stageMatches}
+            currentMatchId={match.id}
+            stage={match.stage}
+          />
+        ) : undefined}
+        posicionesSection={match.stage === 'group' && groupMatches.length > 0 ? (
+          <GroupStandings
+            groupName={match.group_name ?? ''}
+            matches={groupMatches}
+            highlightTeams={[match.home_team, match.away_team]}
+          />
+        ) : undefined}
       />
-
-      {/* Alineaciones */}
-      {match.external_id && (
-        <Lineups externalId={match.external_id} status={match.status} />
-      )}
-
-      {/* Tabla del grupo */}
-      {match.stage === 'group' && groupMatches.length > 0 && (
-        <GroupStandings
-          groupName={match.group_name ?? ''}
-          matches={groupMatches}
-          highlightTeams={[match.home_team, match.away_team]}
-        />
-      )}
     </div>
   )
 }
