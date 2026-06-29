@@ -187,7 +187,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         ) : undefined}
         bracketSection={isKnockout && bracketMatchesWithPreds.length > 0 ? (
           <div className="overflow-x-auto -mx-4 px-4">
-            <BracketClient matches={bracketMatchesWithPreds} userId={user!.id} />
+            <BracketClient matches={bracketMatchesWithPreds} userId={user!.id} highlightMatchId={match.id} />
           </div>
         ) : undefined}
         posicionesSection={match.stage === 'group' && groupMatches.length > 0 ? (

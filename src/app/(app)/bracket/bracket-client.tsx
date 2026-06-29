@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Match, Prediction } from '@/types'
 import TeamFlag from '@/components/team-flag'
@@ -29,13 +29,16 @@ type CardSharedProps = {
   onSave: (match: MatchWithPred) => void
   saving: Record<number, boolean>
   saved: Record<number, boolean>
+  highlightMatchId?: number
+  highlightRef?: React.RefObject<HTMLDivElement | null>
 }
 
 function MatchCard({
   match,
   ...shared
 }: CardSharedProps & { match: MatchWithPred | null }) {
-  const { scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved } = shared
+  const { scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef } = shared
+  const isHighlighted = match != null && highlightMatchId === match.id
 
   if (!match) {
     const row = (
@@ -74,7 +77,10 @@ function MatchCard({
       (match.home_score === match.away_score && match.penalty_home !== null && match.penalty_away !== null && match.penalty_away > match.penalty_home))
 
   return (
-    <div className="w-full rounded-lg border border-slate-700 bg-slate-800 overflow-hidden">
+    <div
+      ref={isHighlighted ? highlightRef : undefined}
+      className={`w-full rounded-lg border bg-slate-800 overflow-hidden ${isHighlighted ? 'border-yellow-400 ring-2 ring-yellow-400/30' : 'border-slate-700'}`}
+    >
       {/* Home row */}
       <div className={`flex items-center gap-2 px-3 py-3 ${homeWins ? 'bg-yellow-500/10' : ''}`}>
         <TeamFlag name={match.home_team} flagUrl={match.home_team_flag} size="lg" showName={false} />
@@ -214,7 +220,7 @@ function MatchCard({
   )
 }
 
-function RoundColumn({ matches, label, slotH, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved }: CardSharedProps & {
+function RoundColumn({ matches, label, slotH, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef }: CardSharedProps & {
   matches: (MatchWithPred | null)[]
   label: string
   slotH: number
@@ -243,6 +249,8 @@ function RoundColumn({ matches, label, slotH, userId, scores, penalty, hasPredic
               onSave={onSave}
               saving={saving}
               saved={saved}
+              highlightMatchId={highlightMatchId}
+              highlightRef={highlightRef}
             />
           </div>
         ))}
@@ -289,7 +297,13 @@ function Connector({ matchCount, slotH, dir }: {
   )
 }
 
-export default function BracketClient({ matches, userId }: { matches: MatchWithPred[]; userId: string }) {
+export default function BracketClient({ matches, userId, highlightMatchId }: { matches: MatchWithPred[]; userId: string; highlightMatchId?: number }) {
+  const highlightRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (highlightMatchId && highlightRef.current) {
+      setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 150)
+    }
+  }, [highlightMatchId])
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>(() => {
     const init: Record<number, { home: string; away: string }> = {}
     matches.forEach(m => {
@@ -390,7 +404,7 @@ export default function BracketClient({ matches, userId }: { matches: MatchWithP
   const ssf = SLOT_H * 8
   const totalH = 8 * SLOT_H
 
-  const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved }
+  const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved, highlightMatchId, highlightRef }
 
   return (
     <div className="w-full overflow-x-auto">
