@@ -243,11 +243,12 @@ const PREV_STAGE: Record<string, string> = {
   'final': 'semi',
 }
 
-function RoundColumn({ matches, label, slotH, stage, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef, winnerMap }: CardSharedProps & {
+function RoundColumn({ matches, label, slotH, stage, positionOffset = 0, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef, winnerMap }: CardSharedProps & {
   matches: (MatchWithPred | null)[]
   label: string
   slotH: number
   stage: string
+  positionOffset?: number
 }) {
   const totalH = matches.length * slotH
   const prevStage = PREV_STAGE[stage]
@@ -258,7 +259,7 @@ function RoundColumn({ matches, label, slotH, stage, userId, scores, penalty, ha
       </div>
       <div className="relative" style={{ height: totalH }}>
         {matches.map((match, i) => {
-          const pos = i + 1
+          const pos = positionOffset + i + 1
           const pendingHome = match == null && prevStage ? (winnerMap.get(`${prevStage}:${2 * pos - 1}`) ?? null) : undefined
           const pendingAway = match == null && prevStage ? (winnerMap.get(`${prevStage}:${2 * pos}`) ?? null) : undefined
           return (
@@ -498,15 +499,15 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
         </div>
 
         <Connector matchCount={1} slotH={ssf} dir="left" />
-        <RoundColumn matches={sfRL} label={STAGE_LABELS.semi} slotH={ssf} stage="semi" {...colProps} />
+        <RoundColumn matches={sfRL} label={STAGE_LABELS.semi} slotH={ssf} stage="semi" positionOffset={1} {...colProps} />
         <Connector matchCount={2} slotH={sqf} dir="left" />
-        <RoundColumn matches={qfRL} label={STAGE_LABELS.quarter} slotH={sqf} stage="quarter" {...colProps} />
+        <RoundColumn matches={qfRL} label={STAGE_LABELS.quarter} slotH={sqf} stage="quarter" positionOffset={2} {...colProps} />
         <Connector matchCount={4} slotH={s16} dir="left" />
-        <RoundColumn matches={r16RL} label={STAGE_LABELS.round_of_16} slotH={s16} stage="round_of_16" {...colProps} />
+        <RoundColumn matches={r16RL} label={STAGE_LABELS.round_of_16} slotH={s16} stage="round_of_16" positionOffset={4} {...colProps} />
         {has32 && (
           <>
             <Connector matchCount={8} slotH={s32} dir="left" />
-            <RoundColumn matches={r32RL} label={STAGE_LABELS.round_of_32} slotH={s32} stage="round_of_32" {...colProps} />
+            <RoundColumn matches={r32RL} label={STAGE_LABELS.round_of_32} slotH={s32} stage="round_of_32" positionOffset={8} {...colProps} />
           </>
         )}
 
