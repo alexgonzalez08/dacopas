@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
@@ -20,7 +20,7 @@ const PAGE_SIZE = 10
 
 const MEDAL_STYLES: Record<number, { medal: string; bg: string }> = {
   0: { medal: '🥇', bg: 'bg-yellow-500/10 border-yellow-500/30' },
-  1: { medal: '🥈', bg: 'bg-slate-700/50 border-slate-600/30' },
+  1: { medal: '🥈', bg: 'bg-slate-400/10 border-slate-400/30' },
   2: { medal: '🥉', bg: 'bg-amber-700/10 border-amber-600/30' },
 }
 
@@ -28,6 +28,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
   const router = useRouter()
   const searchParams = useSearchParams()
 
+  const listRef = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(() => {
     const p = parseInt(searchParams.get('page') ?? '1')
@@ -51,6 +52,9 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', String(p + 1))
     router.replace(`/stats?${params.toString()}`, { scroll: false })
+    setTimeout(() => {
+      listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
   }
 
   function handleSearch(val: string) {
@@ -81,7 +85,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
       </div>
 
       {/* Tabla */}
-      <div className="space-y-2">
+      <div ref={listRef} className="space-y-2">
         {pageEntries.length === 0 ? (
           <p className="text-center text-slate-500 text-sm py-8">No se encontraron resultados.</p>
         ) : pageEntries.map((entry) => {
