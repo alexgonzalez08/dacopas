@@ -30,32 +30,44 @@ async function runSync(request: Request) {
 
   const updatedIds: string[] = []
 
-  // Fetch partidos de API-Football
-  let fixtures: any[] = []
-  try {
-    const res = await fetch(`${API_FOOTBALL}/fixtures?league=${LEAGUE_ID}&season=${SEASON}`, {
-      headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
-    })
-    if (res.ok) {
-      const json = await res.json()
-      fixtures = json.response ?? []
-    } else {
-      console.warn(`API-Football error ${res.status}`)
-    }
-  } catch (err) {
-    console.warn('API-Football fetch failed (network error)', err)
-  }
+  // Consultar Supabase primero (gratis) para saber qué partidos necesitan update
+  const syncNow = new Date()
+  const windowStart = new Date(syncNow.getTime() - 3 * 60 * 60 * 1000)  // hace 3h (por si sigue en juego)
+  const windowEnd   = new Date(syncNow.getTime() + 2 * 60 * 60 * 1000)  // próximas 2h
 
-  if (fixtures.length === 0) {
-    return NextResponse.json({ pointsCalculated: [], notified1h: [], notifiedStart: [], notified15min: [], notifiedFinished: [] })
+  const { data: relevantMatches } = await supabase
+    .from('matches')
+    .select('id, external_id, home_score, away_score, notified_finished, status')
+    .or(`status.eq.live,and(status.eq.scheduled,match_date.gte.${windowStart.toISOString()},match_date.lte.${windowEnd.toISOString()})`)
+    .not('external_id', 'is', null)
+
+  // Si no hay partidos live ni próximos, saltamos la llamada a API-Football
+  let fixtures: any[] = []
+  if (relevantMatches && relevantMatches.length > 0) {
+    const ids = relevantMatches.map(m => m.external_id).join('-')
+    try {
+      const res = await fetch(`${API_FOOTBALL}/fixtures?ids=${ids}`, {
+        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
+      })
+      if (res.ok) {
+        const json = await res.json()
+        fixtures = json.response ?? []
+      } else {
+        console.warn(`API-Football error ${res.status}`)
+      }
+    } catch (err) {
+      console.warn('API-Football fetch failed (network error)', err)
+    }
   }
 
   // Batch-fetch todos los matches existentes de una sola vez
   const externalIds = fixtures.map(f => String(f.fixture.id))
-  const { data: existingMatches } = await supabase
-    .from('matches')
-    .select('id, external_id, home_score, away_score, notified_finished')
-    .in('external_id', externalIds)
+  const { data: existingMatches } = externalIds.length > 0
+    ? await supabase
+        .from('matches')
+        .select('id, external_id, home_score, away_score, notified_finished')
+        .in('external_id', externalIds)
+    : { data: [] }
 
   const existingMap = new Map((existingMatches ?? []).map(m => [m.external_id, m]))
 
