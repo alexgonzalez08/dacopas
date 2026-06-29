@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Trophy, LogOut, Star, Users, UserCircle, UserPlus, Share2, Check, BookOpen, MessageSquareWarning, Rss, BarChart2, GitBranch } from 'lucide-react'
+import { Star, Share2, Check, Rss, BarChart2, GitBranch } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
@@ -49,10 +49,8 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
   const [torneosUnread, setTorneosUnread] = useState(0)
   const [amistаdesUnread, setAmistаdesUnread] = useState(0)
   const [chatUnread, setChatUnread] = useState(0)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
   const notifRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -146,18 +144,11 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  async function signOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
 
   async function handleShare() {
     const url = 'https://dacopas.com'
@@ -263,54 +254,16 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
             )}
           </div>
 
-          {/* Avatar con dropdown (perfil + logout) */}
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(v => !v)}
-              className="flex items-center gap-2 hover:opacity-80 transition"
-            >
-              <div style={{ width: 32, height: 32 }} className="rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
-                {avatarUrl
-                  ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
-                  : username[0]
-                }
-              </div>
-              <span className="hidden md:block text-sm text-slate-400">{username}</span>
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 top-10 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 min-w-40 overflow-hidden">
-                <Link
-                  href="/account"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition"
-                >
-                  <UserCircle className="w-4 h-4" /> Gestión de Cuenta
-                </Link>
-                <Link
-                  href="/rules"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition"
-                >
-                  <BookOpen className="w-4 h-4" /> Reglas del juego
-                </Link>
-                <Link
-                  href="/support"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition"
-                >
-                  <MessageSquareWarning className="w-4 h-4" /> Reportar problema
-                </Link>
-                <div className="border-t border-slate-700" />
-                <button
-                  onClick={() => { setMenuOpen(false); signOut() }}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-slate-700 w-full transition"
-                >
-                  <LogOut className="w-4 h-4" /> Cerrar sesión
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Avatar — link directo a perfil */}
+          <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition">
+            <div style={{ width: 32, height: 32 }} className="rounded-full bg-slate-700 overflow-hidden shrink-0 flex items-center justify-center text-xs font-bold text-slate-300 uppercase">
+              {avatarUrl
+                ? <img src={avatarUrl} alt={username} className="w-full h-full object-cover" />
+                : username[0]
+              }
+            </div>
+            <span className="hidden md:block text-sm text-slate-400">{username}</span>
+          </Link>
         </div>
       </header>
 
