@@ -1,8 +1,9 @@
 'use client'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Camera, Check, Pencil, X, Loader2, Users } from 'lucide-react'
+import { Camera, Check, Pencil, X, Loader2, Users, UserCircle, BookOpen, MessageSquareWarning, LogOut, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import CreatePost from '@/components/create-post'
 import UserPostCard from '@/components/user-post-card'
 
@@ -48,7 +49,15 @@ export default function ProfileClient({
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
   const [posts, setPosts] = useState<Post[]>(initialPosts)
+  const [accountOpen, setAccountOpen] = useState(false)
   const avatarRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+
+  async function signOut() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   async function compressImage(file: File, maxBytes = 3 * 1024 * 1024): Promise<File> {
     if (file.size <= maxBytes) return file
@@ -256,6 +265,40 @@ export default function ProfileClient({
         </div>
         <span className="text-slate-500 text-sm">→</span>
       </Link>
+
+      {/* Menú de cuenta colapsable */}
+      <div className="bg-slate-800 rounded-2xl overflow-hidden">
+        <button
+          onClick={() => setAccountOpen(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-700 transition"
+        >
+          <span className="text-sm font-semibold text-white">Mi Cuenta</span>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {accountOpen && (
+          <div className="border-t border-slate-700">
+            <Link href="/account" className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-700 transition">
+              <UserCircle className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-sm text-slate-300">Gestión de Cuenta</span>
+            </Link>
+            <Link href="/rules" className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-700 transition border-t border-slate-700/50">
+              <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-sm text-slate-300">Reglas de Juego</span>
+            </Link>
+            <Link href="/support" className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-700 transition border-t border-slate-700/50">
+              <MessageSquareWarning className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-sm text-slate-300">Reportar Problema</span>
+            </Link>
+            <button
+              onClick={signOut}
+              className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-700 transition border-t border-slate-700/50"
+            >
+              <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+              <span className="text-sm text-red-400">Cerrar Sesión</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Crear post */}
       <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
