@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { Match, Prediction } from '@/types'
 import TeamFlag from '@/components/team-flag'
@@ -19,6 +19,8 @@ const STAGE_LABELS: Record<string, string> = {
 
 type MatchWithPred = Match & { prediction: Prediction | null }
 
+type TeamInfo = { name: string; flag: string | null }
+
 type CardSharedProps = {
   userId: string
   scores: Record<number, { home: string; away: string }>
@@ -31,27 +33,41 @@ type CardSharedProps = {
   saved: Record<number, boolean>
   highlightMatchId?: number
   highlightRef?: React.RefObject<HTMLDivElement | null>
+  winnerMap: Map<string, TeamInfo>
 }
 
-function MatchCard({
-  match,
-  ...shared
-}: CardSharedProps & { match: MatchWithPred | null }) {
-  const { scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef } = shared
-  const isHighlighted = match != null && highlightMatchId === match.id
-
-  if (!match) {
-    const row = (
+function PendingTeamRow({ team }: { team: TeamInfo | null }) {
+  if (!team) {
+    return (
       <div className="flex items-center gap-2 px-3 py-3">
         <span className="text-slate-700 text-xs">—</span>
         <span className="text-slate-600 text-xs">Por definir</span>
       </div>
     )
+  }
+  return (
+    <div className="flex items-center gap-2 px-3 py-3">
+      <TeamFlag name={team.name} flagUrl={team.flag} size="lg" showName={false} />
+      <span className="text-xs text-slate-400 truncate">{team.name}</span>
+    </div>
+  )
+}
+
+function MatchCard({
+  match,
+  pendingHome,
+  pendingAway,
+  ...shared
+}: CardSharedProps & { match: MatchWithPred | null; pendingHome?: TeamInfo | null; pendingAway?: TeamInfo | null }) {
+  const { scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef } = shared
+  const isHighlighted = match != null && highlightMatchId === match.id
+
+  if (!match) {
     return (
       <div className="w-full rounded-lg border border-dashed border-slate-700/50 bg-slate-800/20 overflow-hidden">
-        {row}
+        <PendingTeamRow team={pendingHome ?? null} />
         <div className="border-t border-slate-700/40" />
-        {row}
+        <PendingTeamRow team={pendingAway ?? null} />
       </div>
     )
   }
@@ -220,40 +236,57 @@ function MatchCard({
   )
 }
 
-function RoundColumn({ matches, label, slotH, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef }: CardSharedProps & {
+const PREV_STAGE: Record<string, string> = {
+  'round_of_16': 'round_of_32',
+  'quarter': 'round_of_16',
+  'semi': 'quarter',
+  'final': 'semi',
+}
+
+function RoundColumn({ matches, label, slotH, stage, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef, winnerMap }: CardSharedProps & {
   matches: (MatchWithPred | null)[]
   label: string
   slotH: number
+  stage: string
 }) {
   const totalH = matches.length * slotH
+  const prevStage = PREV_STAGE[stage]
   return (
     <div className="flex flex-col shrink-0 w-[200px]">
       <div className="text-[9px] font-semibold text-slate-500 uppercase tracking-wider text-center pb-2">
         {label}
       </div>
       <div className="relative" style={{ height: totalH }}>
-        {matches.map((match, i) => (
-          <div
-            key={match?.id ?? `e-${i}`}
-            className="absolute w-full flex items-center px-1"
-            style={{ top: i * slotH, height: slotH }}
-          >
-            <MatchCard
-              match={match}
-              userId={userId}
-              scores={scores}
-              penalty={penalty}
-              hasPrediction={hasPrediction}
-              onScoreChange={onScoreChange}
-              onPenaltyChange={onPenaltyChange}
-              onSave={onSave}
-              saving={saving}
-              saved={saved}
-              highlightMatchId={highlightMatchId}
-              highlightRef={highlightRef}
-            />
-          </div>
-        ))}
+        {matches.map((match, i) => {
+          const pos = i + 1
+          const pendingHome = match == null && prevStage ? (winnerMap.get(`${prevStage}:${2 * pos - 1}`) ?? null) : undefined
+          const pendingAway = match == null && prevStage ? (winnerMap.get(`${prevStage}:${2 * pos}`) ?? null) : undefined
+          return (
+            <div
+              key={match?.id ?? `e-${i}`}
+              className="absolute w-full flex items-center px-1"
+              style={{ top: i * slotH, height: slotH }}
+            >
+              <MatchCard
+                match={match}
+                pendingHome={pendingHome}
+                pendingAway={pendingAway}
+                userId={userId}
+                scores={scores}
+                penalty={penalty}
+                hasPrediction={hasPrediction}
+                onScoreChange={onScoreChange}
+                onPenaltyChange={onPenaltyChange}
+                onSave={onSave}
+                saving={saving}
+                saved={saved}
+                highlightMatchId={highlightMatchId}
+                highlightRef={highlightRef}
+                winnerMap={winnerMap}
+              />
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -304,6 +337,23 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
       setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 150)
     }
   }, [highlightMatchId])
+
+  // Mapa de ganadores: "stage:bracket_position" → { name, flag }
+  const winnerMap = useMemo(() => {
+    const map = new Map<string, TeamInfo>()
+    for (const m of matches) {
+      if (m.status !== 'finished' || m.bracket_position == null) continue
+      const homeScore = m.home_score ?? 0
+      const awayScore = m.away_score ?? 0
+      const homeWins = homeScore > awayScore ||
+        (homeScore === awayScore && (m.penalty_home ?? 0) > (m.penalty_away ?? 0))
+      map.set(`${m.stage}:${m.bracket_position}`, homeWins
+        ? { name: m.home_team, flag: m.home_team_flag ?? null }
+        : { name: m.away_team, flag: m.away_team_flag ?? null }
+      )
+    }
+    return map
+  }, [matches])
   const [scores, setScores] = useState<Record<number, { home: string; away: string }>>(() => {
     const init: Record<number, { home: string; away: string }> = {}
     matches.forEach(m => {
@@ -404,7 +454,7 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
   const ssf = SLOT_H * 8
   const totalH = 8 * SLOT_H
 
-  const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved, highlightMatchId, highlightRef }
+  const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved, highlightMatchId, highlightRef, winnerMap }
 
   return (
     <div className="w-full overflow-x-auto">
@@ -412,15 +462,15 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
 
         {has32 && (
           <>
-            <RoundColumn matches={r32L} label={STAGE_LABELS.round_of_32} slotH={s32} {...colProps} />
+            <RoundColumn matches={r32L} label={STAGE_LABELS.round_of_32} slotH={s32} stage="round_of_32" {...colProps} />
             <Connector matchCount={8} slotH={s32} dir="right" />
           </>
         )}
-        <RoundColumn matches={r16L} label={STAGE_LABELS.round_of_16} slotH={s16} {...colProps} />
+        <RoundColumn matches={r16L} label={STAGE_LABELS.round_of_16} slotH={s16} stage="round_of_16" {...colProps} />
         <Connector matchCount={4} slotH={s16} dir="right" />
-        <RoundColumn matches={qfL} label={STAGE_LABELS.quarter} slotH={sqf} {...colProps} />
+        <RoundColumn matches={qfL} label={STAGE_LABELS.quarter} slotH={sqf} stage="quarter" {...colProps} />
         <Connector matchCount={2} slotH={sqf} dir="right" />
-        <RoundColumn matches={sfL} label={STAGE_LABELS.semi} slotH={ssf} {...colProps} />
+        <RoundColumn matches={sfL} label={STAGE_LABELS.semi} slotH={ssf} stage="semi" {...colProps} />
         <Connector matchCount={1} slotH={ssf} dir="right" />
 
         {/* CENTER */}
@@ -431,7 +481,12 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
               <div className="flex justify-center pb-1">
                 <img src="/logo.png" alt="Dacopas" className="w-14 h-14 object-contain" />
               </div>
-              <MatchCard match={fin[0] ?? null} {...colProps} />
+              <MatchCard
+                match={fin[0] ?? null}
+                pendingHome={fin[0] == null ? (winnerMap.get('semi:1') ?? null) : undefined}
+                pendingAway={fin[0] == null ? (winnerMap.get('semi:2') ?? null) : undefined}
+                {...colProps}
+              />
             </div>
             <div className="flex flex-col gap-1">
               <div className="text-[9px] text-slate-500 uppercase tracking-wider text-center">
@@ -443,15 +498,15 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
         </div>
 
         <Connector matchCount={1} slotH={ssf} dir="left" />
-        <RoundColumn matches={sfRL} label={STAGE_LABELS.semi} slotH={ssf} {...colProps} />
+        <RoundColumn matches={sfRL} label={STAGE_LABELS.semi} slotH={ssf} stage="semi" {...colProps} />
         <Connector matchCount={2} slotH={sqf} dir="left" />
-        <RoundColumn matches={qfRL} label={STAGE_LABELS.quarter} slotH={sqf} {...colProps} />
+        <RoundColumn matches={qfRL} label={STAGE_LABELS.quarter} slotH={sqf} stage="quarter" {...colProps} />
         <Connector matchCount={4} slotH={s16} dir="left" />
-        <RoundColumn matches={r16RL} label={STAGE_LABELS.round_of_16} slotH={s16} {...colProps} />
+        <RoundColumn matches={r16RL} label={STAGE_LABELS.round_of_16} slotH={s16} stage="round_of_16" {...colProps} />
         {has32 && (
           <>
             <Connector matchCount={8} slotH={s32} dir="left" />
-            <RoundColumn matches={r32RL} label={STAGE_LABELS.round_of_32} slotH={s32} {...colProps} />
+            <RoundColumn matches={r32RL} label={STAGE_LABELS.round_of_32} slotH={s32} stage="round_of_32" {...colProps} />
           </>
         )}
 
