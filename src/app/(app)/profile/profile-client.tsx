@@ -32,11 +32,13 @@ export default function ProfileClient({
   userId,
   initialPosts,
   leagues = [],
+  friendsCount = 0,
 }: {
   profile: Profile
   userId: string
   initialPosts: Post[]
   leagues?: { id: string; name: string }[]
+  friendsCount?: number
 }) {
   const [username, setUsername] = useState(profile.username)
   const [fullName, setFullName] = useState(profile.full_name ?? '')
@@ -175,7 +177,7 @@ export default function ProfileClient({
               <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
 
-            {/* Botón editar / guardar */}
+            {/* Botones editar / guardar + menú cuenta */}
             <div className="flex items-center gap-2 self-start sm:self-auto">
               {editing ? (
                 <>
@@ -195,13 +197,22 @@ export default function ProfileClient({
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => setEditing(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-slate-600 text-slate-300 hover:text-white rounded-xl hover:bg-slate-700 transition"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  {saved ? '✓ Guardado' : 'Editar perfil'}
-                </button>
+                <>
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-slate-600 text-slate-300 hover:text-white rounded-xl hover:bg-slate-700 transition"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    {saved ? '✓ Guardado' : 'Editar perfil'}
+                  </button>
+                  <button
+                    onClick={() => setAccountOpen(v => !v)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-slate-600 text-slate-300 hover:text-white rounded-xl hover:bg-slate-700 transition"
+                    title="Mi Cuenta"
+                  >
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -248,38 +259,27 @@ export default function ProfileClient({
               <h1 className="text-xl font-bold text-white">{displayName}</h1>
               {fullName && <p className="text-sm text-slate-400">@{username}</p>}
               {bio && <p className="text-sm text-slate-300 mt-1">{bio}</p>}
-              <p className="text-xs text-slate-500 mt-2">⚽ Miembro desde {joinedYear}</p>
-              <p className="text-xs text-slate-500 mt-0.5">📝 {posts.length} {posts.length === 1 ? 'publicación' : 'publicaciones'}</p>
+              <div className="flex items-center gap-4 mt-2">
+                <Link href="/friends" className="text-xs text-slate-400 hover:text-white transition">
+                  <span className="font-semibold text-white">{friendsCount}</span> {friendsCount === 1 ? 'amigo' : 'amigos'}
+                </Link>
+                <span className="text-xs text-slate-500">📝 {posts.length} {posts.length === 1 ? 'publicación' : 'publicaciones'}</span>
+                <span className="text-xs text-slate-500">⚽ Desde {joinedYear}</span>
+              </div>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Amistades */}
-      <Link href="/friends" className="flex items-center justify-between bg-slate-800 hover:bg-slate-700 transition rounded-2xl px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-500/20 flex items-center justify-center">
-            <Users className="w-4 h-4 text-blue-400" />
-          </div>
-          <span className="text-sm font-semibold text-white">Amistades</span>
-        </div>
-        <span className="text-slate-500 text-sm">→</span>
-      </Link>
-
-      {/* Menú de cuenta colapsable */}
-      <div className="bg-slate-800 rounded-2xl overflow-hidden">
-        <button
-          onClick={() => setAccountOpen(v => !v)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-700 transition"
-        >
-          <span className="text-sm font-semibold text-white">Mi Cuenta</span>
-          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${accountOpen ? 'rotate-180' : ''}`} />
-        </button>
+        {/* Menú de cuenta colapsable */}
         {accountOpen && (
-          <div className="border-t border-slate-700">
+          <div className="border-t border-slate-700 mx-0">
             <Link href="/account" className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-700 transition">
               <UserCircle className="w-4 h-4 text-slate-400 shrink-0" />
               <span className="text-sm text-slate-300">Gestión de Cuenta</span>
+            </Link>
+            <Link href="/friends" className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-700 transition border-t border-slate-700/50">
+              <Users className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="text-sm text-slate-300">Amistades</span>
             </Link>
             <Link href="/rules" className="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-700 transition border-t border-slate-700/50">
               <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
