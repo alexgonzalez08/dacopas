@@ -253,8 +253,19 @@ export default function PredictionsClient({
               const showPenalty = isKnockout && !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum
               const pw = penaltyWinner[match.id]
               const matchDirty = !locked && (s.home !== c.home || s.away !== c.away || pw !== committedPenalty[match.id])
+              const committedH = parseInt(c.home)
+              const committedA = parseInt(c.away)
+              const hasDrawWithoutPenalty = isKnockout && !locked && hasPrediction[match.id] &&
+                committedPenalty[match.id] === null &&
+                !isNaN(committedH) && !isNaN(committedA) && committedH === committedA
               return (
-                <div key={match.id} ref={match.id === nextMatchId ? nextMatchRef : undefined} onClick={() => handleCardNav(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
+                <div key={match.id} ref={match.id === nextMatchId ? nextMatchRef : undefined} onClick={() => handleCardNav(`/matches/${match.id}`)} className={`rounded-xl p-4 cursor-pointer transition-colors ${hasDrawWithoutPenalty ? 'bg-red-500/10 border border-red-500/40' : matchDirty ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800 hover:bg-slate-750'}`}>
+                  {hasDrawWithoutPenalty && (
+                    <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-red-500/15 border border-red-500/30">
+                      <span className="text-red-400 text-sm">⚠️</span>
+                      <span className="text-xs text-red-300 font-medium">Predijiste empate pero no seleccionaste el ganador en penales. Corregí antes de que cierre.</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -267,6 +278,7 @@ export default function PredictionsClient({
                     </div>
                     <div className="flex items-center gap-2">
                       {matchDirty && <span className="text-xs text-yellow-400 font-semibold">Sin guardar</span>}
+                      {hasDrawWithoutPenalty && <span className="text-xs text-red-400 font-semibold">⚠️ Incompleta</span>}
                       {locked && <Lock className="w-3.5 h-3.5 text-amber-400" />}
                     </div>
                   </div>
