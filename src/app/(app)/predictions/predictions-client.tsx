@@ -285,7 +285,8 @@ export default function PredictionsClient({
                               disabled={locked || !showPenalty}
                               onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: pw === 'home' ? null : 'home' }))}
                               className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
-                                ${!showPenalty || locked ? 'opacity-30 cursor-default text-slate-500' :
+                                ${!showPenalty ? 'opacity-30 cursor-default text-slate-500' :
+                                  locked ? (pw === 'home' ? 'text-yellow-400 cursor-default' : 'opacity-30 cursor-default text-slate-500') :
                                   pw === 'home' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
                             >
                               <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition
@@ -299,7 +300,8 @@ export default function PredictionsClient({
                               disabled={locked || !showPenalty}
                               onClick={() => setPenaltyWinner(v => ({ ...v, [match.id]: pw === 'away' ? null : 'away' }))}
                               className={`flex-1 flex items-center justify-center gap-1 py-0.5 rounded text-xs font-semibold transition
-                                ${!showPenalty || locked ? 'opacity-30 cursor-default text-slate-500' :
+                                ${!showPenalty ? 'opacity-30 cursor-default text-slate-500' :
+                                  locked ? (pw === 'away' ? 'text-yellow-400 cursor-default' : 'opacity-30 cursor-default text-slate-500') :
                                   pw === 'away' ? 'text-yellow-400' : 'text-slate-500 hover:text-slate-300'}`}
                             >
                               pen
@@ -356,10 +358,10 @@ export default function PredictionsClient({
                           {match.penalty_home !== null && ` (pen. ${match.penalty_home}-${match.penalty_away})`}
                         </span>
                       )}
-                      {locked && match.prediction?.penalty_winner && (
+                      {locked && committedPenalty[match.id] && (
                         <p className="text-xs text-slate-400 text-center sm:text-right">
                           Penales: <span className="text-yellow-400 font-semibold">
-                            {match.prediction.penalty_winner === 'home' ? match.home_team : match.away_team}
+                            {committedPenalty[match.id] === 'home' ? match.home_team : match.away_team}
                           </span>
                         </p>
                       )}
