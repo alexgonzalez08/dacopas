@@ -159,6 +159,21 @@ function MatchCard({
         </div>
       )}
 
+      {/* User prediction for finished matches */}
+      {finished && match.prediction && (
+        <div className="px-3 py-1 border-t border-slate-700/50 flex items-center gap-1">
+          <span className="text-[10px] text-slate-500">Tu pred:</span>
+          <span className="text-[10px] text-slate-400 tabular-nums">
+            {match.prediction.home_score}-{match.prediction.away_score}
+            {match.prediction.penalty_winner && (
+              <span className="text-yellow-500/70 ml-1">
+                (pen. {match.prediction.penalty_winner === 'home' ? match.home_team : match.away_team})
+              </span>
+            )}
+          </span>
+        </div>
+      )}
+
       {/* Locked penalty info */}
       {locked && !finished && match.prediction?.penalty_winner && (
         <div className="px-3 py-1 border-t border-slate-700/50">
