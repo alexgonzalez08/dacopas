@@ -34,7 +34,7 @@ export default async function StatsPage() {
 
   const { data: matches } = await supabase
     .from('matches')
-    .select('id, home_score, away_score, penalty_home, penalty_away')
+    .select('id, home_score, away_score, penalty_home, penalty_away, competition_name')
     .eq('status', 'finished')
 
   const matchMap = new Map((matches ?? []).map(m => [m.id, m]))
@@ -70,50 +70,75 @@ export default async function StatsPage() {
     offset += PAGE
   }
 
-  // Calcular puntos por usuario
-  const userStats = new Map<string, { points: number; exact: number; winner: number; played: number }>()
-  for (const pred of allPreds) {
-    const match = matchMap.get(pred.match_id)
-    if (!match || match.home_score == null) continue
-    const pts = calcPoints(pred, match)
-    const exact = pred.home_score === match.home_score && pred.away_score === match.away_score ? 1 : 0
-    const predWinner = pred.home_score > pred.away_score ? 'home' : pred.away_score > pred.home_score ? 'away' : 'draw'
-    const realWinner = match.home_score > match.away_score ? 'home' : match.away_score > match.home_score ? 'away' : 'draw'
-    const winner = !exact && predWinner === realWinner ? 1 : 0
-    const prev = userStats.get(pred.user_id) ?? { points: 0, exact: 0, winner: 0, played: 0 }
-    userStats.set(pred.user_id, {
-      points: prev.points + pts,
-      exact: prev.exact + exact,
-      winner: prev.winner + winner,
-      played: prev.played + 1,
-    })
+  // Agrupar partidos por competición
+  const matchesByCompetition = new Map<string, typeof matches>()
+  for (const m of matches ?? []) {
+    const key = m.competition_name ?? 'FIFA World Cup'
+    if (!matchesByCompetition.has(key)) matchesByCompetition.set(key, [])
+    matchesByCompetition.get(key)!.push(m)
   }
 
-  const userIds = [...userStats.keys()]
+  // Calcular stats por competición
+  const allUserIds = new Set<string>()
+  const statsByCompetition = new Map<string, Map<string, { points: number; exact: number; winner: number; played: number }>>()
+
+  for (const [compName, compMatches] of matchesByCompetition) {
+    const compMatchIds = new Set(compMatches!.map(m => m.id))
+    const userStats = new Map<string, { points: number; exact: number; winner: number; played: number }>()
+
+    for (const pred of allPreds) {
+      if (!compMatchIds.has(pred.match_id)) continue
+      const match = matchMap.get(pred.match_id)
+      if (!match || match.home_score == null) continue
+      const pts = calcPoints(pred, match)
+      const exact = pred.home_score === match.home_score && pred.away_score === match.away_score ? 1 : 0
+      const predWinner = pred.home_score > pred.away_score ? 'home' : pred.away_score > pred.home_score ? 'away' : 'draw'
+      const realWinner = match.home_score > match.away_score ? 'home' : match.away_score > match.home_score ? 'away' : 'draw'
+      const winner = !exact && predWinner === realWinner ? 1 : 0
+      const prev = userStats.get(pred.user_id) ?? { points: 0, exact: 0, winner: 0, played: 0 }
+      userStats.set(pred.user_id, {
+        points: prev.points + pts,
+        exact: prev.exact + exact,
+        winner: prev.winner + winner,
+        played: prev.played + 1,
+      })
+      allUserIds.add(pred.user_id)
+    }
+    statsByCompetition.set(compName, userStats)
+  }
+
   const { data: profiles } = await adminSupabase
     .from('profiles')
     .select('id, username, full_name, avatar_url')
-    .in('id', userIds)
+    .in('id', [...allUserIds])
 
   const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
 
-  const leaderboard = [...userStats.entries()]
-    .map(([uid, stats]) => {
-      const profile = profileMap.get(uid)
-      if (!profile) return null
-      return { uid, ...stats, username: profile.username, full_name: profile.full_name, avatar_url: profile.avatar_url }
-    })
-    .filter(Boolean)
-    .sort((a, b) => b!.points - a!.points || b!.exact - a!.exact || b!.winner - a!.winner)
-    .map((e, i) => ({ ...e!, rank: i })) as any[]
+  function buildLeaderboard(userStats: Map<string, { points: number; exact: number; winner: number; played: number }>) {
+    return [...userStats.entries()]
+      .map(([uid, stats]) => {
+        const profile = profileMap.get(uid)
+        if (!profile) return null
+        return { uid, ...stats, username: profile.username, full_name: profile.full_name, avatar_url: profile.avatar_url }
+      })
+      .filter(Boolean)
+      .sort((a, b) => b!.points - a!.points || b!.exact - a!.exact || b!.winner - a!.winner)
+      .map((e, i) => ({ ...e!, rank: i })) as any[]
+  }
+
+  const competitions = [...statsByCompetition.entries()].map(([name, userStats]) => ({
+    name,
+    matchCount: matchesByCompetition.get(name)?.length ?? 0,
+    leaderboard: buildLeaderboard(userStats),
+  }))
 
   return (
     <div className="max-w-lg mx-auto space-y-6 pb-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Estadísticas Globales</h1>
-        <p className="text-sm text-slate-400 mt-1">{leaderboard.length} jugadores · {finishedIds.length} partidos finalizados</p>
+        <p className="text-sm text-slate-400 mt-1">{profiles?.length ?? 0} jugadores · {finishedIds.length} partidos finalizados</p>
       </div>
-      <StatsClient leaderboard={leaderboard} currentUserId={user!.id} />
+      <StatsClient competitions={competitions} currentUserId={user!.id} />
     </div>
   )
 }
