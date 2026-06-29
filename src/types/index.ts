@@ -21,6 +21,8 @@ export type Match = {
   penalty_away: number | null
   tournament: string | null
   bracket_position: number | null
+  competition_id: number | null
+  competition_name: string | null
 }
 
 export type League = {
