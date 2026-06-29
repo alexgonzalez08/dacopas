@@ -325,17 +325,20 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const matchesWithPredictions = (allMatches ?? [])
     .filter(m => m.status === 'finished' && m.match_date >= league.created_at)
-    .map(m => ({
-      ...m,
-      predictions: (predsByMatch.get(m.id) ?? []).map(p => ({
-        user_id: p.user_id,
-        username: usernameMap.get(p.user_id) ?? 'Usuario',
-        home_score: p.home_score,
-        away_score: p.away_score,
-        penalty_winner: (p.penalty_winner as 'home' | 'away' | null) ?? null,
-        points: calcPoints(p, m),
-      })),
-    }))
+    .map(m => {
+      const seen = new Set<string>()
+      const preds = (predsByMatch.get(m.id) ?? [])
+        .filter(p => { if (seen.has(p.user_id)) return false; seen.add(p.user_id); return true })
+        .map(p => ({
+          user_id: p.user_id,
+          username: usernameMap.get(p.user_id) ?? 'Usuario',
+          home_score: p.home_score,
+          away_score: p.away_score,
+          penalty_winner: (p.penalty_winner as 'home' | 'away' | null) ?? null,
+          points: calcPoints(p, m),
+        }))
+      return { ...m, predictions: preds }
+    })
 
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
   const RANK_STYLES = [
