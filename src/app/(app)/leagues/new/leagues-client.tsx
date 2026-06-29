@@ -3,12 +3,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createLeague, joinLeague, leaveLeague } from '@/lib/leagues'
-import { Trophy, Copy, Check, ChevronRight, LogOut, X, Loader2, Plus, Hash, ImageIcon } from 'lucide-react'
+import { Trophy, Copy, Check, ChevronRight, ChevronDown, LogOut, X, Loader2, Plus, Hash, ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { sendPushNotification } from '@/lib/push'
 import LeaguesInfoModal from '@/components/leagues-info-modal'
 
-type League = { id: string; name: string; code: string; role: string; image_url?: string | null }
+type League = { id: string; name: string; code: string; role: string; image_url?: string | null; competition_name?: string | null }
 
 export default function LeaguesClient({
   leagues: initial,
@@ -30,6 +30,26 @@ export default function LeaguesClient({
   const [leagueNotifsState, setLeagueNotifsState] = useState<Record<string, number>>(leagueNotifs)
   const [modal, setModal] = useState<'create' | 'join' | null>(null)
   const [visibleCount, setVisibleCount] = useState(10)
+
+  // Competiciones expandidas — todas abiertas por defecto
+  const competitionNames = [...new Set(leagues.map(l => l.competition_name ?? 'Mundial 2026'))]
+  const [expandedCompetitions, setExpandedCompetitions] = useState<Set<string>>(() => new Set(competitionNames))
+
+  function toggleCompetition(name: string) {
+    setExpandedCompetitions(prev => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
+  }
+
+  // Agrupar ligas por competición
+  const leaguesByCompetition = leagues.reduce<Record<string, League[]>>((acc, league) => {
+    const key = league.competition_name ?? 'Mundial 2026'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(league)
+    return acc
+  }, {})
 
   const leagueIds = leagues.map(l => l.id)
 
@@ -79,11 +99,17 @@ export default function LeaguesClient({
   // Crear torneo
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [competitionName, setCompetitionName] = useState('Mundial 2026')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
   const imageRef = useRef<HTMLInputElement>(null)
+
+  // Competiciones disponibles (hardcodeado por ahora, vendrá de API-Football)
+  const AVAILABLE_COMPETITIONS = [
+    { id: null, name: 'Mundial 2026' },
+  ]
 
   // Unirse
   const [code, setCode] = useState('')
@@ -98,7 +124,7 @@ export default function LeaguesClient({
 
   function closeModal() {
     setModal(null)
-    setName(''); setDescription(''); setImageFile(null); setImagePreview(null); setCreateError('')
+    setName(''); setDescription(''); setCompetitionName('Mundial 2026'); setImageFile(null); setImagePreview(null); setCreateError('')
     setCode(''); setJoinError('')
   }
 
@@ -130,7 +156,7 @@ export default function LeaguesClient({
         imageUrl = publicUrl
       }
 
-      const league = await createLeague(name, user!.id, imageUrl, description || undefined)
+      const league = await createLeague(name, user!.id, imageUrl, description || undefined, competitionName)
 
       // Feed event: anunciar creación del torneo
       await supabase.from('feed_events').insert({
@@ -258,42 +284,68 @@ export default function LeaguesClient({
           <p className="text-xs mt-1">Creá uno o uníte con un código.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {leagues.slice(0, visibleCount).map(league => {
-            const totalNotifs = (chatUnread[league.id] ?? 0) + (leagueNotifsState[league.id] ?? 0)
+        <div className="space-y-3">
+          {Object.entries(leaguesByCompetition).map(([competitionName, competitionLeagues]) => {
+            const isOpen = expandedCompetitions.has(competitionName)
+            const competitionNotifs = competitionLeagues.reduce((sum, l) =>
+              sum + (chatUnread[l.id] ?? 0) + (leagueNotifsState[l.id] ?? 0), 0)
             return (
-              <div key={league.id}>
-                <div className="flex items-center bg-slate-800 rounded-xl overflow-hidden">
-                  {league.image_url && (
-                    <img src={league.image_url} alt={league.name} className="w-12 h-12 object-cover shrink-0" />
-                  )}
-                  <Link
-                    href={`/leagues/${league.id}`}
-                    className="flex-1 flex items-center justify-between px-4 py-3 hover:bg-slate-700 transition min-w-0"
-                  >
-                    <span className="font-medium truncate">{league.name}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {totalNotifs > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                          {totalNotifs > 9 ? '9+' : totalNotifs}
-                        </span>
-                      )}
-                      <span className="text-xs font-mono text-slate-400">{league.code}</span>
-                      <ChevronRight className="w-4 h-4 text-slate-500" />
-                    </div>
-                  </Link>
-                </div>
+              <div key={competitionName} className="bg-slate-800 rounded-2xl overflow-hidden">
+                {/* Cabecera de competición */}
+                <button
+                  onClick={() => toggleCompetition(competitionName)}
+                  className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-700 transition"
+                >
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-yellow-400 shrink-0" />
+                    <span className="font-semibold text-white text-sm">{competitionName}</span>
+                    <span className="text-xs text-slate-500">({competitionLeagues.length})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isOpen && competitionNotifs > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {competitionNotifs > 9 ? '9+' : competitionNotifs}
+                      </span>
+                    )}
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </button>
+
+                {/* Lista de torneos de esta competición */}
+                {isOpen && (
+                  <div className="border-t border-slate-700/50">
+                    {competitionLeagues.map((league, idx) => {
+                      const totalNotifs = (chatUnread[league.id] ?? 0) + (leagueNotifsState[league.id] ?? 0)
+                      return (
+                        <div key={league.id} className={idx > 0 ? 'border-t border-slate-700/50' : ''}>
+                          <div className="flex items-center hover:bg-slate-700 transition">
+                            {league.image_url && (
+                              <img src={league.image_url} alt={league.name} className="w-11 h-11 object-cover shrink-0" />
+                            )}
+                            <Link
+                              href={`/leagues/${league.id}`}
+                              className="flex-1 flex items-center justify-between px-4 py-3 min-w-0"
+                            >
+                              <span className="text-sm font-medium truncate">{league.name}</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {totalNotifs > 0 && (
+                                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                    {totalNotifs > 9 ? '9+' : totalNotifs}
+                                  </span>
+                                )}
+                                <span className="text-xs font-mono text-slate-400">{league.code}</span>
+                                <ChevronRight className="w-4 h-4 text-slate-500" />
+                              </div>
+                            </Link>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )
           })}
-          {leagues.length > visibleCount && (
-            <button
-              onClick={() => setVisibleCount(c => c + 10)}
-              className="w-full py-2.5 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition"
-            >
-              Ver más ({leagues.length - visibleCount} restantes)
-            </button>
-          )}
         </div>
       )}
 
@@ -321,6 +373,19 @@ export default function LeaguesClient({
                 )}
               </div>
               <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Competición</label>
+                <select
+                  value={competitionName}
+                  onChange={e => setCompetitionName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 text-white"
+                >
+                  {AVAILABLE_COMPETITIONS.map(c => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
 
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Nombre del torneo</label>

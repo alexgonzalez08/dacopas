@@ -19,8 +19,9 @@ export default async function ProfilePage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('league_members')
-      .select('leagues(id, name)')
-      .eq('user_id', user!.id),
+      .select('leagues(id, name, competition_name)')
+      .eq('user_id', user!.id)
+      .is('left_at', null),
     supabase
       .from('friendships')
       .select('*', { count: 'exact', head: true })
@@ -28,7 +29,8 @@ export default async function ProfilePage() {
       .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`),
   ])
 
-  const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string }] : [])
+  const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string; competition_name?: string }] : [])
+  const competitions = [...new Set(leagues.map(l => l.competition_name ?? 'Mundial 2026'))]
 
   return (
     <ProfileClient
@@ -37,6 +39,7 @@ export default async function ProfilePage() {
       initialPosts={posts ?? []}
       leagues={leagues}
       friendsCount={friendsCount ?? 0}
+      competitions={competitions}
     />
   )
 }

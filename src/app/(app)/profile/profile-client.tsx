@@ -33,12 +33,14 @@ export default function ProfileClient({
   initialPosts,
   leagues = [],
   friendsCount = 0,
+  competitions = [],
 }: {
   profile: Profile
   userId: string
   initialPosts: Post[]
   leagues?: { id: string; name: string }[]
   friendsCount?: number
+  competitions?: string[]
 }) {
   const [username, setUsername] = useState(profile.username)
   const [fullName, setFullName] = useState(profile.full_name ?? '')
@@ -266,6 +268,15 @@ export default function ProfileClient({
                 <span className="text-xs text-slate-500">📝 {posts.length} {posts.length === 1 ? 'publicación' : 'publicaciones'}</span>
                 <span className="text-xs text-slate-500">⚽ Desde {joinedYear}</span>
               </div>
+              {competitions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {competitions.map(c => (
+                    <span key={c} className="text-xs px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 font-medium">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
