@@ -11,7 +11,7 @@ export default async function ProfilePage() {
     .eq('id', user!.id)
     .single()
 
-  const [{ data: posts }, { data: memberships }] = await Promise.all([
+  const [{ data: posts }, { data: memberships }, { count: friendsCount }] = await Promise.all([
     supabase
       .from('user_posts')
       .select('*, profiles!user_posts_user_id_fkey(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
@@ -21,6 +21,11 @@ export default async function ProfilePage() {
       .from('league_members')
       .select('leagues(id, name)')
       .eq('user_id', user!.id),
+    supabase
+      .from('friendships')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${user!.id},addressee_id.eq.${user!.id}`),
   ])
 
   const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as unknown as { id: string; name: string }] : [])
@@ -31,6 +36,7 @@ export default async function ProfilePage() {
       userId={user!.id}
       initialPosts={posts ?? []}
       leagues={leagues}
+      friendsCount={friendsCount ?? 0}
     />
   )
 }
