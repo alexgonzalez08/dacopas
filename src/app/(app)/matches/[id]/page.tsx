@@ -8,8 +8,8 @@ import TeamFlag from '@/components/team-flag'
 import MatchPrediction from './match-prediction'
 import GroupStandings from './group-standings'
 import Lineups from './lineups'
-import EliminatoriaSection from './eliminatoria-section'
 import MatchTabsClient from './match-tabs-client'
+import BracketClient from '@/app/(app)/bracket/bracket-client'
 import { Calendar, Clock } from 'lucide-react'
 import MatchTime from '@/components/match-time'
 import ShareButton from './share-button'
@@ -97,15 +97,23 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  // Partidos de la misma fase eliminatoria
-  let stageMatches: any[] = []
+  // Bracket completo para la pestaña Eliminatoria
+  let bracketMatchesWithPreds: any[] = []
   if (isKnockout) {
-    const { data: sMatches } = await supabase
-      .from('matches')
-      .select('id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, penalty_home, penalty_away, status, bracket_position, match_date')
-      .eq('stage', match.stage)
-      .order('bracket_position', { ascending: true, nullsFirst: false })
-    stageMatches = sMatches ?? []
+    const [{ data: bracketMatches }, { data: bracketPredictions }] = await Promise.all([
+      supabase
+        .from('matches')
+        .select('*')
+        .in('stage', ['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
+        .order('bracket_position', { ascending: true, nullsFirst: false })
+        .order('match_date', { ascending: true }),
+      supabase
+        .from('predictions')
+        .select('*')
+        .eq('user_id', user!.id),
+    ])
+    const predMap = new Map((bracketPredictions ?? []).map(p => [p.match_id, p]))
+    bracketMatchesWithPreds = (bracketMatches ?? []).map(m => ({ ...m, prediction: predMap.get(m.id) ?? null }))
   }
 
   const matchDate = new Date(match.match_date)
@@ -177,12 +185,10 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         alineacionesSection={match.external_id ? (
           <Lineups externalId={match.external_id} status={match.status} />
         ) : undefined}
-        bracketSection={isKnockout && stageMatches.length > 0 ? (
-          <EliminatoriaSection
-            stageMatches={stageMatches}
-            currentMatchId={match.id}
-            stage={match.stage}
-          />
+        bracketSection={isKnockout && bracketMatchesWithPreds.length > 0 ? (
+          <div className="overflow-x-auto -mx-4 px-4">
+            <BracketClient matches={bracketMatchesWithPreds} userId={user!.id} />
+          </div>
         ) : undefined}
         posicionesSection={match.stage === 'group' && groupMatches.length > 0 ? (
           <GroupStandings
