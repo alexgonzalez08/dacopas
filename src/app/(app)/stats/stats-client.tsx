@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
 
 type Entry = {
@@ -16,6 +16,12 @@ type Entry = {
   rank: number
 }
 
+type Competition = {
+  name: string
+  matchCount: number
+  leaderboard: Entry[]
+}
+
 const PAGE_SIZE = 10
 
 const MEDAL_STYLES: Record<number, { medal: string; bg: string }> = {
@@ -24,34 +30,28 @@ const MEDAL_STYLES: Record<number, { medal: string; bg: string }> = {
   2: { medal: '🥉', bg: 'bg-amber-700/10 border-amber-600/30' },
 }
 
-export default function StatsClient({ leaderboard, currentUserId }: { leaderboard: Entry[]; currentUserId: string }) {
+function CompetitionLeaderboard({ competition, currentUserId }: { competition: Competition; currentUserId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-
   const listRef = useRef<HTMLDivElement>(null)
+
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(() => {
-    const p = parseInt(searchParams.get('page') ?? '1')
-    return isNaN(p) || p < 1 ? 0 : p - 1
-  })
+  const [page, setPage] = useState(0)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return leaderboard
-    return leaderboard.filter(e =>
+    if (!q) return competition.leaderboard
+    return competition.leaderboard.filter(e =>
       e.username.toLowerCase().includes(q) ||
       (e.full_name ?? '').toLowerCase().includes(q)
     )
-  }, [search, leaderboard])
+  }, [search, competition.leaderboard])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const pageEntries = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   function goToPage(p: number) {
     setPage(p)
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('page', String(p + 1))
-    router.replace(`/stats?${params.toString()}`, { scroll: false })
     setTimeout(() => {
       listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 0)
@@ -60,18 +60,10 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
   function handleSearch(val: string) {
     setSearch(val)
     setPage(0)
-    const params = new URLSearchParams()
-    if (val) params.set('q', val)
-    router.replace(`/stats?${params.toString()}`, { scroll: false })
   }
 
-  useEffect(() => {
-    const q = searchParams.get('q') ?? ''
-    setSearch(q)
-  }, [])
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-4 px-4 pb-4">
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -80,7 +72,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
           value={search}
           onChange={e => handleSearch(e.target.value)}
           placeholder="Buscar por nombre o alias..."
-          className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500 transition"
+          className="w-full bg-slate-700 border border-slate-600 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-yellow-500 transition"
         />
       </div>
 
@@ -90,7 +82,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
           <p className="text-center text-slate-500 text-sm py-8">No se encontraron resultados.</p>
         ) : pageEntries.map((entry) => {
           const r = entry.rank
-          const style = MEDAL_STYLES[r] ?? { medal: null, bg: 'bg-slate-800 border-slate-700/50' }
+          const style = MEDAL_STYLES[r] ?? { medal: null, bg: 'bg-slate-700/50 border-slate-600/50' }
           const isMe = entry.uid === currentUserId
           return (
             <div key={entry.uid} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${isMe ? 'bg-yellow-500/10 border-yellow-500/30' : style.bg}`}>
@@ -121,7 +113,7 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
           <button
             onClick={() => goToPage(Math.max(0, page - 1))}
             disabled={page === 0}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-4 h-4" /> Anterior
           </button>
@@ -131,12 +123,47 @@ export default function StatsClient({ leaderboard, currentUserId }: { leaderboar
           <button
             onClick={() => goToPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
-            className="flex items-center gap-1 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Siguiente <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+export default function StatsClient({ competitions, currentUserId }: { competitions: Competition[]; currentUserId: string }) {
+  const [openCompetitions, setOpenCompetitions] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(competitions.map((c, i) => [c.name, i === 0]))
+  )
+
+  function toggle(name: string) {
+    setOpenCompetitions(v => ({ ...v, [name]: !v[name] }))
+  }
+
+  return (
+    <div className="space-y-3">
+      {competitions.map(competition => (
+        <div key={competition.name} className="bg-slate-800 rounded-2xl overflow-hidden">
+          <button
+            onClick={() => toggle(competition.name)}
+            className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-700 transition group"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-white group-hover:text-yellow-400 transition">{competition.name}</span>
+              <span className="text-xs text-slate-500">{competition.leaderboard.length} jugadores · {competition.matchCount} partidos</span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openCompetitions[competition.name] ? 'rotate-180' : ''}`} />
+          </button>
+
+          {openCompetitions[competition.name] && (
+            <div className="border-t border-slate-700/50">
+              <CompetitionLeaderboard competition={competition} currentUserId={currentUserId} />
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

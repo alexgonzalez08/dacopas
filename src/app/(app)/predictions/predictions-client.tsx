@@ -118,34 +118,60 @@ export default function PredictionsClient({
 
   const STAGE_ORDER = ['group', 'round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final']
 
-  // Agrupar por fase, ordenados cronológicamente dentro de cada fase
   const sorted = [...matches].sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
-  const byStage = sorted.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
-    if (!acc[m.stage]) acc[m.stage] = []
-    acc[m.stage].push(m)
-    return acc
-  }, {})
-
-  const stages = STAGE_ORDER.filter(s => byStage[s])
-
-  const todayStr = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD en timezone local
+  const todayStr = new Date().toLocaleDateString('en-CA')
   const matchDay = (date: string) => new Date(date).toLocaleDateString('en-CA')
 
-  // Fase activa: la que tiene partidos hoy, o la más próxima con partidos futuros
-  const activeStage = (() => {
+  // Agrupar por competición
+  const byCompetition = sorted.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
+    const key = m.competition_name ?? 'FIFA World Cup'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(m)
+    return acc
+  }, {})
+  const competitionList = Object.keys(byCompetition)
+
+  // Competición activa: la que tiene partidos hoy o futuros
+  const activeCompetition = competitionList.find(c =>
+    byCompetition[c].some(m => matchDay(m.match_date) >= todayStr)
+  ) ?? competitionList[competitionList.length - 1]
+
+  const [openCompetitions, setOpenCompetitions] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(competitionList.map(c => [c, c === activeCompetition]))
+  )
+  function toggleCompetition(competition: string) {
+    setOpenCompetitions(v => ({ ...v, [competition]: !v[competition] }))
+  }
+
+  // Helpers de fases por competición
+  function getStagesForCompetition(compMatches: MatchWithPrediction[]) {
+    const byStage = compMatches.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
+      if (!acc[m.stage]) acc[m.stage] = []
+      acc[m.stage].push(m)
+      return acc
+    }, {})
+    return { byStage, stages: STAGE_ORDER.filter(s => byStage[s]) }
+  }
+
+  function getActiveStage(stages: string[], byStage: Record<string, MatchWithPrediction[]>) {
     const withToday = stages.find(s => byStage[s].some(m => matchDay(m.match_date) === todayStr))
     if (withToday) return withToday
     return stages.find(s => byStage[s].some(m => matchDay(m.match_date) >= todayStr)) ?? stages[stages.length - 1]
-  })()
-
-  const [openStages, setOpenStages] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(stages.map(s => [s, s === activeStage]))
-  )
-  function toggleStage(stage: string) {
-    setOpenStages(v => ({ ...v, [stage]: !v[stage] }))
   }
 
-  // Día activo por fase: el que tiene partidos hoy, o el más próximo con partidos futuros
+  const [openStages, setOpenStages] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    competitionList.forEach(c => {
+      const { byStage, stages } = getStagesForCompetition(byCompetition[c])
+      const active = getActiveStage(stages, byStage)
+      stages.forEach(s => { init[`${c}:${s}`] = s === active })
+    })
+    return init
+  })
+  function toggleStage(competition: string, stage: string) {
+    setOpenStages(v => ({ ...v, [`${competition}:${stage}`]: !v[`${competition}:${stage}`] }))
+  }
+
   function getActiveDay(stageMatches: MatchWithPrediction[]) {
     const withToday = stageMatches.find(m => matchDay(m.match_date) === todayStr)
     if (withToday) return matchDay(withToday.match_date)
@@ -156,10 +182,13 @@ export default function PredictionsClient({
 
   const [openDays, setOpenDays] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {}
-    stages.forEach(stage => {
-      const activeDay = getActiveDay(byStage[stage])
-      const days = [...new Set(byStage[stage].map(m => matchDay(m.match_date)))].sort()
-      days.forEach(d => { init[d] = d === activeDay })
+    competitionList.forEach(c => {
+      const { byStage, stages } = getStagesForCompetition(byCompetition[c])
+      stages.forEach(stage => {
+        const activeDay = getActiveDay(byStage[stage])
+        const days = [...new Set(byStage[stage].map(m => matchDay(m.match_date)))].sort()
+        days.forEach(d => { init[d] = d === activeDay })
+      })
     })
     return init
   })
@@ -195,54 +224,74 @@ export default function PredictionsClient({
         </Link>
       </div>
 
-      {stages.map(stage => {
-        const stageMatches = byStage[stage]
-        const isOpen = openStages[stage]
-        const total = stageMatches.length
-        const done = stageMatches.filter(m => m.status === 'finished').length
-        const hasPred = stageMatches.filter(m => hasPrediction[m.id]).length
+      {competitionList.map(competition => {
+        const { byStage, stages } = getStagesForCompetition(byCompetition[competition])
+        const isCompOpen = openCompetitions[competition]
+        const totalComp = byCompetition[competition].length
+        const predComp = byCompetition[competition].filter(m => hasPrediction[m.id]).length
         return (
-        <div key={stage}>
+        <div key={competition} className="bg-slate-800/50 rounded-2xl overflow-hidden">
           <button
-            onClick={() => toggleStage(stage)}
-            className="w-full flex items-center justify-between px-4 py-3 mb-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
+            onClick={() => toggleCompetition(competition)}
+            className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-700/50 transition group"
           >
-            <div className="flex items-center gap-3">
-              <h2 className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
-                {STAGE_LABELS[stage] ?? stage}
-              </h2>
-              <span className="text-xs text-slate-500">{hasPred}/{total}</span>
-              {done === total && <span className="text-xs text-green-500 font-medium">✓ Finalizada</span>}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-white group-hover:text-yellow-400 transition">{competition}</span>
+              <span className="text-xs text-slate-500">{predComp}/{totalComp}</span>
             </div>
-            {isOpen
-              ? <ChevronDown className="w-4 h-4 text-slate-400" />
-              : <ChevronRight className="w-4 h-4 text-slate-400" />
-            }
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isCompOpen ? 'rotate-180' : ''}`} />
           </button>
-          {isOpen && <div className="space-y-5">
-            {(() => {
-              const byDay = stageMatches.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
-                const d = matchDay(m.match_date)
-                if (!acc[d]) acc[d] = []
-                acc[d].push(m)
-                return acc
-              }, {})
-              const stageDays = Object.keys(byDay).sort()
-              return stageDays.map(day => (
-                <div key={day}>
-                  <button
-                    onClick={() => toggleDay(day)}
-                    className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition group"
-                  >
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-slate-200 transition">
-                      {new Date(day + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </span>
-                    {openDays[day]
-                      ? <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-                      : <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                    }
-                  </button>
-                  {openDays[day] && <div className="space-y-3">
+
+          {isCompOpen && <div className="border-t border-slate-700/50 px-0 pt-3 pb-3 space-y-3">
+          {stages.map(stage => {
+            const stageMatches = byStage[stage]
+            const stageKey = `${competition}:${stage}`
+            const isOpen = openStages[stageKey]
+            const total = stageMatches.length
+            const done = stageMatches.filter(m => m.status === 'finished').length
+            const hasPred = stageMatches.filter(m => hasPrediction[m.id]).length
+            return (
+            <div key={stage} className="px-3">
+              <button
+                onClick={() => toggleStage(competition, stage)}
+                className="w-full flex items-center justify-between px-4 py-3 mb-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
+              >
+                <div className="flex items-center gap-3">
+                  <h2 className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
+                    {STAGE_LABELS[stage] ?? stage}
+                  </h2>
+                  <span className="text-xs text-slate-500">{hasPred}/{total}</span>
+                  {done === total && <span className="text-xs text-green-500 font-medium">✓ Finalizada</span>}
+                </div>
+                {isOpen
+                  ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                  : <ChevronRight className="w-4 h-4 text-slate-400" />
+                }
+              </button>
+              {isOpen && <div className="space-y-5">
+                {(() => {
+                  const byDay = stageMatches.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
+                    const d = matchDay(m.match_date)
+                    if (!acc[d]) acc[d] = []
+                    acc[d].push(m)
+                    return acc
+                  }, {})
+                  const stageDays = Object.keys(byDay).sort()
+                  return stageDays.map(day => (
+                    <div key={day}>
+                      <button
+                        onClick={() => toggleDay(day)}
+                        className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition group"
+                      >
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-slate-200 transition">
+                          {new Date(day + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </span>
+                        {openDays[day]
+                          ? <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                          : <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                        }
+                      </button>
+                      {openDays[day] && <div className="space-y-3">
                     {byDay[day].map(match => {
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
@@ -398,10 +447,14 @@ export default function PredictionsClient({
                 </div>
               )
                     })}
-                  </div>}
-                </div>
-              ))
-            })()}
+                      </div>}
+                    </div>
+                  ))
+                })()}
+              </div>}
+            </div>
+          )
+          })}
           </div>}
         </div>
       )

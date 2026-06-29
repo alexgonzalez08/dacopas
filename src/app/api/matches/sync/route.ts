@@ -171,6 +171,8 @@ async function runSync(request: Request) {
         penalty_home: penaltyHome,
         penalty_away: penaltyAway,
         tournament: f.league.name ?? null,
+        competition_id: LEAGUE_ID,
+        competition_name: f.league.name ?? 'FIFA World Cup',
       })
     }
   }

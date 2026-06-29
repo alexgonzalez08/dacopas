@@ -32,7 +32,7 @@ export default function LeaguesClient({
   const [visibleCount, setVisibleCount] = useState(10)
 
   // Competiciones expandidas — todas abiertas por defecto
-  const competitionNames = [...new Set(leagues.map(l => l.competition_name ?? 'Mundial 2026'))]
+  const competitionNames = [...new Set(leagues.map(l => l.competition_name ?? 'FIFA World Cup'))]
   const [expandedCompetitions, setExpandedCompetitions] = useState<Set<string>>(() => new Set(competitionNames))
 
   function toggleCompetition(name: string) {
@@ -45,7 +45,7 @@ export default function LeaguesClient({
 
   // Agrupar ligas por competición
   const leaguesByCompetition = leagues.reduce<Record<string, League[]>>((acc, league) => {
-    const key = league.competition_name ?? 'Mundial 2026'
+    const key = league.competition_name ?? 'FIFA World Cup'
     if (!acc[key]) acc[key] = []
     acc[key].push(league)
     return acc
@@ -99,7 +99,7 @@ export default function LeaguesClient({
   // Crear torneo
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [competitionName, setCompetitionName] = useState('Mundial 2026')
+  const [competitionName, setCompetitionName] = useState('FIFA World Cup')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -108,7 +108,7 @@ export default function LeaguesClient({
 
   // Competiciones disponibles (hardcodeado por ahora, vendrá de API-Football)
   const AVAILABLE_COMPETITIONS = [
-    { id: null, name: 'Mundial 2026' },
+    { id: null, name: 'FIFA World Cup' },
   ]
 
   // Unirse
@@ -124,7 +124,7 @@ export default function LeaguesClient({
 
   function closeModal() {
     setModal(null)
-    setName(''); setDescription(''); setCompetitionName('Mundial 2026'); setImageFile(null); setImagePreview(null); setCreateError('')
+    setName(''); setDescription(''); setCompetitionName('FIFA World Cup'); setImageFile(null); setImagePreview(null); setCreateError('')
     setCode(''); setJoinError('')
   }
 
