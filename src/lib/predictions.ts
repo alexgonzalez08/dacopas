@@ -27,12 +27,27 @@ export async function upsertPrediction(
       .select()
       .single()
 
-    if (!error) return data
+    if (error) {
+      const isLast = attempt === retries - 1
+      if (isLast) throw error
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
+      continue
+    }
 
+    // Verificar que la escritura realmente persistió
+    const { data: verify } = await supabase
+      .from('predictions')
+      .select('home_score, away_score')
+      .eq('user_id', userId)
+      .eq('match_id', matchId)
+      .single()
+
+    const persisted = verify?.home_score === homeScore && verify?.away_score === awayScore
+    if (persisted) return data
+
+    // Si no persistió, reintentar
     const isLast = attempt === retries - 1
-    if (isLast) throw error
-
-    // Exponential backoff: 500ms, 1000ms, 2000ms
+    if (isLast) throw new Error('La predicción no se guardó correctamente. Intentá de nuevo.')
     await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
   }
 }
