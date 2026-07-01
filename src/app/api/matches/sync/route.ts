@@ -177,6 +177,71 @@ async function runSync(request: Request) {
     }
   }
 
+  // Descubrir e insertar fixtures nuevos de rounds knockout que aún no están en la DB
+  const KNOCKOUT_ROUNDS = ['Round of 16', 'Quarter-finals', 'Semi-finals', '3rd Place Final', 'Final']
+  let newFixturesInserted = 0
+  let bracketNeedsUpdate = false
+
+  const { data: existingExternalIds } = await supabase
+    .from('matches')
+    .select('external_id')
+    .not('external_id', 'is', null)
+  const existingExternalSet = new Set((existingExternalIds ?? []).map(m => String(m.external_id)))
+
+  for (const round of KNOCKOUT_ROUNDS) {
+    try {
+      const res = await fetch(`${API_FOOTBALL}/fixtures?league=${LEAGUE_ID}&season=${SEASON}&round=${encodeURIComponent(round)}`, {
+        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
+      })
+      if (!res.ok) continue
+      const json = await res.json()
+      const roundFixtures: any[] = json.response ?? []
+      for (const f of roundFixtures) {
+        const externalId = String(f.fixture.id)
+        if (existingExternalSet.has(externalId)) continue
+        const stage = mapStage(f.league.round ?? '')
+        await supabase.from('matches').insert({
+          external_id: externalId,
+          home_team: f.teams.home.name,
+          away_team: f.teams.away.name,
+          home_team_flag: f.teams.home.logo ?? null,
+          away_team_flag: f.teams.away.logo ?? null,
+          match_date: f.fixture.date,
+          stage,
+          group_name: parseGroup(f.league.round ?? ''),
+          status: mapStatus(f.fixture.status.short),
+          home_score: f.goals.home ?? null,
+          away_score: f.goals.away ?? null,
+          penalty_home: f.score?.penalty?.home ?? null,
+          penalty_away: f.score?.penalty?.away ?? null,
+          tournament: f.league.name ?? null,
+          competition_id: LEAGUE_ID,
+          competition_name: f.league.name ?? 'FIFA World Cup',
+        })
+        newFixturesInserted++
+        bracketNeedsUpdate = true
+        existingExternalSet.add(externalId)
+      }
+    } catch (err) {
+      console.warn(`Error fetching round ${round}:`, err)
+    }
+  }
+
+  // Si se insertaron partidos nuevos, reasignar bracket_position por fecha dentro de cada stage
+  if (bracketNeedsUpdate) {
+    const knockoutStages = ['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final']
+    for (const stage of knockoutStages) {
+      const { data: stageMatches } = await supabase
+        .from('matches')
+        .select('id, match_date')
+        .eq('stage', stage)
+        .order('match_date', { ascending: true })
+      for (let i = 0; i < (stageMatches ?? []).length; i++) {
+        await supabase.from('matches').update({ bracket_position: i + 1 }).eq('id', stageMatches![i].id)
+      }
+    }
+  }
+
   // Lock predictions 1h before kickoff
   await supabase.rpc('lock_predictions_before_match')
 
@@ -324,7 +389,7 @@ async function runSync(request: Request) {
     supabase.from('feed_events').delete().lt('created_at', cutoffOld),
   ])
 
-  return NextResponse.json({ pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min, notifiedFinished })
+  return NextResponse.json({ pointsCalculated: updatedIds, notified1h, notifiedStart, notified15min, notifiedFinished, newFixturesInserted })
 }
 
 export async function GET(request: Request) {
