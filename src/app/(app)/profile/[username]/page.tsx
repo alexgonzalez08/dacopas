@@ -11,11 +11,21 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .ilike('username', username)
-    .single()
+    .eq('username', username)
+    .maybeSingle()
+
+  if (!profile) {
+    const { data: fallback } = await supabase
+      .from('profiles')
+      .select('*')
+      .ilike('username', username)
+      .limit(1)
+      .maybeSingle()
+    profile = fallback
+  }
 
   if (!profile) notFound()
 
