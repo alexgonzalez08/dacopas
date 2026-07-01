@@ -172,7 +172,7 @@ async function runSync(request: Request) {
         penalty_away: penaltyAway,
         tournament: f.league.name ?? null,
         competition_id: LEAGUE_ID,
-        competition_name: f.league.name ?? 'FIFA World Cup',
+        competition_name: f.league.name ?? 'FIFA World Cup 2026',
       })
     }
   }
@@ -264,7 +264,7 @@ async function runSync(request: Request) {
           penalty_away: f.score?.penalty?.away ?? null,
           tournament: f.league.name ?? null,
           competition_id: LEAGUE_ID,
-          competition_name: 'FIFA World Cup',
+          competition_name: 'FIFA World Cup 2026',
         })
         newFixturesInserted++
         existingExternalSet.add(externalId)
