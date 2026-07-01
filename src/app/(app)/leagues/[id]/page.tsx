@@ -270,7 +270,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   // Fetch predicciones paginado para superar el límite de PostgREST (1000 rows)
   async function fetchAllPredictions(userIds: string[]) {
-    const PAGE = 100 // TODO: volver a 1000 después de prueba en staging
+    const PAGE = 1000
     let offset = 0
     const all: any[] = []
     while (true) {
