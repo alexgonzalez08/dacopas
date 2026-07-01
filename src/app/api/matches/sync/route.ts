@@ -179,14 +179,60 @@ async function runSync(request: Request) {
 
   // Descubrir e insertar fixtures nuevos de rounds knockout que aún no están en la DB
   const KNOCKOUT_ROUNDS = ['Round of 16', 'Quarter-finals', 'Semi-finals', '3rd Place Final', 'Final']
+  const PREV_STAGE: Record<string, string> = {
+    'round_of_16': 'round_of_32',
+    'quarter': 'round_of_16',
+    'semi': 'quarter',
+    'final': 'semi',
+    'third_place': 'semi',
+  }
   let newFixturesInserted = 0
-  let bracketNeedsUpdate = false
 
   const { data: existingExternalIds } = await supabase
     .from('matches')
     .select('external_id')
     .not('external_id', 'is', null)
   const existingExternalSet = new Set((existingExternalIds ?? []).map(m => String(m.external_id)))
+
+  // Cargar todas las posiciones del bracket actuales para calcular la posición de nuevos fixtures
+  const { data: allKnockoutMatches } = await supabase
+    .from('matches')
+    .select('stage, home_team, away_team, bracket_position, home_score, away_score, penalty_home, penalty_away, status')
+    .in('stage', ['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
+
+  // Mapa: stage → team_name → bracket_position (solo partidos finalizados)
+  function buildWinnerPositionMap(stage: string): Map<string, number> {
+    const map = new Map<string, number>()
+    for (const m of allKnockoutMatches ?? []) {
+      if (m.stage !== stage || m.bracket_position == null) continue
+      const homeScore = m.home_score ?? 0
+      const awayScore = m.away_score ?? 0
+      const homeWins = homeScore > awayScore ||
+        (homeScore === awayScore && (m.penalty_home ?? 0) > (m.penalty_away ?? 0))
+      const winner = homeWins ? m.home_team : m.away_team
+      const loser = homeWins ? m.away_team : m.home_team
+      map.set(winner.toLowerCase(), m.bracket_position)
+      // Para tercero y cuarto puesto, los perdedores también son relevantes
+      map.set(`loser:${loser.toLowerCase()}`, m.bracket_position)
+    }
+    return map
+  }
+
+  // Calcula bracket_position para un fixture nuevo buscando las posiciones previas de sus equipos
+  function calcBracketPosition(homeTeam: string, awayTeam: string, stage: string): number | null {
+    if (stage === 'third_place' || stage === 'final') {
+      // Solo hay 1 partido en el centro — posición fija
+      return 1
+    }
+    const prevStage = PREV_STAGE[stage]
+    if (!prevStage) return null
+    const winnerMap = buildWinnerPositionMap(prevStage)
+    const homePos = winnerMap.get(homeTeam.toLowerCase())
+    const awayPos = winnerMap.get(awayTeam.toLowerCase())
+    const pos = homePos ?? awayPos
+    if (pos == null) return null
+    return Math.ceil(pos / 2)
+  }
 
   for (const round of KNOCKOUT_ROUNDS) {
     try {
@@ -200,6 +246,7 @@ async function runSync(request: Request) {
         const externalId = String(f.fixture.id)
         if (existingExternalSet.has(externalId)) continue
         const stage = mapStage(f.league.round ?? '')
+        const bracketPosition = calcBracketPosition(f.teams.home.name, f.teams.away.name, stage)
         await supabase.from('matches').insert({
           external_id: externalId,
           home_team: f.teams.home.name,
@@ -208,6 +255,7 @@ async function runSync(request: Request) {
           away_team_flag: f.teams.away.logo ?? null,
           match_date: f.fixture.date,
           stage,
+          bracket_position: bracketPosition,
           group_name: parseGroup(f.league.round ?? ''),
           status: mapStatus(f.fixture.status.short),
           home_score: f.goals.home ?? null,
@@ -219,26 +267,10 @@ async function runSync(request: Request) {
           competition_name: f.league.name ?? 'FIFA World Cup',
         })
         newFixturesInserted++
-        bracketNeedsUpdate = true
         existingExternalSet.add(externalId)
       }
     } catch (err) {
       console.warn(`Error fetching round ${round}:`, err)
-    }
-  }
-
-  // Si se insertaron partidos nuevos, reasignar bracket_position por fecha dentro de cada stage
-  if (bracketNeedsUpdate) {
-    const knockoutStages = ['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final']
-    for (const stage of knockoutStages) {
-      const { data: stageMatches } = await supabase
-        .from('matches')
-        .select('id, match_date')
-        .eq('stage', stage)
-        .order('match_date', { ascending: true })
-      for (let i = 0; i < (stageMatches ?? []).length; i++) {
-        await supabase.from('matches').update({ bracket_position: i + 1 }).eq('id', stageMatches![i].id)
-      }
     }
   }
 
