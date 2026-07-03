@@ -9,6 +9,7 @@ import MatchPrediction from './match-prediction'
 import GroupStandings from './group-standings'
 import Lineups from './lineups'
 import MatchTabsClient from './match-tabs-client'
+import TeamHistory from './team-history'
 import BracketClient from '@/app/(app)/bracket/bracket-client'
 import { Calendar, Clock } from 'lucide-react'
 import MatchTime from '@/components/match-time'
@@ -116,6 +117,20 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     bracketMatchesWithPreds = (bracketMatches ?? []).map(m => ({ ...m, prediction: predMap.get(m.id) ?? null }))
   }
 
+  // Historial de ambos equipos en el torneo (partidos previos al actual)
+  const { data: pastMatchesRaw } = await supabase
+    .from('matches')
+    .select('id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, penalty_home, penalty_away, stage, group_name, match_date')
+    .eq('status', 'finished')
+    .eq('competition_name', match.competition_name)
+    .lt('match_date', match.match_date)
+    .or(`home_team.eq.${match.home_team},away_team.eq.${match.home_team},home_team.eq.${match.away_team},away_team.eq.${match.away_team}`)
+    .order('match_date', { ascending: true })
+
+  const pastMatches = pastMatchesRaw ?? []
+  const homePastMatches = pastMatches.filter(m => m.home_team === match.home_team || m.away_team === match.home_team)
+  const awayPastMatches = pastMatches.filter(m => m.home_team === match.away_team || m.away_team === match.away_team)
+
   const matchDate = new Date(match.match_date)
 
   return (
@@ -195,6 +210,16 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             groupName={match.group_name ?? ''}
             matches={groupMatches}
             highlightTeams={[match.home_team, match.away_team]}
+          />
+        ) : undefined}
+        historialSection={pastMatches.length > 0 ? (
+          <TeamHistory
+            homeTeam={match.home_team}
+            homeFlag={match.home_team_flag}
+            homePastMatches={homePastMatches}
+            awayTeam={match.away_team}
+            awayFlag={match.away_team_flag}
+            awayPastMatches={awayPastMatches}
           />
         ) : undefined}
       />
