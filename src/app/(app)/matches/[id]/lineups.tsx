@@ -97,7 +97,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   return (
     <div className="space-y-3">
       {/* Pitch */}
-      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '170%', background: '#2d6a35' }}>
+      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '205%', background: '#2d6a35' }}>
         {/* Pitch markings */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 145" preserveAspectRatio="none">
           {/* Outer border */}
@@ -127,7 +127,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
             <div
               key={p.id}
               className="absolute flex flex-col items-center"
-              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '17%' }}
+              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '19%' }}
             >
               <PlayerAvatar id={p.id} number={p.number} ringColor="ring-slate-300" fallbackBg="bg-slate-600" />
               <span className="text-[9px] text-white font-semibold mt-1 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
@@ -145,7 +145,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
             <div
               key={p.id}
               className="absolute flex flex-col items-center"
-              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '17%' }}
+              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '19%' }}
             >
               <PlayerAvatar id={p.id} number={p.number} ringColor="ring-yellow-400" fallbackBg="bg-yellow-500" />
               <span className="text-[9px] text-white font-semibold mt-1 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>

@@ -16,7 +16,7 @@ export default function PlayerAvatar({
   const src = `https://media.api-sports.io/football/players/${id}.png`
 
   return (
-    <div className={`w-9 h-9 rounded-full ring-2 ${ringColor} overflow-hidden shadow-lg ${failed ? fallbackBg : 'bg-slate-700'} flex items-center justify-center`}>
+    <div className={`w-11 h-11 rounded-full ring-2 ${ringColor} overflow-hidden shadow-lg ${failed ? fallbackBg : 'bg-slate-700'} flex items-center justify-center`}>
       {!failed ? (
         <img
           src={src}
