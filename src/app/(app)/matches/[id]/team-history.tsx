@@ -53,10 +53,13 @@ function MatchRow({ match, team }: { match: PastMatch; team: string }) {
   return (
     <div className="flex items-center gap-2">
       <FlagCircle flag={myFlag} name={team} />
-      <div className={`flex-1 flex items-center justify-center px-2 py-1.5 rounded-lg ${pillColor} whitespace-nowrap`}>
-        <span className="text-sm font-bold tabular-nums">
-          {goalsFor} - {goalsAgainst}{penFor != null && penAgainst != null ? ` (${penFor}-${penAgainst})` : ''}
+      <div className={`flex-1 flex flex-col items-center justify-center px-2 py-1.5 rounded-lg ${pillColor}`}>
+        <span className="text-sm font-bold tabular-nums leading-none">
+          {goalsFor} - {goalsAgainst}
         </span>
+        {penFor != null && penAgainst != null && (
+          <span className="text-[10px] tabular-nums opacity-80 leading-none mt-0.5">({penFor}-{penAgainst})</span>
+        )}
       </div>
       <FlagCircle flag={oppFlag} name={oppName} />
     </div>
