@@ -59,13 +59,50 @@ function MatchRow({ match, team }: { match: PastMatch; team: string }) {
   )
 }
 
+function calcStats(team: string, matches: PastMatch[]) {
+  let w = 0, d = 0, l = 0, gf = 0, ga = 0, cs = 0
+  for (const m of matches) {
+    const isHome = m.home_team === team
+    const goalsFor = isHome ? m.home_score : m.away_score
+    const goalsAgainst = isHome ? m.away_score : m.home_score
+    const penFor = isHome ? m.penalty_home : m.penalty_away
+    const penAgainst = isHome ? m.penalty_away : m.penalty_home
+    gf += goalsFor
+    ga += goalsAgainst
+    if (goalsAgainst === 0) cs++
+    if (goalsFor > goalsAgainst) w++
+    else if (goalsFor < goalsAgainst) l++
+    else if (penFor != null && penAgainst != null) penFor > penAgainst ? w++ : l++
+    else d++
+  }
+  return { w, d, l, gf, ga, cs }
+}
+
 function TeamColumn({ team, flag, matches }: { team: string; flag: string | null; matches: PastMatch[] }) {
+  const stats = calcStats(team, matches)
   return (
     <div className="flex-1 min-w-0 space-y-2.5">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <FlagCircle flag={flag} name={team} />
         <span className="text-xs font-semibold text-slate-300 truncate">{team}</span>
       </div>
+
+      {matches.length > 0 && (
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1 bg-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
+          <div className="text-center">
+            <p className="text-base font-bold text-white">{stats.w}<span className="text-green-400">-</span>{stats.d}<span className="text-yellow-400">-</span>{stats.l}</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide">G-E-P</p>
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold text-white">{stats.gf}<span className="text-slate-500 text-sm font-normal"> / </span>{stats.ga}</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide">GF / GC</p>
+          </div>
+          <div className="col-span-2 border-t border-slate-700/60 mt-1 pt-1 text-center">
+            <p className="text-sm font-bold text-white">{stats.cs} <span className="text-xs font-normal text-slate-400">{stats.cs === 1 ? 'portería en cero' : 'porterías en cero'}</span></p>
+          </div>
+        </div>
+      )}
+
       {matches.length === 0
         ? <p className="text-xs text-slate-500">Sin partidos previos</p>
         : matches.map(m => <MatchRow key={m.id} match={m} team={team} />)
