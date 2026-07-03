@@ -76,7 +76,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   function calcY(row: number, maxRow: number, start: number, dir: 1 | -1) {
     if (maxRow === 1) return start
     const n = maxRow - 1
-    const totalRange = 33
+    const totalRange = 36
     const baseGap = totalRange / (n - 1 + 1.6)
     let y = start
     for (let r = 2; r <= row; r++) {
@@ -247,7 +247,7 @@ export default async function Lineups({
   }
 
   return (
-    <div className="bg-slate-800 rounded-2xl overflow-hidden">
+    <div className="bg-slate-800 overflow-hidden -mx-4 sm:mx-0 sm:rounded-2xl">
       <div className="px-5 pt-5 pb-3">
         <h2 className="font-semibold text-slate-300 flex items-center gap-2">
           <Users className="w-4 h-4" /> Alineaciones
