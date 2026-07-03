@@ -72,14 +72,20 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
 
   // Home: GK (row 1) at bottom (~88%), last row at ~54%
   // Away: GK (row 1) at top (~12%), last row at ~46%
-  function homeY(row: number) {
-    if (homeMaxRow === 1) return 91
-    return 91 - ((row - 1) / (homeMaxRow - 1)) * 44
+  // Non-linear spacing: el último gap (MID→FWD) es 1.6x más grande que los demás
+  function calcY(row: number, maxRow: number, start: number, dir: 1 | -1) {
+    if (maxRow === 1) return start
+    const n = maxRow - 1
+    const totalRange = 37
+    const baseGap = totalRange / (n - 1 + 1.6)
+    let y = start
+    for (let r = 2; r <= row; r++) {
+      y += dir * (r === maxRow ? baseGap * 1.6 : baseGap)
+    }
+    return y
   }
-  function awayY(row: number) {
-    if (awayMaxRow === 1) return 9
-    return 9 + ((row - 1) / (awayMaxRow - 1)) * 44
-  }
+  function homeY(row: number) { return calcY(row, homeMaxRow, 91, -1) }
+  function awayY(row: number) { return calcY(row, awayMaxRow, 9, 1) }
   function xPct(col: number, total: number) {
     return (col / (total + 1)) * 100
   }
