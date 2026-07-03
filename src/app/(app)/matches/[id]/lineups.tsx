@@ -74,11 +74,11 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   // Away: GK (row 1) at top (~12%), last row at ~46%
   function homeY(row: number) {
     if (homeMaxRow === 1) return 91
-    return 91 - ((row - 1) / (homeMaxRow - 1)) * 30
+    return 91 - ((row - 1) / (homeMaxRow - 1)) * 38
   }
   function awayY(row: number) {
     if (awayMaxRow === 1) return 9
-    return 9 + ((row - 1) / (awayMaxRow - 1)) * 30
+    return 9 + ((row - 1) / (awayMaxRow - 1)) * 38
   }
   function xPct(col: number, total: number) {
     return (col / (total + 1)) * 100
