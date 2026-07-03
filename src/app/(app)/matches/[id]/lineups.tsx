@@ -76,7 +76,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   function calcY(row: number, maxRow: number, start: number, dir: 1 | -1) {
     if (maxRow === 1) return start
     const n = maxRow - 1
-    const totalRange = 36
+    const totalRange = 39
     const baseGap = totalRange / (n - 1 + 1.6)
     let y = start
     for (let r = 2; r <= row; r++) {
