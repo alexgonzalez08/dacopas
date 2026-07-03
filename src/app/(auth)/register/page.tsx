@@ -68,7 +68,8 @@ function RegisterForm() {
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('id')
-      .eq('username', alias)
+      .ilike('username', alias)
+      .limit(1)
       .maybeSingle()
     if (existingProfile) {
       setError('Ese alias ya está en uso, elegí otro.')

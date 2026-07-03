@@ -1,7 +1,7 @@
 'use client'
 import { useState, type ReactNode } from 'react'
 
-type TabId = 'prediccion' | 'alineaciones' | 'bracket' | 'posiciones'
+type TabId = 'prediccion' | 'alineaciones' | 'bracket' | 'posiciones' | 'historial'
 
 type Tab = { id: TabId; label: string }
 
@@ -10,14 +10,17 @@ export default function MatchTabsClient({
   alineacionesSection,
   bracketSection,
   posicionesSection,
+  historialSection,
 }: {
   prediccionSection: ReactNode
   alineacionesSection?: ReactNode
   bracketSection?: ReactNode
   posicionesSection?: ReactNode
+  historialSection?: ReactNode
 }) {
   const tabs: Tab[] = [
     { id: 'prediccion', label: 'Predicción' },
+    ...(historialSection ? [{ id: 'historial' as TabId, label: 'Estadísticas' }] : []),
     ...(alineacionesSection ? [{ id: 'alineaciones' as TabId, label: 'Alineaciones' }] : []),
     ...(bracketSection ? [{ id: 'bracket' as TabId, label: 'Eliminatoria' }] : []),
     ...(posicionesSection ? [{ id: 'posiciones' as TabId, label: 'Posiciones' }] : []),
@@ -52,6 +55,7 @@ export default function MatchTabsClient({
         {active === 'alineaciones' && alineacionesSection}
         {active === 'bracket' && bracketSection}
         {active === 'posiciones' && posicionesSection}
+        {active === 'historial' && historialSection}
       </div>
     </>
   )

@@ -2,8 +2,6 @@ export const revalidate = 60
 
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { formatDistanceToNow } from 'date-fns'
-import { es } from 'date-fns/locale'
 import UserPostCard from '@/components/user-post-card'
 import Link from 'next/link'
 import FriendshipButton from './friendship-button'
@@ -13,23 +11,53 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .ilike('username', username)
-    .single()
+    .eq('username', username)
+    .maybeSingle()
+
+  if (!profile) {
+    const { data: fallback } = await supabase
+      .from('profiles')
+      .select('*')
+      .ilike('username', username)
+      .limit(1)
+      .maybeSingle()
+    profile = fallback
+  }
 
   if (!profile) notFound()
 
-  const { data: posts } = await supabase
-    .from('user_posts')
-    .select('*, profiles!user_posts_user_id_fkey(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
-    .eq('user_id', profile.id)
-    .order('created_at', { ascending: false })
+  const [
+    { data: posts },
+    { data: memberships },
+    { count: friendsCount },
+  ] = await Promise.all([
+    supabase
+      .from('user_posts')
+      .select('*, profiles!user_posts_user_id_fkey(username, full_name, avatar_url), post_reactions(id, emoji, user_id), post_comments(id, content, user_id, created_at, profiles(username, full_name, avatar_url))')
+      .eq('user_id', profile.id)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('league_members')
+      .select('leagues(id, name, competition_name)')
+      .eq('user_id', profile.id)
+      .is('left_at', null),
+    supabase
+      .from('friendships')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${profile.id},addressee_id.eq.${profile.id}`),
+  ])
+
+  const leagues = (memberships ?? []).flatMap(m => m.leagues ? [m.leagues as any] : [])
+  const competitions = [...new Set(leagues.map((l: any) => l.competition_name ?? 'FIFA World Cup 2026'))]
 
   const isOwn = user?.id === profile.id
   const displayName = profile.full_name || profile.username
   const joinedYear = new Date(profile.created_at).getFullYear()
+  const postCount = posts?.length ?? 0
 
   // Estado de amistad
   let friendshipStatus: 'none' | 'pending_sent' | 'pending_received' | 'accepted' = 'none'
@@ -82,11 +110,28 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               />
             )}
           </div>
+
           <h1 className="text-xl font-bold text-white">{displayName}</h1>
           {profile.full_name && <p className="text-sm text-slate-400">@{profile.username}</p>}
           {profile.bio && <p className="text-sm text-slate-300 mt-1">{profile.bio}</p>}
-          <p className="text-xs text-slate-500 mt-2">⚽ Miembro desde {joinedYear}</p>
-          <p className="text-xs text-slate-500 mt-0.5">📝 {posts?.length ?? 0} {posts?.length === 1 ? 'publicación' : 'publicaciones'}</p>
+
+          <div className="flex items-center gap-4 mt-2">
+            <span className="text-xs text-slate-400">
+              <span className="font-semibold text-white">{friendsCount ?? 0}</span> {(friendsCount ?? 0) === 1 ? 'amigo' : 'amigos'}
+            </span>
+            <span className="text-xs text-slate-500">📝 {postCount} {postCount === 1 ? 'publicación' : 'publicaciones'}</span>
+            <span className="text-xs text-slate-500">⚽ Desde {joinedYear}</span>
+          </div>
+
+          {competitions.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {competitions.map((c: string) => (
+                <span key={c} className="text-xs px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 font-medium">
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
