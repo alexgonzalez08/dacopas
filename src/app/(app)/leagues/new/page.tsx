@@ -64,7 +64,7 @@ export default async function LeaguesPage() {
       .select('metadata')
       .eq('user_id', user!.id)
       .eq('type', 'join_request')
-      .is('read_at', null)
+      .eq('read', false)
 
     for (const n of notifs ?? []) {
       const lid = n.metadata?.league_id

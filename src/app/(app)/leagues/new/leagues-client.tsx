@@ -72,7 +72,7 @@ export default function LeaguesClient({
         .select('metadata')
         .eq('user_id', userId)
         .eq('type', 'join_request')
-        .is('read_at', null)
+        .eq('read', false)
       const counts: Record<string, number> = {}
       for (const n of notifs ?? []) {
         const lid = n.metadata?.league_id
