@@ -1,4 +1,5 @@
 import { Users } from 'lucide-react'
+import PlayerAvatar from './player-avatar'
 
 type Player = {
   id: number
@@ -128,10 +129,8 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
               className="absolute flex flex-col items-center"
               style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '17%' }}
             >
-              <div className="w-7 h-7 rounded-full bg-slate-200 border-2 border-slate-400 flex items-center justify-center shadow-md">
-                <span className="text-[10px] font-bold text-slate-800 leading-none">{p.number}</span>
-              </div>
-              <span className="text-[9px] text-white font-medium mt-0.5 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              <PlayerAvatar id={p.id} number={p.number} ringColor="ring-slate-300" fallbackBg="bg-slate-600" />
+              <span className="text-[9px] text-white font-semibold mt-1 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                 {shortName(p.name)}
               </span>
             </div>
@@ -148,10 +147,8 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
               className="absolute flex flex-col items-center"
               style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '17%' }}
             >
-              <div className="w-7 h-7 rounded-full bg-yellow-400 border-2 border-yellow-600 flex items-center justify-center shadow-md">
-                <span className="text-[10px] font-bold text-slate-900 leading-none">{p.number}</span>
-              </div>
-              <span className="text-[9px] text-white font-medium mt-0.5 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              <PlayerAvatar id={p.id} number={p.number} ringColor="ring-yellow-400" fallbackBg="bg-yellow-500" />
+              <span className="text-[9px] text-white font-semibold mt-1 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                 {shortName(p.name)}
               </span>
             </div>
