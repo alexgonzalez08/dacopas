@@ -90,7 +90,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   return (
     <div className="space-y-3">
       {/* Pitch */}
-      <div className="relative w-full rounded-2xl overflow-hidden" style={{ paddingBottom: '145%', background: '#2d6a35' }}>
+      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '145%', background: '#2d6a35' }}>
         {/* Pitch markings */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 145" preserveAspectRatio="none">
           {/* Outer border */}
@@ -164,7 +164,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
       </div>
 
       {/* Substitutes */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 px-5 pb-5">
         {[home, away].map(lineup => (
           lineup.substitutes.length > 0 && (
             <div key={lineup.team.id}>
@@ -241,10 +241,12 @@ export default async function Lineups({
   }
 
   return (
-    <div className="bg-slate-800 rounded-2xl p-5">
-      <h2 className="font-semibold mb-4 text-slate-300 flex items-center gap-2">
-        <Users className="w-4 h-4" /> Alineaciones
-      </h2>
+    <div className="bg-slate-800 rounded-2xl overflow-hidden">
+      <div className="px-5 pt-5 pb-3">
+        <h2 className="font-semibold text-slate-300 flex items-center gap-2">
+          <Users className="w-4 h-4" /> Alineaciones
+        </h2>
+      </div>
       <PitchView home={lineups[0]} away={lineups[1]} />
     </div>
   )
