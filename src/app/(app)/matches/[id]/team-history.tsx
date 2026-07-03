@@ -86,7 +86,7 @@ export default function TeamHistory({
   awayPastMatches: PastMatch[]
 }) {
   return (
-    <div className="space-y-4">
+    <div className="bg-slate-800 -mx-4 sm:mx-0 sm:rounded-2xl px-4 py-5 space-y-4">
       <p className="text-sm font-bold text-white">Últimos partidos</p>
       <div className="flex gap-4 items-start">
         <TeamColumn team={homeTeam} flag={homeFlag} matches={homePastMatches} />
