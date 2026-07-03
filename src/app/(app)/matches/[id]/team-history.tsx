@@ -57,7 +57,7 @@ function MatchRow({ match, team }: { match: PastMatch; team: string }) {
         <span className="text-sm font-bold tabular-nums leading-none">
           {goalsFor} - {goalsAgainst}
         </span>
-        {penFor != null && penAgainst != null && (
+        {penFor != null && penAgainst != null && (penFor > 0 || penAgainst > 0) && (
           <span className="text-[10px] tabular-nums opacity-80 leading-none mt-0.5">({penFor}-{penAgainst})</span>
         )}
       </div>
