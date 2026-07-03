@@ -16,7 +16,9 @@ type PastMatch = {
 function FlagCircle({ flag, name }: { flag: string | null; name: string }) {
   if (flag?.startsWith('http')) {
     return (
-      <img src={flag} alt={name} className="w-9 h-9 rounded-full object-cover border border-slate-600 shrink-0" />
+      <div className="w-9 h-9 rounded-full overflow-hidden border border-slate-600 shrink-0">
+        <img src={flag} alt={name} className="w-full h-full object-cover" />
+      </div>
     )
   }
   return (
@@ -36,23 +38,21 @@ function MatchRow({ match, team }: { match: PastMatch; team: string }) {
   const penFor = isHome ? match.penalty_home : match.penalty_away
   const penAgainst = isHome ? match.penalty_away : match.penalty_home
 
-  let won: boolean | null = null
-  if (goalsFor > goalsAgainst) won = true
-  else if (goalsFor < goalsAgainst) won = false
-  else if (penFor != null && penAgainst != null) won = penFor > penAgainst
+  let result: 'W' | 'D' | 'L'
+  if (goalsFor > goalsAgainst) result = 'W'
+  else if (goalsFor < goalsAgainst) result = 'L'
+  else if (penFor != null && penAgainst != null) result = penFor > penAgainst ? 'W' : 'L'
+  else result = 'D'
 
-  const pillColor = won === true ? 'bg-green-600' : 'bg-slate-600'
+  const pillColor = result === 'W' ? 'bg-green-600' : result === 'L' ? 'bg-red-600' : 'bg-yellow-600'
 
   return (
     <div className="flex items-center gap-2">
       <FlagCircle flag={myFlag} name={team} />
-      <div className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg ${pillColor}`}>
+      <div className={`flex-1 flex items-center justify-center px-2 py-1.5 rounded-lg ${pillColor} whitespace-nowrap`}>
         <span className="text-sm font-bold tabular-nums text-white">
-          {goalsFor} - {goalsAgainst}
+          {goalsFor} - {goalsAgainst}{penFor != null && penAgainst != null ? ` (${penFor}-${penAgainst})` : ''}
         </span>
-        {penFor != null && penAgainst != null && (
-          <span className="text-[10px] text-white/70">({penFor}-{penAgainst})</span>
-        )}
       </div>
       <FlagCircle flag={oppFlag} name={oppName} />
     </div>
