@@ -20,10 +20,10 @@ export default function MatchTabsClient({
 }) {
   const tabs: Tab[] = [
     { id: 'prediccion', label: 'Predicción' },
+    ...(historialSection ? [{ id: 'historial' as TabId, label: 'Estadísticas' }] : []),
     ...(alineacionesSection ? [{ id: 'alineaciones' as TabId, label: 'Alineaciones' }] : []),
     ...(bracketSection ? [{ id: 'bracket' as TabId, label: 'Eliminatoria' }] : []),
     ...(posicionesSection ? [{ id: 'posiciones' as TabId, label: 'Posiciones' }] : []),
-    ...(historialSection ? [{ id: 'historial' as TabId, label: 'Estadísticas' }] : []),
   ]
 
   const [active, setActive] = useState<TabId>('prediccion')
