@@ -90,7 +90,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   return (
     <div className="space-y-3">
       {/* Pitch */}
-      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '145%', background: '#2d6a35' }}>
+      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '170%', background: '#2d6a35' }}>
         {/* Pitch markings */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 145" preserveAspectRatio="none">
           {/* Outer border */}
@@ -120,12 +120,12 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
             <div
               key={p.id}
               className="absolute flex flex-col items-center"
-              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '13%' }}
+              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '17%' }}
             >
               <div className="w-7 h-7 rounded-full bg-slate-200 border-2 border-slate-400 flex items-center justify-center shadow-md">
                 <span className="text-[10px] font-bold text-slate-800 leading-none">{p.number}</span>
               </div>
-              <span className="text-[9px] text-white font-medium mt-0.5 text-center leading-tight drop-shadow-md truncate w-full text-center">
+              <span className="text-[9px] text-white font-medium mt-0.5 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                 {shortName(p.name)}
               </span>
             </div>
@@ -140,12 +140,12 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
             <div
               key={p.id}
               className="absolute flex flex-col items-center"
-              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '13%' }}
+              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', width: '17%' }}
             >
               <div className="w-7 h-7 rounded-full bg-yellow-400 border-2 border-yellow-600 flex items-center justify-center shadow-md">
                 <span className="text-[10px] font-bold text-slate-900 leading-none">{p.number}</span>
               </div>
-              <span className="text-[9px] text-white font-medium mt-0.5 text-center leading-tight drop-shadow-md truncate w-full text-center">
+              <span className="text-[9px] text-white font-medium mt-0.5 text-center leading-tight drop-shadow-md w-full overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                 {shortName(p.name)}
               </span>
             </div>
