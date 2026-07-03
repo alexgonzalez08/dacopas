@@ -75,11 +75,11 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   // Away: GK (row 1) at top (~12%), last row at ~46%
   function homeY(row: number) {
     if (homeMaxRow === 1) return 92
-    return 92 - ((row - 1) / (homeMaxRow - 1)) * 38
+    return 92 - ((row - 1) / (homeMaxRow - 1)) * 34
   }
   function awayY(row: number) {
     if (awayMaxRow === 1) return 8
-    return 8 + ((row - 1) / (awayMaxRow - 1)) * 38
+    return 8 + ((row - 1) / (awayMaxRow - 1)) * 34
   }
   function xPct(col: number, total: number) {
     return (col / (total + 1)) * 100
@@ -91,7 +91,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   return (
     <div className="space-y-3">
       {/* Pitch */}
-      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '205%', background: '#2d6a35' }}>
+      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '240%', background: '#2d6a35' }}>
         {/* Pitch markings */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 145" preserveAspectRatio="none">
           {/* Outer border */}
