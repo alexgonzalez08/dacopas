@@ -91,7 +91,7 @@ function PitchView({ home, away }: { home: LineupTeam; away: LineupTeam }) {
   return (
     <div className="space-y-3">
       {/* Pitch */}
-      <div className="relative w-full overflow-hidden" style={{ paddingBottom: '240%', background: '#2d6a35' }}>
+      <div className="relative w-full overflow-hidden [padding-bottom:240%] sm:[padding-bottom:110%]" style={{ background: '#2d6a35' }}>
         {/* Pitch markings */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 145" preserveAspectRatio="none">
           {/* Outer border */}
