@@ -44,13 +44,17 @@ function MatchRow({ match, team }: { match: PastMatch; team: string }) {
   else if (penFor != null && penAgainst != null) result = penFor > penAgainst ? 'W' : 'L'
   else result = 'D'
 
-  const pillColor = result === 'W' ? 'bg-green-600' : result === 'L' ? 'bg-red-600' : 'bg-yellow-600'
+  const pillColor = result === 'W'
+    ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+    : result === 'L'
+    ? 'bg-red-500/10 border border-red-500/20 text-red-400'
+    : 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400'
 
   return (
     <div className="flex items-center gap-2">
       <FlagCircle flag={myFlag} name={team} />
       <div className={`flex-1 flex items-center justify-center px-2 py-1.5 rounded-lg ${pillColor} whitespace-nowrap`}>
-        <span className="text-sm font-bold tabular-nums text-white">
+        <span className="text-sm font-bold tabular-nums">
           {goalsFor} - {goalsAgainst}{penFor != null && penAgainst != null ? ` (${penFor}-${penAgainst})` : ''}
         </span>
       </div>
