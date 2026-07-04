@@ -31,6 +31,7 @@ type CardSharedProps = {
   onSave: (match: MatchWithPred) => void
   saving: Record<number, boolean>
   saved: Record<number, boolean>
+  error: Record<number, string>
   highlightMatchId?: number
   highlightRef?: React.RefObject<HTMLDivElement | null>
   winnerMap: Map<string, TeamInfo>
@@ -59,7 +60,7 @@ function MatchCard({
   pendingAway,
   ...shared
 }: CardSharedProps & { match: MatchWithPred | null; pendingHome?: TeamInfo | null; pendingAway?: TeamInfo | null }) {
-  const { scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef } = shared
+  const { scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, error, highlightMatchId, highlightRef } = shared
   const isHighlighted = match != null && highlightMatchId === match.id
 
   if (!match) {
@@ -209,14 +210,17 @@ function MatchCard({
 
       {/* Save indicator */}
       {!finished && !locked && (
-        <div className="flex items-center justify-end px-3 py-1 border-t border-slate-700/50">
+        <div className="flex items-center justify-end gap-1.5 px-3 py-1 border-t border-slate-700/50">
+          {error[match.id] && (
+            <span className="text-[10px] text-red-400 truncate">{error[match.id]}</span>
+          )}
           {saving[match.id] ? (
             <Loader2 size={11} className="animate-spin text-slate-500" />
           ) : saved[match.id] ? (
             <CheckCircle2 size={11} className="text-green-400" />
-          ) : canSave ? (
-            <button onClick={() => onSave(match)} className="text-[10px] text-yellow-400 hover:text-yellow-300 font-medium">
-              {hasPrediction[match.id] ? 'Modificar' : 'Guardar'}
+          ) : canSave || error[match.id] ? (
+            <button onClick={() => onSave(match)} className="text-[10px] text-yellow-400 hover:text-yellow-300 font-medium shrink-0">
+              {hasPrediction[match.id] ? 'Reintentar' : 'Guardar'}
             </button>
           ) : hasPrediction[match.id] ? (
             <CheckCircle2 size={11} className="text-slate-600" />
@@ -243,7 +247,7 @@ const PREV_STAGE: Record<string, string> = {
   'final': 'semi',
 }
 
-function RoundColumn({ matches, label, slotH, stage, positionOffset = 0, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, highlightMatchId, highlightRef, winnerMap }: CardSharedProps & {
+function RoundColumn({ matches, label, slotH, stage, positionOffset = 0, userId, scores, penalty, hasPrediction, onScoreChange, onPenaltyChange, onSave, saving, saved, error, highlightMatchId, highlightRef, winnerMap }: CardSharedProps & {
   matches: (MatchWithPred | null)[]
   label: string
   slotH: number
@@ -281,6 +285,7 @@ function RoundColumn({ matches, label, slotH, stage, positionOffset = 0, userId,
                 onSave={onSave}
                 saving={saving}
                 saved={saved}
+                error={error}
                 highlightMatchId={highlightMatchId}
                 highlightRef={highlightRef}
                 winnerMap={winnerMap}
@@ -372,6 +377,7 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
   })
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
+  const [error, setError] = useState<Record<number, string>>({})
   const [hasPrediction, setHasPrediction] = useState<Record<number, boolean>>(() => {
     const init: Record<number, boolean> = {}
     matches.forEach(m => { init[m.id] = !!m.prediction })
@@ -397,13 +403,14 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
     const pw = isDraw ? (penalty[match.id] ?? null) : null
     if (isDraw && pw === null) return
     setSaving(v => ({ ...v, [match.id]: true }))
+    setError(v => ({ ...v, [match.id]: '' }))
     try {
       await upsertPrediction(userId, match.id, home, away, pw)
       setHasPrediction(v => ({ ...v, [match.id]: true }))
       setSaved(v => ({ ...v, [match.id]: true }))
       setTimeout(() => setSaved(v => ({ ...v, [match.id]: false })), 2000)
     } catch {
-      // silently fail — user can retry
+      setError(v => ({ ...v, [match.id]: 'Error al guardar' }))
     } finally {
       setSaving(v => ({ ...v, [match.id]: false }))
     }
@@ -455,7 +462,7 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
   const ssf = SLOT_H * 8
   const totalH = 8 * SLOT_H
 
-  const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved, highlightMatchId, highlightRef, winnerMap }
+  const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved, error, highlightMatchId, highlightRef, winnerMap }
 
   return (
     <div className="w-full overflow-x-auto">
