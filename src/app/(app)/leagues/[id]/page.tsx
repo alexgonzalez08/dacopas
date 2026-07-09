@@ -11,6 +11,8 @@ import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import LeagueHeaderMenu from './league-header-menu'
 import CopyCodeButton from './copy-code-button'
+import { getActiveCompetition, getFinalMatch } from '@/lib/champion-teams'
+import { computeChampionResult, computePoints } from '@/lib/champion-scoring'
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -288,11 +290,12 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     return all
   }
 
-  const [{ data: allMatches }, allPredictions, { data: userProfile }] = await Promise.all([
-    supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score, penalty_home, penalty_away, stage, group_name')
+  const [{ data: allMatches }, allPredictions, { data: userProfile }, { data: championPredictionsData }] = await Promise.all([
+    supabase.from('matches').select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, status, home_score, away_score, penalty_home, penalty_away, stage, group_name, competition_name')
       .order('match_date', { ascending: true }),
     fetchAllPredictions(memberIds),
     supabase.from('profiles').select('leagues_info_seen').eq('id', user!.id).single(),
+    adminSupabase.from('champion_predictions').select('user_id, competition_name, champion_team, finalist_team, champion_score, runner_up_score, penalty_winner').in('user_id', memberIds),
   ])
 
   const predsByMatch = new Map<string, typeof allPredictions>()
@@ -339,6 +342,32 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         }))
       return { ...m, predictions: preds }
     })
+
+  // Predicción de campeón — comparación por liga
+  const activeCompetition = getActiveCompetition(allMatches ?? [])
+  const championFinalMatch = activeCompetition ? getFinalMatch(allMatches ?? [], activeCompetition) : null
+  const championActualResult = championFinalMatch ? computeChampionResult(championFinalMatch) : null
+  const championRevealed = championFinalMatch?.status === 'finished' && championActualResult !== null
+
+  const championPredByUser = new Map((championPredictionsData ?? [])
+    .filter(cp => cp.competition_name === (activeCompetition ?? 'FIFA World Cup'))
+    .map(cp => [cp.user_id, cp]))
+
+  const championPredictionEntries = memberIds.map(uid => {
+    const cp = championPredByUser.get(uid)
+    const points = cp && championActualResult
+      ? computePoints(cp, championActualResult).points
+      : null
+    return {
+      user_id: uid,
+      username: usernameMap.get(uid) ?? 'Usuario',
+      champion_team: cp?.champion_team ?? null,
+      finalist_team: cp?.finalist_team ?? null,
+      champion_score: cp?.champion_score ?? null,
+      runner_up_score: cp?.runner_up_score ?? null,
+      points,
+    }
+  })
 
   const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
   const RANK_STYLES = [
@@ -463,6 +492,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         avatarUrl={currentMember?.profiles?.avatar_url}
         matches={matchesWithPredictions}
         leaguesInfoSeen={userProfile?.leagues_info_seen ?? false}
+        championPredictions={championPredictionEntries}
+        championRevealed={championRevealed}
       />
     </div>
   )

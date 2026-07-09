@@ -3,60 +3,11 @@ import { useState } from 'react'
 import { upsertChampionPrediction } from '@/lib/champion-predictions'
 import { ChampionPrediction } from '@/types'
 import { ChampionMatchLike } from '@/lib/champion-teams'
+import { computeChampionResult, computePoints } from '@/lib/champion-scoring'
 import TeamFlag from '@/components/team-flag'
 import { Lock } from 'lucide-react'
 
 type Team = { name: string; flag: string | null }
-
-function computeChampionResult(finalMatch: ChampionMatchLike) {
-  const { home_team, away_team, home_score, away_score, penalty_home, penalty_away } = finalMatch
-  if (home_score === null || away_score === null) return null
-
-  let champion: string, runnerUp: string, championScore: number, runnerUpScore: number, wentToPenalties = false
-
-  if (home_score > away_score) {
-    champion = home_team; runnerUp = away_team
-    championScore = home_score; runnerUpScore = away_score
-  } else if (away_score > home_score) {
-    champion = away_team; runnerUp = home_team
-    championScore = away_score; runnerUpScore = home_score
-  } else {
-    wentToPenalties = true
-    championScore = home_score; runnerUpScore = away_score
-    if ((penalty_home ?? 0) > (penalty_away ?? 0)) {
-      champion = home_team; runnerUp = away_team
-    } else {
-      champion = away_team; runnerUp = home_team
-    }
-  }
-  return { champion, runnerUp, championScore, runnerUpScore, wentToPenalties }
-}
-
-function computePoints(pred: ChampionPrediction, actual: NonNullable<ReturnType<typeof computeChampionResult>>) {
-  const { champion, runnerUp, championScore, runnerUpScore, wentToPenalties } = actual
-
-  // Si predijo empate y eligió que gane "el otro finalista", ese equipo pasa a ser
-  // su campeón pronosticado (penalty_winner desempata quién es el campeón real)
-  const predictedTie = pred.champion_score === pred.runner_up_score
-  const flipped = predictedTie && pred.penalty_winner === 'runner_up'
-  const predChampion = flipped ? pred.finalist_team : pred.champion_team
-  const predRunnerUp = flipped ? pred.champion_team : pred.finalist_team
-
-  const championCorrect = predChampion === champion
-  const finalistsCorrect = championCorrect && predRunnerUp === runnerUp
-  const scoreExact = pred.champion_score === championScore && pred.runner_up_score === runnerUpScore
-  const penaltyBonus = championCorrect && wentToPenalties && predictedTie
-
-  if (!championCorrect) return { points: 0, label: 'No acertaste el campeón' }
-  if (finalistsCorrect && scoreExact && penaltyBonus) return { points: 15, label: 'Campeón, finalistas y marcador exactos, y ganador en penales correcto' }
-  if (finalistsCorrect && scoreExact) return { points: 12, label: 'Campeón, finalistas y marcador exactos' }
-  if (finalistsCorrect && penaltyBonus) return { points: 10, label: 'Campeón y finalistas correctos, ganador en penales correcto' }
-  if (finalistsCorrect) return { points: 8, label: 'Acertaste campeón y finalistas, marcador inexacto' }
-  if (scoreExact && penaltyBonus) return { points: 5, label: 'Campeón y marcador exactos, y ganador en penales correcto' }
-  if (scoreExact) return { points: 3, label: 'Campeón y marcador exactos' }
-  if (penaltyBonus) return { points: 2, label: 'Campeón correcto y ganador en penales correcto' }
-  return { points: 1, label: 'Acertaste el campeón' }
-}
 
 export default function ChampionPredictionCard({
   userId,
@@ -99,7 +50,7 @@ export default function ChampionPredictionCard({
 
   async function handleSave() {
     if (!championTeam || !finalistTeam) {
-      setError('Elegí campeón y finalista')
+      setError('Elegí los 2 finalistas')
       return
     }
     const cs = parseInt(championScore)
@@ -167,7 +118,7 @@ export default function ChampionPredictionCard({
         <>
           <div className="flex items-end gap-1.5 mb-3">
             <div className="flex-1 min-w-0">
-              <label className="text-xs text-slate-500 block mb-1">Campeón</label>
+              <label className="text-xs text-slate-500 block mb-1">Finalista 1</label>
               <select
                 disabled={locked}
                 value={championTeam}
@@ -194,7 +145,7 @@ export default function ChampionPredictionCard({
               className="w-10 shrink-0 text-center bg-slate-700 border border-slate-600 rounded-lg py-1.5 text-sm font-bold text-white disabled:opacity-50"
             />
             <div className="flex-1 min-w-0">
-              <label className="text-xs text-slate-500 block mb-1">Otro finalista</label>
+              <label className="text-xs text-slate-500 block mb-1">Finalista 2</label>
               <select
                 disabled={locked}
                 value={finalistTeam}

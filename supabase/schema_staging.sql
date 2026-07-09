@@ -545,16 +545,18 @@ begin
   with pred as (
     select
       cp.user_id,
-      -- Si predijo empate y eligió que gane "el otro finalista", ese equipo pasa a ser
-      -- su campeón pronosticado (el penalty_winner desempata quién es el campeón real)
+      -- El ganador pronosticado se deriva siempre del marcador (como en cualquier partido).
+      -- Solo si predijo empate se usa penalty_winner para desempatar quién es el campeón.
       case
-        when cp.champion_score = cp.runner_up_score and cp.penalty_winner = 'runner_up'
-          then cp.finalist_team
+        when cp.champion_score > cp.runner_up_score then cp.champion_team
+        when cp.runner_up_score > cp.champion_score then cp.finalist_team
+        when cp.penalty_winner = 'runner_up' then cp.finalist_team
         else cp.champion_team
       end as pred_champion,
       case
-        when cp.champion_score = cp.runner_up_score and cp.penalty_winner = 'runner_up'
-          then cp.champion_team
+        when cp.champion_score > cp.runner_up_score then cp.finalist_team
+        when cp.runner_up_score > cp.champion_score then cp.champion_team
+        when cp.penalty_winner = 'runner_up' then cp.champion_team
         else cp.finalist_team
       end as pred_runner_up,
       (cp.champion_score = cp.runner_up_score) as predicted_tie,
