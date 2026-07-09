@@ -8,6 +8,7 @@ export type ChampionPredictionEntry = {
   finalist_team: string | null
   champion_score: number | null
   runner_up_score: number | null
+  penalty_winner: 'champion' | 'runner_up' | null
   points: number | null
 }
 
@@ -35,6 +36,10 @@ export default function LeagueChampionPredictions({
           {entries.map(entry => {
             const isMe = entry.user_id === currentUserId
             const hasPred = entry.champion_team && entry.finalist_team
+            const predictedTie = hasPred && entry.champion_score === entry.runner_up_score
+            const penaltyPickName = entry.penalty_winner === 'champion' ? entry.champion_team
+              : entry.penalty_winner === 'runner_up' ? entry.finalist_team
+              : null
             return (
               <div
                 key={entry.user_id}
@@ -51,10 +56,15 @@ export default function LeagueChampionPredictions({
                   @{entry.username}
                 </span>
                 {hasPred ? (
-                  <div className="shrink-0 flex items-center gap-1.5">
-                    <TeamFlag name={entry.champion_team!} size="sm" showName={false} />
-                    <span className="text-sm font-bold text-white">{entry.champion_score}-{entry.runner_up_score}</span>
-                    <TeamFlag name={entry.finalist_team!} size="sm" showName={false} />
+                  <div className="shrink-0 text-right">
+                    <div className="flex items-center gap-1.5">
+                      <TeamFlag name={entry.champion_team!} size="sm" showName={false} />
+                      <span className="text-sm font-bold text-white">{entry.champion_score}-{entry.runner_up_score}</span>
+                      <TeamFlag name={entry.finalist_team!} size="sm" showName={false} />
+                    </div>
+                    {predictedTie && penaltyPickName && (
+                      <p className="text-[10px] text-slate-400 mt-0.5">🥅 {penaltyPickName}</p>
+                    )}
                   </div>
                 ) : (
                   <span className="text-xs text-slate-500 shrink-0">Sin pronóstico</span>

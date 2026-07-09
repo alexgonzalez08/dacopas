@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { BookOpen, Target, CheckCircle, Clock, Globe } from 'lucide-react'
+import { BookOpen, Target, CheckCircle, Clock, Globe, Trophy } from 'lucide-react'
+import ChampionScoringTable from '@/components/champion-scoring-table'
 
 export default function RulesPage() {
   return (
@@ -78,6 +79,17 @@ export default function RulesPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Predicción Campeón */}
+      <div className="bg-slate-800 rounded-2xl p-5 space-y-4">
+        <h2 className="font-semibold text-white flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-yellow-400" /> Predicción Campeón del Mundial
+        </h2>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Además de los partidos, podés predecir quién sale campeón, el otro finalista y el marcador de la final — antes de que se definan los semifinalistas. Se bloquea 15 minutos antes de la primera semifinal.
+        </p>
+        <ChampionScoringTable />
       </div>
 
       {/* Puntos globales */}

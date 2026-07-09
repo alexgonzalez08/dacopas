@@ -365,6 +365,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       finalist_team: cp?.finalist_team ?? null,
       champion_score: cp?.champion_score ?? null,
       runner_up_score: cp?.runner_up_score ?? null,
+      penalty_winner: (cp?.penalty_winner as 'champion' | 'runner_up' | null) ?? null,
       points,
     }
   })
