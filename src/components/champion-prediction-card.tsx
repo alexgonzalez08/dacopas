@@ -145,7 +145,7 @@ export default function ChampionPredictionCard({
       {!actualResult && locked && (
         <div className="flex items-center gap-2 mb-3 px-2.5 py-2 rounded-lg bg-slate-700/40">
           <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="text-xs text-slate-400">Bloqueado: ya se definieron los 4 semifinalistas</span>
+          <span className="text-xs text-slate-400">Bloqueado: está por comenzar la primera semifinal</span>
         </div>
       )}
 
@@ -210,16 +210,16 @@ export default function ChampionPredictionCard({
               <button
                 type="button" disabled={locked}
                 onClick={() => setPenaltyWinner('champion')}
-                className={`text-xs px-2.5 py-1 rounded-md border transition ${penaltyWinner === 'champion' ? 'border-yellow-500 text-yellow-400' : 'border-slate-600 text-slate-400'}`}
+                className={`flex items-center justify-center px-2 py-1 rounded-md border transition ${penaltyWinner === 'champion' ? 'border-yellow-500' : 'border-slate-600 opacity-60'}`}
               >
-                Campeón
+                <TeamFlag name={championTeam} size="sm" showName={false} />
               </button>
               <button
                 type="button" disabled={locked}
                 onClick={() => setPenaltyWinner('runner_up')}
-                className={`text-xs px-2.5 py-1 rounded-md border transition ${penaltyWinner === 'runner_up' ? 'border-yellow-500 text-yellow-400' : 'border-slate-600 text-slate-400'}`}
+                className={`flex items-center justify-center px-2 py-1 rounded-md border transition ${penaltyWinner === 'runner_up' ? 'border-yellow-500' : 'border-slate-600 opacity-60'}`}
               >
-                Otro finalista
+                <TeamFlag name={finalistTeam} size="sm" showName={false} />
               </button>
             </div>
           )}

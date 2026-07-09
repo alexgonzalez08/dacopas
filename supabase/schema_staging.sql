@@ -576,7 +576,7 @@ begin
 end;
 $$;
 
--- Llamado desde el cron: bloquea cuando hay 4 semifinalistas y liquida puntos si la final terminó
+-- Llamado desde el cron: bloquea 15 min antes de que arranque la primera semifinal y liquida puntos si la final terminó
 create or replace function sync_champion_predictions()
 returns void language plpgsql security definer as $$
 declare
@@ -586,9 +586,10 @@ begin
   set status = 'locked', updated_at = now()
   where cp.status = 'draft'
     and (
-      select count(*) from matches m
+      select count(*) >= 2 and min(m.match_date) <= now() + interval '15 minutes'
+      from matches m
       where m.stage = 'semi' and coalesce(m.competition_name, 'FIFA World Cup') = cp.competition_name
-    ) >= 2;
+    );
 
   for comp in
     select distinct coalesce(competition_name, 'FIFA World Cup') as competition_name

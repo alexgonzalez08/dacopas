@@ -136,13 +136,21 @@ export default function PredictionsClient({
 
   const championPredMap = new Map(championPredictions.map(cp => [cp.competition_name, cp]))
 
+  // Muestra los equipos de la fase más avanzada que ya tenga partidos cargados
+  // (cuartos si ya se sortearon, si no cae a la fase anterior disponible)
+  const TEAM_SOURCE_STAGES = ['quarter', 'round_of_16', 'round_of_32', 'group']
   function getTeamsForCompetition(compMatches: MatchWithPrediction[]) {
-    const teamMap = new Map<string, string | null>()
-    compMatches.filter(m => m.stage === 'quarter').forEach(m => {
-      teamMap.set(m.home_team, m.home_team_flag)
-      teamMap.set(m.away_team, m.away_team_flag)
-    })
-    return [...teamMap.entries()].map(([name, flag]) => ({ name, flag }))
+    for (const stage of TEAM_SOURCE_STAGES) {
+      const stageMatches = compMatches.filter(m => m.stage === stage)
+      if (stageMatches.length === 0) continue
+      const teamMap = new Map<string, string | null>()
+      stageMatches.forEach(m => {
+        teamMap.set(m.home_team, m.home_team_flag)
+        teamMap.set(m.away_team, m.away_team_flag)
+      })
+      return [...teamMap.entries()].map(([name, flag]) => ({ name, flag }))
+    }
+    return []
   }
 
   // Competición activa: la que tiene partidos hoy o futuros
