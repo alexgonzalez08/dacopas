@@ -65,30 +65,57 @@ begin
     end if;
   end if;
 
-  with pred_points as (
+  with pred as (
     select
       cp.user_id,
+      -- Si predijo empate y eligió que gane "el otro finalista", ese equipo pasa a ser
+      -- su campeón pronosticado (el penalty_winner desempata quién es el campeón real)
       case
-        when cp.champion_team = v_champion and cp.finalist_team = v_runner_up
-          and cp.champion_score = v_champion_score and cp.runner_up_score = v_runner_up_score
-          and (not v_went_to_penalties or cp.penalty_winner = 'champion') then 12
-        when cp.champion_team = v_champion and cp.finalist_team = v_runner_up
-          and cp.champion_score = v_champion_score and cp.runner_up_score = v_runner_up_score then 10
-        when cp.champion_team = v_champion and cp.finalist_team = v_runner_up then 8
-        when cp.champion_team = v_champion then 5
-        -- Acertó los 2 finalistas pero invertidos (marcó como campeón al subcampeón real)
-        when cp.finalist_team = v_champion and cp.champion_team = v_runner_up then 1
-        else 0
-      end as pts
+        when cp.champion_score = cp.runner_up_score and cp.penalty_winner = 'runner_up'
+          then cp.finalist_team
+        else cp.champion_team
+      end as pred_champion,
+      case
+        when cp.champion_score = cp.runner_up_score and cp.penalty_winner = 'runner_up'
+          then cp.champion_team
+        else cp.finalist_team
+      end as pred_runner_up,
+      (cp.champion_score = cp.runner_up_score) as predicted_tie,
+      (cp.champion_score = v_champion_score and cp.runner_up_score = v_runner_up_score) as score_exact
     from champion_predictions cp
     where coalesce(cp.competition_name, 'FIFA World Cup') = p_competition_name
       and cp.status = 'locked'
       and cp.points_calculated = false
+  ),
+  pred_points as (
+    select
+      p.user_id,
+      (p.pred_champion = v_champion) as champion_correct,
+      (p.pred_champion = v_champion and p.pred_runner_up = v_runner_up) as finalists_correct,
+      p.score_exact,
+      (p.pred_champion = v_champion and v_went_to_penalties and p.predicted_tie) as penalty_bonus
+    from pred p
+  ),
+  scored as (
+    select
+      pp.user_id,
+      case
+        when not pp.champion_correct then 0
+        when pp.finalists_correct and pp.score_exact and pp.penalty_bonus then 15
+        when pp.finalists_correct and pp.score_exact then 12
+        when pp.finalists_correct and pp.penalty_bonus then 10
+        when pp.finalists_correct then 8
+        when pp.score_exact and pp.penalty_bonus then 5
+        when pp.score_exact then 3
+        when pp.penalty_bonus then 2
+        else 1
+      end as pts
+    from pred_points pp
   )
   insert into league_points (user_id, league_id, points)
-  select pp.user_id, lm.league_id, pp.pts
-  from pred_points pp
-  join league_members lm on lm.user_id = pp.user_id and lm.left_at is null
+  select s.user_id, lm.league_id, s.pts
+  from scored s
+  join league_members lm on lm.user_id = s.user_id and lm.left_at is null
   on conflict (user_id, league_id) do update
     set points = league_points.points + excluded.points, updated_at = now();
 

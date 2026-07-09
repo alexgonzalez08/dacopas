@@ -1,9 +1,11 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { Match, Prediction } from '@/types'
+import { Match, Prediction, ChampionPrediction } from '@/types'
 import TeamFlag from '@/components/team-flag'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
+import ChampionPredictionCard from '@/components/champion-prediction-card'
+import { ChampionMatchLike } from '@/lib/champion-teams'
 import { CheckCircle2, Lock, Loader2 } from 'lucide-react'
 
 const SLOT_H = 160
@@ -336,7 +338,14 @@ function Connector({ matchCount, slotH, dir }: {
   )
 }
 
-export default function BracketClient({ matches, userId, highlightMatchId }: { matches: MatchWithPred[]; userId: string; highlightMatchId?: number }) {
+type ChampionPredictionProps = {
+  competitionName: string
+  teams: { name: string; flag: string | null }[]
+  finalMatch: ChampionMatchLike | null
+  prediction: ChampionPrediction | null
+}
+
+export default function BracketClient({ matches, userId, highlightMatchId, championPredictionProps = null }: { matches: MatchWithPred[]; userId: string; highlightMatchId?: number; championPredictionProps?: ChampionPredictionProps | null }) {
   const highlightRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (highlightMatchId && highlightRef.current) {
@@ -465,6 +474,19 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
   const colProps: CardSharedProps = { userId, scores, penalty, hasPrediction, onScoreChange: handleScoreChange, onPenaltyChange: handlePenaltyChange, onSave: handleSave, saving, saved, error, highlightMatchId, highlightRef, winnerMap }
 
   return (
+    <>
+    {championPredictionProps && (
+      <div className="max-w-md mx-auto px-3 mb-3">
+        <ChampionPredictionCard
+          userId={userId}
+          competitionName={championPredictionProps.competitionName}
+          teams={championPredictionProps.teams}
+          finalMatch={championPredictionProps.finalMatch}
+          prediction={championPredictionProps.prediction}
+          className=""
+        />
+      </div>
+    )}
     <div className="w-full overflow-x-auto">
       <div className="flex items-start" style={{ minWidth: has32 ? 2000 : 1560 }}>
 
@@ -520,5 +542,6 @@ export default function BracketClient({ matches, userId, highlightMatchId }: { m
 
       </div>
     </div>
+    </>
   )
 }
