@@ -277,6 +277,9 @@ async function runSync(request: Request) {
   // Lock predictions 1h before kickoff
   await supabase.rpc('lock_predictions_before_match')
 
+  // Bloquear predicción de campeón cuando ya se definieron los 4 semifinalistas, y liquidar puntos si la final terminó
+  await supabase.rpc('sync_champion_predictions')
+
   const now = new Date()
 
   // Notificar 1 hora antes del partido

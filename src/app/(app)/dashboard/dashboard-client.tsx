@@ -5,11 +5,20 @@ import Feed, { FeedItem } from '@/components/feed'
 import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
 import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
+import ChampionPredictionCard from '@/components/champion-prediction-card'
 import { initPushNotifications } from '@/lib/push'
 import { Bell, X } from 'lucide-react'
+import { ChampionPrediction } from '@/types'
+import { ChampionMatchLike } from '@/lib/champion-teams'
 
 type League = { id: string; name: string }
 type SuggestedUser = { id: string; username: string; full_name: string | null; avatar_url: string | null; shared_leagues: string[] }
+type ChampionPredictionProps = {
+  competitionName: string
+  teams: { name: string; flag: string | null }[]
+  finalMatch: ChampionMatchLike | null
+  prediction: ChampionPrediction | null
+}
 
 export default function DashboardClient({
   userId,
@@ -21,6 +30,7 @@ export default function DashboardClient({
   hasLeagues,
   showWelcome,
   suggestedFriends,
+  championPredictionProps,
 }: {
   userId: string
   username: string
@@ -31,6 +41,7 @@ export default function DashboardClient({
   hasLeagues: boolean
   showWelcome: boolean
   suggestedFriends: SuggestedUser[]
+  championPredictionProps: ChampionPredictionProps | null
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(() => {
     try {
@@ -131,6 +142,16 @@ export default function DashboardClient({
 
       <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
       <SuggestedFriendsCarousel userId={userId} suggestions={suggestedFriends} />
+      {championPredictionProps && (
+        <ChampionPredictionCard
+          userId={userId}
+          competitionName={championPredictionProps.competitionName}
+          teams={championPredictionProps.teams}
+          finalMatch={championPredictionProps.finalMatch}
+          prediction={championPredictionProps.prediction}
+          className=""
+        />
+      )}
       <Feed items={feed} userId={userId} userAvatarUrl={avatarUrl} onDeletePost={handleDeletePost} serverNow={serverNow} />
     </div>
   )

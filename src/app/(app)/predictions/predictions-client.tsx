@@ -2,11 +2,12 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
-import { Match, Prediction } from '@/types'
+import { Match, Prediction, ChampionPrediction } from '@/types'
 import { Lock, Clock, ChevronDown, ChevronRight } from 'lucide-react'
 import TeamFlag from '@/components/team-flag'
 import MatchTime from '@/components/match-time'
 import PredictionsInfoModal from '@/components/predictions-info-modal'
+import ChampionPredictionCard from '@/components/champion-prediction-card'
 import UnsavedChangesGuard from '@/components/unsaved-changes-guard'
 import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
 
@@ -26,10 +27,12 @@ export default function PredictionsClient({
   userId,
   matches,
   predictionsInfoSeen,
+  championPredictions,
 }: {
   userId: string
   matches: MatchWithPrediction[]
   predictionsInfoSeen: boolean
+  championPredictions: ChampionPrediction[]
 }) {
   const { navigate } = useUnsavedChanges()
   const [, setTick] = useState(0)
@@ -130,6 +133,25 @@ export default function PredictionsClient({
     return acc
   }, {})
   const competitionList = Object.keys(byCompetition)
+
+  const championPredMap = new Map(championPredictions.map(cp => [cp.competition_name, cp]))
+
+  // Muestra los equipos de la fase más avanzada que ya tenga partidos cargados
+  // (cuartos si ya se sortearon, si no cae a la fase anterior disponible)
+  const TEAM_SOURCE_STAGES = ['quarter', 'round_of_16', 'round_of_32', 'group']
+  function getTeamsForCompetition(compMatches: MatchWithPrediction[]) {
+    for (const stage of TEAM_SOURCE_STAGES) {
+      const stageMatches = compMatches.filter(m => m.stage === stage)
+      if (stageMatches.length === 0) continue
+      const teamMap = new Map<string, string | null>()
+      stageMatches.forEach(m => {
+        teamMap.set(m.home_team, m.home_team_flag)
+        teamMap.set(m.away_team, m.away_team_flag)
+      })
+      return [...teamMap.entries()].map(([name, flag]) => ({ name, flag }))
+    }
+    return []
+  }
 
   // Competición activa: la que tiene partidos hoy o futuros
   const activeCompetition = competitionList.find(c =>
@@ -243,6 +265,13 @@ export default function PredictionsClient({
           </button>
 
           {isCompOpen && <div className="border-t border-slate-700/50 px-0 pt-3 pb-3 space-y-3">
+          <ChampionPredictionCard
+            userId={userId}
+            competitionName={competition}
+            teams={getTeamsForCompetition(byCompetition[competition])}
+            finalMatch={byStage['final']?.[0] ?? null}
+            prediction={championPredMap.get(competition) ?? null}
+          />
           {stages.map(stage => {
             const stageMatches = byStage[stage]
             const stageKey = `${competition}:${stage}`

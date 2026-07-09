@@ -9,6 +9,7 @@ import { sendPushNotification } from '@/lib/push'
 import Link from 'next/link'
 import LeagueChat from './league-chat'
 import LeagueAgreements from './league-agreements'
+import LeagueChampionPredictions, { ChampionPredictionEntry } from './league-champion-predictions'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import MatchTime from '@/components/match-time'
@@ -205,6 +206,8 @@ export default function LeagueClient({
   avatarUrl,
   matches = [],
   leaguesInfoSeen = false,
+  championPredictions = [],
+  championRevealed = false,
 }: {
   leagueId: string
   leagueName: string
@@ -219,6 +222,8 @@ export default function LeagueClient({
   avatarUrl?: string | null
   matches?: MatchWithPredictions[]
   leaguesInfoSeen?: boolean
+  championPredictions?: ChampionPredictionEntry[]
+  championRevealed?: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -569,6 +574,7 @@ export default function LeagueClient({
         {/* Tab: Pronósticos */}
         {tab === 'pronosticos' && (
           <div className="space-y-3 pb-32 md:pb-6">
+            <LeagueChampionPredictions entries={championPredictions} revealed={championRevealed} currentUserId={userId} />
             {matches.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
             ) : stageList.map(stage => (
@@ -810,6 +816,7 @@ export default function LeagueClient({
 
       {tab === 'pronosticos' && (
         <div className="space-y-3">
+          <LeagueChampionPredictions entries={championPredictions} revealed={championRevealed} currentUserId={userId} />
           {matches.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
           ) : stageList.map(stage => (

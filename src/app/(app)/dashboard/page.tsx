@@ -7,6 +7,7 @@ import { isPredictionLocked } from '@/lib/predictions'
 import DashboardClient from './dashboard-client'
 import { getSuggestedFriends } from '@/lib/suggested-friends'
 import PenaltyInfoModal from '@/components/penalty-info-modal'
+import { getActiveCompetition, getTeamsForCompetition, getFinalMatch } from '@/lib/champion-teams'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -58,6 +59,8 @@ export default async function DashboardPage() {
     { data: systemPosts },
     { data: dismissedPosts },
     suggestedFriends,
+    { data: bracketMatches },
+    { data: championPredictions },
   ] = await Promise.all([
     supabase
       .from('matches')
@@ -106,6 +109,11 @@ export default async function DashboardPage() {
       .select('post_id')
       .eq('user_id', user!.id),
     getSuggestedFriends(supabase, user!.id),
+    supabase
+      .from('matches')
+      .select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, stage, status, home_score, away_score, penalty_home, penalty_away, competition_name')
+      .in('stage', ['group', 'round_of_32', 'round_of_16', 'quarter', 'semi', 'final']),
+    supabase.from('champion_predictions').select('*').eq('user_id', user!.id),
   ])
 
   const predMap = new Map((predictions ?? []).map(p => [p.match_id, p]))
@@ -187,6 +195,9 @@ export default async function DashboardPage() {
 
   const serverNow = new Date().toISOString()
 
+  const activeCompetition = getActiveCompetition(bracketMatches ?? [])
+  const championPredMap = new Map((championPredictions ?? []).map(cp => [cp.competition_name, cp]))
+
   return (
     <>
     <PenaltyInfoModal
@@ -203,6 +214,12 @@ export default async function DashboardPage() {
       hasLeagues={leagueIds.length > 0}
       showWelcome={!profile?.welcome_seen}
       suggestedFriends={suggestedFriends}
+      championPredictionProps={activeCompetition ? {
+        competitionName: activeCompetition,
+        teams: getTeamsForCompetition(bracketMatches ?? [], activeCompetition),
+        finalMatch: getFinalMatch(bracketMatches ?? [], activeCompetition),
+        prediction: championPredMap.get(activeCompetition) ?? null,
+      } : null}
     />
     </>
   )

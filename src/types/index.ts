@@ -52,6 +52,19 @@ export type Prediction = {
   updated_at: string
 }
 
+export type ChampionPrediction = {
+  id: string
+  user_id: string
+  competition_name: string
+  champion_team: string
+  finalist_team: string
+  champion_score: number
+  runner_up_score: number
+  penalty_winner: 'champion' | 'runner_up' | null
+  status: 'draft' | 'locked'
+  points_calculated: boolean
+}
+
 export type LeaguePoints = {
   user_id: string
   league_id: string
