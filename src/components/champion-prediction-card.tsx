@@ -5,6 +5,8 @@ import { ChampionPrediction } from '@/types'
 import { ChampionMatchLike } from '@/lib/champion-teams'
 import { computeChampionResult, computePoints } from '@/lib/champion-scoring'
 import TeamFlag from '@/components/team-flag'
+import ChampionVsFinalInfoModal from '@/components/champion-vs-final-info-modal'
+import ChampionRulesModal from '@/components/champion-rules-modal'
 import { Lock } from 'lucide-react'
 
 type Team = { name: string; flag: string | null }
@@ -85,10 +87,12 @@ export default function ChampionPredictionCard({
   if (!actualResult && !prediction && sortedTeams.length === 0) return null
 
   return (
-    <div className={`${className} rounded-xl p-4 bg-slate-800 border border-yellow-500/35`}>
+    <div id="champion-prediction" className={`${className} rounded-xl p-4 bg-slate-800 border border-yellow-500/35 scroll-mt-20`}>
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xl">🏆</span>
         <span className="text-sm font-semibold text-yellow-400">Predicción Campeón del Mundial</span>
+        <ChampionRulesModal />
+        <ChampionVsFinalInfoModal userId={userId} />
       </div>
 
       {actualResult && (
