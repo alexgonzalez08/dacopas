@@ -633,3 +633,8 @@ $$;
 -- Modal de novedad: Predicción de Campeón
 -- ============================================================
 alter table profiles add column if not exists champion_prediction_info_seen boolean default false;
+
+-- ============================================================
+-- Modal de novedad: Predicción Campeón vs partido de la Final
+-- ============================================================
+alter table profiles add column if not exists champion_vs_final_info_seen boolean default false;

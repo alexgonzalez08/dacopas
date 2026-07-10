@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import AppHeader from '@/components/app-header'
 import ChatToast from '@/components/chat-toast'
 import SWRegister from '@/components/sw-register'
-import ChampionPredictionInfoModal from '@/components/champion-prediction-info-modal'
+import ChampionVsFinalInfoModal from '@/components/champion-vs-final-info-modal'
 import { UnsavedChangesProvider } from '@/lib/unsaved-changes-context'
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
 
   const [{ data: profile }, { data: memberships }] = await Promise.all([
-    supabase.from('profiles').select('username, avatar_url, champion_prediction_info_seen').eq('id', user.id).single(),
+    supabase.from('profiles').select('username, avatar_url, champion_vs_final_info_seen').eq('id', user.id).single(),
     supabase.from('league_members').select('leagues(id, name, image_url)').eq('user_id', user.id).is('left_at', null),
   ])
 
@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <AppHeader username={profile?.username ?? ''} avatarUrl={profile?.avatar_url} userId={user.id} />
         <main className="flex-1 px-4 py-6 max-w-3xl mx-auto w-full pb-24 md:pb-6">{children}</main>
         <ChatToast userId={user.id} leagues={leagues} />
-        <ChampionPredictionInfoModal userId={user.id} autoOpen={!(profile?.champion_prediction_info_seen ?? false)} />
+        <ChampionVsFinalInfoModal userId={user.id} autoOpen={!(profile?.champion_vs_final_info_seen ?? false)} />
       </div>
     </UnsavedChangesProvider>
   )
