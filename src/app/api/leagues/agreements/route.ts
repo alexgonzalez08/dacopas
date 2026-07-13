@@ -58,6 +58,9 @@ export async function POST(req: NextRequest) {
 
   const admin = createAdmin(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
+  const { data: leagueCheck } = await admin.from('leagues').select('ended_at').eq('id', leagueId).single()
+  if (leagueCheck?.ended_at) return NextResponse.json({ error: 'El torneo ya terminó' }, { status: 400 })
+
   // Crear acuerdo
   const { data: agreement, error } = await supabase
     .from('league_agreements')

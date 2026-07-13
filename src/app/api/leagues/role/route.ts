@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Solo los admins pueden cambiar roles' }, { status: 403 })
   }
 
+  const { data: league } = await adminClient.from('leagues').select('ended_at').eq('id', leagueId).single()
+  if (league?.ended_at) return NextResponse.json({ error: 'El torneo ya terminó' }, { status: 400 })
+
   const { error } = await adminClient
     .from('league_members')
     .update({ role })
