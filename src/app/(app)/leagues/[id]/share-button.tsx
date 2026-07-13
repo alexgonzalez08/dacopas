@@ -2,11 +2,11 @@
 import { useState } from 'react'
 import { Share2, Check, Copy } from 'lucide-react'
 
-export default function ShareButton({ leagueId, leagueName }: { leagueId: string; leagueName: string }) {
+export default function ShareButton({ leagueId, leagueName, competitionName }: { leagueId: string; leagueName: string; competitionName: string }) {
   const [copied, setCopied] = useState(false)
 
   const url = `https://dacopas.com/leagues/${leagueId}/join`
-  const text = `¡Uníte a mi torneo "${leagueName}" en Dacopas y predecí los resultados del Mundial 2026! 🏆⚽`
+  const text = `¡Uníte a mi torneo "${leagueName}" en Dacopas y predecí los resultados de ${competitionName}! 🏆⚽`
 
   async function handleShare() {
     if (navigator.share) {

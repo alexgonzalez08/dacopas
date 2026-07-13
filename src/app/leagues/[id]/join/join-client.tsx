@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Trophy, Users, Medal, Loader2, X, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 
-type League = { id: string; name: string; description: string | null; image_url: string | null; code: string }
+type League = { id: string; name: string; description: string | null; image_url: string | null; code: string; competition_name: string | null }
 type Member = { user_id: string; username: string; avatar_url: string | null }
 type Top3 = Member & { points: number }
 
@@ -125,7 +125,7 @@ export default function JoinClient({
           {/* Info del torneo */}
           <div className="space-y-2">
             <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/20">
-              🏆 Mundial 2026
+              🏆 {league.competition_name ?? 'FIFA World Cup'}
             </span>
             <h1 className="text-2xl font-bold">{league.name}</h1>
             {league.description && (
