@@ -21,7 +21,7 @@ export default async function LeaguesPage() {
   ])
 
   const leagues = (memberships ?? [])
-    .filter(m => m.leagues != null && !(m.leagues as any).ended_at)
+    .filter(m => m.leagues != null)
     .map(m => ({ ...(m.leagues as any), role: m.role ?? 'participant' }))
 
   const leagueIds = leagues.map(l => l.id)

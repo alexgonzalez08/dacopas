@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToAllUsers, sendPushToUsers } from '@/lib/push-server'
 import { COMPETITIONS, getCompetition, getCompetitionFormat } from '@/lib/competitions'
+import { endLeague } from '@/lib/league-end'
 
 export const maxDuration = 60
 
@@ -285,6 +286,31 @@ async function runSync(request: Request) {
 
   // Bloquear predicción de campeón cuando ya se definieron los 4 semifinalistas, y liquidar puntos si la final terminó
   await supabase.rpc('sync_champion_predictions')
+
+  // Terminar automáticamente los torneos de una competencia knockout (Mundial) cuando su final
+  // ya se jugó — idempotente: una vez que ended_at queda seteado, el torneo deja de matchear
+  // el filtro `is('ended_at', null)` y no se vuelve a procesar en la próxima corrida del cron.
+  for (const competition of COMPETITIONS.filter(c => c.format === 'knockout')) {
+    const { data: finalMatch } = await supabase
+      .from('matches')
+      .select('id')
+      .eq('competition_id', competition.id)
+      .eq('stage', 'final')
+      .eq('status', 'finished')
+      .not('home_score', 'is', null)
+      .maybeSingle()
+    if (!finalMatch) continue
+
+    const { data: activeLeagues } = await supabase
+      .from('leagues')
+      .select('id')
+      .eq('competition_id', competition.id)
+      .is('ended_at', null)
+
+    for (const league of activeLeagues ?? []) {
+      await endLeague(supabase, league.id, null)
+    }
+  }
 
   const now = new Date()
 
