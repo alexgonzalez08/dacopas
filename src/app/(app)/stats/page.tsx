@@ -32,6 +32,16 @@ export default async function StatsPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Solo mostrar competencias donde el usuario tiene al menos un torneo activo
+  const { data: myMemberships } = await supabase
+    .from('league_members')
+    .select('leagues(competition_name)')
+    .eq('user_id', user!.id)
+    .is('left_at', null)
+  const myCompetitionNames = new Set(
+    (myMemberships ?? []).map(m => (m.leagues as any)?.competition_name ?? 'FIFA World Cup')
+  )
+
   // Competencias = las que tienen al menos un torneo activo (no terminado), no las que
   // tienen partidos finalizados — así aparecen aunque la temporada recién empiece.
   const { data: allLeagues } = await adminSupabase
@@ -71,7 +81,7 @@ export default async function StatsPage() {
     userIdsByCompetition.set(compName, users)
   }
 
-  if (userIdsByCompetition.size === 0) {
+  if (myCompetitionNames.size === 0) {
     return (
       <div className="max-w-lg mx-auto space-y-6 pb-8">
         <div>
@@ -174,11 +184,13 @@ export default async function StatsPage() {
       .map((e, i) => ({ ...e!, rank: i })) as any[]
   }
 
-  const competitions = [...userIdsByCompetition.entries()].map(([name, userIds]) => ({
-    name,
-    matchCount: matchesByCompetition.get(name)?.length ?? 0,
-    leaderboard: buildLeaderboard(userIds, statsByCompetition.get(name) ?? new Map()),
-  }))
+  const competitions = [...userIdsByCompetition.entries()]
+    .filter(([name]) => myCompetitionNames.has(name))
+    .map(([name, userIds]) => ({
+      name,
+      matchCount: matchesByCompetition.get(name)?.length ?? 0,
+      leaderboard: buildLeaderboard(userIds, statsByCompetition.get(name) ?? new Map()),
+    }))
 
   return (
     <div className="max-w-lg mx-auto space-y-6 pb-8">
