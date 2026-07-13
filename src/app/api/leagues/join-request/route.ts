@@ -14,6 +14,12 @@ export async function POST(req: NextRequest) {
   const { leagueId, leagueName } = await req.json()
   if (!leagueId || !leagueName) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
+  const { data: league } = await adminClient
+    .from('leagues').select('ended_at').eq('id', leagueId).single()
+  if (league?.ended_at) {
+    return NextResponse.json({ error: 'Este torneo ya finalizó y no admite nuevos participantes' }, { status: 400 })
+  }
+
   const { data: profile } = await adminClient
     .from('profiles').select('username').eq('id', user.id).single()
 

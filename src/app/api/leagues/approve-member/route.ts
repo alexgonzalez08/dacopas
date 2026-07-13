@@ -23,6 +23,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Solo los admins pueden aprobar solicitudes' }, { status: 403 })
   }
 
+  const { data: leagueCheck } = await adminClient
+    .from('leagues').select('ended_at').eq('id', leagueId).single()
+  if (leagueCheck?.ended_at) {
+    return NextResponse.json({ error: 'Este torneo ya finalizó y no admite nuevos participantes' }, { status: 400 })
+  }
+
   // Verificar si ya es miembro activo
   const { data: existing } = await adminClient
     .from('league_members').select('user_id, left_at')

@@ -433,15 +433,17 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             <p className="text-sm text-slate-400 leading-relaxed">{league.description}</p>
           )}
 
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-slate-500">
-                Código: <span className="font-mono font-semibold text-yellow-400">{league.code}</span>
-              </p>
-              <CopyCodeButton code={league.code} />
+          {!ended && (
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-slate-500">
+                  Código: <span className="font-mono font-semibold text-yellow-400">{league.code}</span>
+                </p>
+                <CopyCodeButton code={league.code} />
+              </div>
+              <ShareButton leagueId={id} leagueName={league.name} competitionName={league.competition_name ?? 'FIFA World Cup'} />
             </div>
-            <ShareButton leagueId={id} leagueName={league.name} competitionName={league.competition_name ?? 'FIFA World Cup'} />
-          </div>
+          )}
           <Link href="/support" className="text-xs text-slate-500 hover:text-yellow-400 transition">
             ¿Tenés un problema? Reportalo aquí
           </Link>

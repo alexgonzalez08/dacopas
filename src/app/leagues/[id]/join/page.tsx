@@ -59,7 +59,6 @@ export default async function JoinPage({ params }: Props) {
     .single()
 
   if (!league) notFound()
-  if (league.ended_at) redirect('/dashboard')
 
   // Obtener miembros
   const { data: membersData } = await adminSupabase
@@ -131,6 +130,7 @@ export default async function JoinPage({ params }: Props) {
       userId={user?.id ?? null}
       isNewUser={isNewUser}
       hasPendingRequest={hasPendingRequest}
+      ended={!!league.ended_at}
     />
   )
 }
