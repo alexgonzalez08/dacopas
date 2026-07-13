@@ -15,7 +15,7 @@ async function ensureProfile(userId: string) {
   }, { onConflict: 'id', ignoreDuplicates: true })
 }
 
-export async function createLeague(name: string, userId: string, imageUrl?: string, description?: string, competitionName = 'FIFA World Cup') {
+export async function createLeague(name: string, userId: string, imageUrl?: string, description?: string, competitionName = 'FIFA World Cup', competitionId: number | null = null) {
   const supabase = createClient()
   await ensureProfile(userId)
   const code = generateCode()
@@ -27,6 +27,7 @@ export async function createLeague(name: string, userId: string, imageUrl?: stri
       code,
       created_by: userId,
       competition_name: competitionName,
+      competition_id: competitionId,
       ...(imageUrl ? { image_url: imageUrl } : {}),
       ...(description ? { description } : {}),
     })

@@ -10,9 +10,11 @@ import Link from 'next/link'
 import LeagueChat from './league-chat'
 import LeagueAgreements from './league-agreements'
 import LeagueChampionPredictions, { ChampionPredictionEntry } from './league-champion-predictions'
-import { format } from 'date-fns'
+import { format as formatDate } from 'date-fns'
 import { es } from 'date-fns/locale'
 import MatchTime from '@/components/match-time'
+import { CompetitionFormat } from '@/lib/competitions'
+import ChampionPredictionSettings from './champion-prediction-settings'
 
 type MatchPrediction = {
   user_id: string
@@ -35,8 +37,9 @@ type MatchWithPredictions = {
   away_score: number | null
   penalty_home: number | null
   penalty_away: number | null
-  stage: string
+  stage: string | null
   group_name: string | null
+  matchday: number | null
   predictions: MatchPrediction[]
 }
 
@@ -57,7 +60,7 @@ function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredict
     <div className="bg-slate-800 rounded-2xl overflow-hidden">
       <button onClick={() => setOpen(v => !v)} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-700/50 transition text-left">
         <div className="shrink-0 w-14">
-          <p className="text-xs text-slate-500">{format(date, 'd MMM', { locale: es })}</p>
+          <p className="text-xs text-slate-500">{formatDate(date, 'd MMM', { locale: es })}</p>
           <p className="text-xs text-slate-400 font-medium"><MatchTime matchDate={date} /></p>
         </div>
         <div className="flex-1 flex items-center gap-1.5 min-w-0">
@@ -208,6 +211,10 @@ export default function LeagueClient({
   leaguesInfoSeen = false,
   championPredictions = [],
   championRevealed = false,
+  competitionFormat = 'knockout',
+  championPredictionEnabled = true,
+  isWorldCup = false,
+  championLockPassed = false,
 }: {
   leagueId: string
   leagueName: string
@@ -224,6 +231,10 @@ export default function LeagueClient({
   leaguesInfoSeen?: boolean
   championPredictions?: ChampionPredictionEntry[]
   championRevealed?: boolean
+  competitionFormat?: CompetitionFormat
+  championPredictionEnabled?: boolean
+  isWorldCup?: boolean
+  championLockPassed?: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -256,12 +267,31 @@ export default function LeagueClient({
 
   const sortedMatches = [...matches].sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
 
+  // En formato round_robin no hay fases/grupos — se agrupa por fecha (matchday) en vez de stage
+  function groupKeyFor(m: MatchWithPredictions) {
+    if (competitionFormat === 'round_robin') return m.matchday != null ? `md-${m.matchday}` : 'sin-fecha'
+    return m.stage ?? 'group'
+  }
+  function groupLabelFor(key: string) {
+    if (competitionFormat === 'round_robin') {
+      return key === 'sin-fecha' ? 'Sin fecha asignada' : `Fecha ${key.replace('md-', '')}`
+    }
+    return STAGE_LABELS[key] ?? key
+  }
+
   const byStage = sortedMatches.reduce<Record<string, MatchWithPredictions[]>>((acc, m) => {
-    if (!acc[m.stage]) acc[m.stage] = []
-    acc[m.stage].push(m)
+    const key = groupKeyFor(m)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(m)
     return acc
   }, {})
-  const stageList = STAGE_ORDER.filter(s => byStage[s])
+  const stageList = competitionFormat === 'round_robin'
+    ? Object.keys(byStage).sort((a, b) => {
+        const na = a === 'sin-fecha' ? Infinity : Number(a.replace('md-', ''))
+        const nb = b === 'sin-fecha' ? Infinity : Number(b.replace('md-', ''))
+        return na - nb
+      })
+    : STAGE_ORDER.filter(s => byStage[s])
 
   const activeStage = (() => {
     const withToday = stageList.find(s => byStage[s].some(m => m.match_date.slice(0, 10) === todayStr))
@@ -574,7 +604,7 @@ export default function LeagueClient({
         {/* Tab: Pronósticos */}
         {tab === 'pronosticos' && (
           <div className="space-y-3 pb-32 md:pb-6">
-            <LeagueChampionPredictions entries={championPredictions} revealed={championRevealed} currentUserId={userId} />
+            {championPredictionEnabled && <LeagueChampionPredictions entries={championPredictions} revealed={championRevealed} currentUserId={userId} />}
             {matches.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
             ) : stageList.map(stage => (
@@ -584,7 +614,7 @@ export default function LeagueClient({
                   className="w-full flex items-center justify-between px-4 py-3 mb-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
                 >
                   <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
-                    {STAGE_LABELS[stage] ?? stage}
+                    {groupLabelFor(stage)}
                   </span>
                   {openStages[stage]
                     ? <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -678,6 +708,14 @@ export default function LeagueClient({
                 </div>
               </div>
             )}
+
+            {/* Configuración del torneo — solo admin */}
+            <ChampionPredictionSettings
+              leagueId={leagueId}
+              isWorldCup={isWorldCup}
+              initialEnabled={championPredictionEnabled}
+              lockPassed={championLockPassed}
+            />
 
             {/* Lista de miembros con gestión de roles */}
             <div className="bg-slate-800 rounded-2xl p-4 space-y-3">
@@ -816,7 +854,7 @@ export default function LeagueClient({
 
       {tab === 'pronosticos' && (
         <div className="space-y-3">
-          <LeagueChampionPredictions entries={championPredictions} revealed={championRevealed} currentUserId={userId} />
+          {championPredictionEnabled && <LeagueChampionPredictions entries={championPredictions} revealed={championRevealed} currentUserId={userId} />}
           {matches.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-8">Sin partidos disponibles.</p>
           ) : stageList.map(stage => (
@@ -826,7 +864,7 @@ export default function LeagueClient({
                 className="w-full flex items-center justify-between px-4 py-3 mb-2 rounded-xl bg-slate-800 hover:bg-slate-700 transition group"
               >
                 <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
-                  {STAGE_LABELS[stage] ?? stage}
+                  {groupLabelFor(stage)}
                 </span>
                 {openStages[stage]
                   ? <ChevronDown className="w-4 h-4 text-slate-400" />

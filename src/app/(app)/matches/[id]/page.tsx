@@ -16,6 +16,9 @@ import MatchTime from '@/components/match-time'
 import ShareButton from './share-button'
 import LiveScore from './live-score'
 import type { Metadata } from 'next'
+import { getCompetitionFormat } from '@/lib/competitions'
+import { calcStandings } from '@/lib/standings'
+import LeagueStandings from '@/components/league-standings'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -98,6 +101,17 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  // Tabla de posiciones completa para partidos de competencias round_robin
+  const competitionFormat = getCompetitionFormat(match.competition_id)
+  let leagueStandings: ReturnType<typeof calcStandings> = []
+  if (competitionFormat === 'round_robin') {
+    const { data: seasonMatches } = await supabase
+      .from('matches')
+      .select('home_team, away_team, home_score, away_score, status')
+      .eq('competition_id', match.competition_id)
+    leagueStandings = calcStandings(seasonMatches ?? [])
+  }
+
   // Bracket completo para la pestaña Eliminatoria
   let bracketMatchesWithPreds: any[] = []
   if (isKnockout) {
@@ -117,15 +131,20 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     bracketMatchesWithPreds = (bracketMatches ?? []).map(m => ({ ...m, prediction: predMap.get(m.id) ?? null }))
   }
 
-  // Historial de ambos equipos en el torneo (partidos previos al actual)
-  const { data: pastMatchesRaw } = await supabase
+  // Estadísticas de ambos equipos en la temporada actual (todos los partidos finalizados
+  // de la competencia, sin importar si son antes o después de este partido en particular)
+  let seasonMatchesQuery = supabase
     .from('matches')
     .select('id, home_team, away_team, home_team_flag, away_team_flag, home_score, away_score, penalty_home, penalty_away, stage, group_name, match_date')
     .eq('status', 'finished')
-    .eq('competition_name', match.competition_name)
-    .lt('match_date', match.match_date)
+    .neq('id', match.id)
     .or(`home_team.eq.${match.home_team},away_team.eq.${match.home_team},home_team.eq.${match.away_team},away_team.eq.${match.away_team}`)
     .order('match_date', { ascending: true })
+  seasonMatchesQuery = match.competition_id != null
+    ? seasonMatchesQuery.eq('competition_id', match.competition_id)
+    : seasonMatchesQuery.eq('competition_name', match.competition_name)
+
+  const { data: pastMatchesRaw } = await seasonMatchesQuery
 
   const pastMatches = pastMatchesRaw ?? []
   const homePastMatches = pastMatches.filter(m => m.home_team === match.home_team || m.away_team === match.home_team)
@@ -205,14 +224,21 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             <BracketClient matches={bracketMatchesWithPreds} userId={user!.id} highlightMatchId={match.id} />
           </div>
         ) : undefined}
-        posicionesSection={match.stage === 'group' && groupMatches.length > 0 ? (
-          <GroupStandings
-            groupName={match.group_name ?? ''}
-            matches={groupMatches}
-            highlightTeams={[match.home_team, match.away_team]}
-          />
-        ) : undefined}
-        historialSection={pastMatches.length > 0 ? (
+        posicionesSection={
+          match.stage === 'group' && groupMatches.length > 0 ? (
+            <GroupStandings
+              groupName={match.group_name ?? ''}
+              matches={groupMatches}
+              highlightTeams={[match.home_team, match.away_team]}
+            />
+          ) : competitionFormat === 'round_robin' && leagueStandings.length > 0 ? (
+            <LeagueStandings
+              standings={leagueStandings}
+              highlightTeams={[match.home_team, match.away_team]}
+            />
+          ) : undefined
+        }
+        historialSection={
           <TeamHistory
             homeTeam={match.home_team}
             homeFlag={match.home_team_flag}
@@ -221,7 +247,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             awayFlag={match.away_team_flag}
             awayPastMatches={awayPastMatches}
           />
-        ) : undefined}
+        }
       />
     </div>
   )

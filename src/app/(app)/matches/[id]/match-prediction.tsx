@@ -35,7 +35,7 @@ export default function MatchPrediction({
     return () => clearInterval(interval)
   }, [])
   const locked = isPredictionLocked(match)
-  const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+  const isKnockout = !!match.stage && KNOCKOUT_STAGES.has(match.stage)
   const homeNum = parseInt(home)
   const awayNum = parseInt(away)
   const showPenalty = isKnockout && !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum

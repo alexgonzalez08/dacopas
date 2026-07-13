@@ -32,6 +32,56 @@ export default async function StatsPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Competencias = las que tienen al menos un torneo activo (no terminado), no las que
+  // tienen partidos finalizados — así aparecen aunque la temporada recién empiece.
+  const { data: allLeagues } = await adminSupabase
+    .from('leagues')
+    .select('id, competition_name')
+    .is('ended_at', null)
+
+  const leagueIdsByCompetition = new Map<string, string[]>()
+  for (const l of allLeagues ?? []) {
+    const key = l.competition_name ?? 'FIFA World Cup'
+    if (!leagueIdsByCompetition.has(key)) leagueIdsByCompetition.set(key, [])
+    leagueIdsByCompetition.get(key)!.push(l.id)
+  }
+
+  const allLeagueIds = (allLeagues ?? []).map(l => l.id)
+  const { data: allMembers } = allLeagueIds.length > 0
+    ? await adminSupabase
+        .from('league_members')
+        .select('league_id, user_id')
+        .in('league_id', allLeagueIds)
+        .is('left_at', null)
+    : { data: [] }
+
+  const membersByLeagueId = new Map<string, string[]>()
+  for (const m of allMembers ?? []) {
+    if (!membersByLeagueId.has(m.league_id)) membersByLeagueId.set(m.league_id, [])
+    membersByLeagueId.get(m.league_id)!.push(m.user_id)
+  }
+
+  // Unión de todos los usuarios con torneo activo en cada competencia
+  const userIdsByCompetition = new Map<string, Set<string>>()
+  for (const [compName, leagueIds] of leagueIdsByCompetition) {
+    const users = new Set<string>()
+    for (const lid of leagueIds) {
+      for (const uid of membersByLeagueId.get(lid) ?? []) users.add(uid)
+    }
+    userIdsByCompetition.set(compName, users)
+  }
+
+  if (userIdsByCompetition.size === 0) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6 pb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Estadísticas Globales</h1>
+          <p className="text-sm text-slate-400 mt-1">Todavía no hay torneos activos.</p>
+        </div>
+      </div>
+    )
+  }
+
   const { data: matches } = await supabase
     .from('matches')
     .select('id, home_score, away_score, penalty_home, penalty_away, competition_name')
@@ -40,37 +90,28 @@ export default async function StatsPage() {
   const matchMap = new Map((matches ?? []).map(m => [m.id, m]))
   const finishedIds = [...matchMap.keys()]
 
-  if (finishedIds.length === 0) {
-    return (
-      <div className="max-w-lg mx-auto space-y-6 pb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Estadísticas Globales</h1>
-          <p className="text-sm text-slate-400 mt-1">Aún no hay partidos finalizados.</p>
-        </div>
-      </div>
-    )
-  }
-
   // Predicciones paginadas
   const PAGE = 1000
   let offset = 0
   const allPreds: any[] = []
-  while (true) {
-    const { data } = await adminSupabase
-      .from('predictions')
-      .select('user_id, match_id, home_score, away_score, penalty_winner')
-      .in('match_id', finishedIds)
-      .eq('status', 'locked')
-      .order('user_id')
-      .order('match_id')
-      .range(offset, offset + PAGE - 1)
-    if (!data || data.length === 0) break
-    allPreds.push(...data)
-    if (data.length < PAGE) break
-    offset += PAGE
+  if (finishedIds.length > 0) {
+    while (true) {
+      const { data } = await adminSupabase
+        .from('predictions')
+        .select('user_id, match_id, home_score, away_score, penalty_winner')
+        .in('match_id', finishedIds)
+        .eq('status', 'locked')
+        .order('user_id')
+        .order('match_id')
+        .range(offset, offset + PAGE - 1)
+      if (!data || data.length === 0) break
+      allPreds.push(...data)
+      if (data.length < PAGE) break
+      offset += PAGE
+    }
   }
 
-  // Agrupar partidos por competición
+  // Agrupar partidos finalizados por competición
   const matchesByCompetition = new Map<string, typeof matches>()
   for (const m of matches ?? []) {
     const key = m.competition_name ?? 'FIFA World Cup'
@@ -78,8 +119,7 @@ export default async function StatsPage() {
     matchesByCompetition.get(key)!.push(m)
   }
 
-  // Calcular stats por competición
-  const allUserIds = new Set<string>()
+  // Calcular stats por competición (puede quedar vacío si la competencia no tiene partidos finalizados todavía)
   const statsByCompetition = new Map<string, Map<string, { points: number; exact: number; winner: number; played: number }>>()
 
   for (const [compName, compMatches] of matchesByCompetition) {
@@ -102,9 +142,13 @@ export default async function StatsPage() {
         winner: prev.winner + winner,
         played: prev.played + 1,
       })
-      allUserIds.add(pred.user_id)
     }
     statsByCompetition.set(compName, userStats)
+  }
+
+  const allUserIds = new Set<string>()
+  for (const users of userIdsByCompetition.values()) {
+    for (const uid of users) allUserIds.add(uid)
   }
 
   const { data: profiles } = await adminSupabase
@@ -114,11 +158,15 @@ export default async function StatsPage() {
 
   const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
 
-  function buildLeaderboard(userStats: Map<string, { points: number; exact: number; winner: number; played: number }>) {
-    return [...userStats.entries()]
-      .map(([uid, stats]) => {
+  function buildLeaderboard(
+    userIds: Set<string>,
+    userStats: Map<string, { points: number; exact: number; winner: number; played: number }>
+  ) {
+    return [...userIds]
+      .map(uid => {
         const profile = profileMap.get(uid)
         if (!profile) return null
+        const stats = userStats.get(uid) ?? { points: 0, exact: 0, winner: 0, played: 0 }
         return { uid, ...stats, username: profile.username, full_name: profile.full_name, avatar_url: profile.avatar_url }
       })
       .filter(Boolean)
@@ -126,17 +174,17 @@ export default async function StatsPage() {
       .map((e, i) => ({ ...e!, rank: i })) as any[]
   }
 
-  const competitions = [...statsByCompetition.entries()].map(([name, userStats]) => ({
+  const competitions = [...userIdsByCompetition.entries()].map(([name, userIds]) => ({
     name,
     matchCount: matchesByCompetition.get(name)?.length ?? 0,
-    leaderboard: buildLeaderboard(userStats),
+    leaderboard: buildLeaderboard(userIds, statsByCompetition.get(name) ?? new Map()),
   }))
 
   return (
     <div className="max-w-lg mx-auto space-y-6 pb-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Estadísticas Globales</h1>
-        <p className="text-sm text-slate-400 mt-1">{profiles?.length ?? 0} jugadores · {finishedIds.length} partidos finalizados</p>
+        <p className="text-sm text-slate-400 mt-1">{allUserIds.size} jugadores · {finishedIds.length} partidos finalizados</p>
       </div>
       <StatsClient competitions={competitions} currentUserId={user!.id} />
     </div>

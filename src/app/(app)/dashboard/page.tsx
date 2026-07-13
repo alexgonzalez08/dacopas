@@ -8,6 +8,7 @@ import DashboardClient from './dashboard-client'
 import { getSuggestedFriends } from '@/lib/suggested-friends'
 import PenaltyInfoModal from '@/components/penalty-info-modal'
 import { getActiveCompetition, getTeamsForCompetition, getFinalMatch } from '@/lib/champion-teams'
+import { getCompetitionFormat } from '@/lib/competitions'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
 
   const { data: memberships } = await supabase
     .from('league_members')
-    .select('league_id, leagues(id, name, ended_at)')
+    .select('league_id, leagues(id, name, ended_at, competition_id)')
     .eq('user_id', user!.id)
     .is('left_at', null)
 
@@ -36,6 +37,12 @@ export default async function DashboardPage() {
   const leagues = (memberships ?? [])
     .filter(m => m.leagues != null && !(m.leagues as any).ended_at)
     .map(m => m.leagues as unknown as { id: string; name: string })
+
+  // Solo mostrar partidos para predecir de competencias donde el usuario tiene un torneo activo
+  const competitionIds = [...new Set((memberships ?? [])
+    .filter(m => !(m.leagues as any)?.ended_at)
+    .map(m => (m.leagues as any)?.competition_id)
+    .filter((id): id is number => id != null))]
 
   // Amigos en ambas direcciones
   const { data: friendships } = await supabase
@@ -62,13 +69,16 @@ export default async function DashboardPage() {
     { data: bracketMatches },
     { data: championPredictions },
   ] = await Promise.all([
-    supabase
-      .from('matches')
-      .select('*')
-      .in('status', ['scheduled', 'live'])
-      .gte('match_date', new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString())
-      .order('match_date', { ascending: true })
-      .limit(50),
+    competitionIds.length > 0
+      ? supabase
+          .from('matches')
+          .select('*')
+          .in('status', ['scheduled', 'live'])
+          .in('competition_id', competitionIds)
+          .gte('match_date', new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString())
+          .order('match_date', { ascending: true })
+          .limit(50)
+      : Promise.resolve({ data: [] }),
     supabase.from('predictions').select('*').eq('user_id', user!.id),
     friendIds.length > 0
       ? supabase
@@ -127,12 +137,37 @@ export default async function DashboardPage() {
       ? available.filter(m => m.match_date.slice(0, 10) === available[0].match_date.slice(0, 10))
       : []
 
-  const matchPosts: FeedItem[] = displayMatches.map(m => ({
+  // El Mundial se sigue mostrando partido por partido. Las ligas todos-contra-todos
+  // pueden tener muchos partidos a la misma hora — se agrupan en una sola tarjeta por
+  // competencia que lleva a Predicciones con esa competencia y fecha ya abiertas.
+  const knockoutDisplayMatches = displayMatches.filter(m => getCompetitionFormat(m.competition_id) !== 'round_robin')
+  const roundRobinDisplayMatches = displayMatches.filter(m => getCompetitionFormat(m.competition_id) === 'round_robin')
+
+  const matchPosts: FeedItem[] = knockoutDisplayMatches.map(m => ({
     kind: 'match' as const,
     ...m,
     prediction: predMap.get(m.id) ?? null,
     sortDate: new Date(m.match_date),
   }))
+
+  const roundRobinByCompetition = new Map<string, typeof roundRobinDisplayMatches>()
+  for (const m of roundRobinDisplayMatches) {
+    const key = m.competition_name ?? 'Liga'
+    if (!roundRobinByCompetition.has(key)) roundRobinByCompetition.set(key, [])
+    roundRobinByCompetition.get(key)!.push(m)
+  }
+  const matchdayPosts: FeedItem[] = [...roundRobinByCompetition.entries()].map(([compName, ms]) => {
+    const sorted = [...ms].sort((a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime())
+    return {
+      kind: 'competition_matchday' as const,
+      id: `matchday-${compName}`,
+      competitionName: compName,
+      matchCount: ms.length,
+      matchday: sorted[0]?.matchday ?? null,
+      nextMatchDate: sorted[0].match_date,
+      sortDate: new Date(sorted[0].match_date),
+    }
+  })
 
   const leagueIdSet = new Set(leagueIds)
   const activeLeagueIdSet = new Set(activeLeagueIds)
@@ -180,16 +215,17 @@ export default async function DashboardPage() {
     }))
 
   const seenFeedIds = new Set<string>()
-  const allItems = [...matchPosts, ...activityPosts, ...userPostItems, ...systemPostItems].filter(item => {
+  const allItems = [...matchPosts, ...matchdayPosts, ...activityPosts, ...userPostItems, ...systemPostItems].filter(item => {
     const id = String((item as any).id)
     if (seenFeedIds.has(id)) return false
     seenFeedIds.add(id)
     return true
   })
+  const isMatchLike = (item: FeedItem) => item.kind === 'match' || item.kind === 'competition_matchday'
   const feed: FeedItem[] = allItems.sort((a, b) => {
-    if (a.kind === 'match' && b.kind === 'match') return a.sortDate.getTime() - b.sortDate.getTime()
-    if (a.kind === 'match') return -1
-    if (b.kind === 'match') return 1
+    if (isMatchLike(a) && isMatchLike(b)) return a.sortDate.getTime() - b.sortDate.getTime()
+    if (isMatchLike(a)) return -1
+    if (isMatchLike(b)) return 1
     return b.sortDate.getTime() - a.sortDate.getTime()
   })
 

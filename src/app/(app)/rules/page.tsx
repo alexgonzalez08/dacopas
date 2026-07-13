@@ -92,6 +92,17 @@ export default function RulesPage() {
         <ChampionScoringTable />
       </div>
 
+      {/* Predicción Campeón — ligas todos contra todos */}
+      <div className="bg-slate-800 rounded-2xl p-5 space-y-4">
+        <h2 className="font-semibold text-white flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-yellow-400" /> Predicción Campeón — Ligas (Premier League, La Liga)
+        </h2>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          En torneos de ligas todos-contra-todos solo se elige el equipo campeón (no hay finalista ni marcador que predecir). Si el admin del torneo la activó, se bloquea a mitad de temporada y se liquida cuando termina la última fecha.
+        </p>
+        <ChampionScoringTable variant="round_robin" />
+      </div>
+
       {/* Puntos globales */}
       <div className="bg-slate-800 rounded-2xl p-5">
         <h2 className="font-semibold text-white flex items-center gap-2 mb-3">
