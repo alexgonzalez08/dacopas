@@ -7,11 +7,13 @@ import ChampionPredictionToggleInfoModal from '@/components/champion-prediction-
 export default function ChampionPredictionSettings({
   leagueId,
   isWorldCup,
+  championSupported = true,
   initialEnabled,
   lockPassed,
 }: {
   leagueId: string
   isWorldCup: boolean
+  championSupported?: boolean
   initialEnabled: boolean
   lockPassed: boolean
 }) {
@@ -21,6 +23,20 @@ export default function ChampionPredictionSettings({
   // El Mundial ya está por terminar y sus torneos ya tienen predicciones enviadas —
   // no se puede desactivar, así que ni se muestra el control.
   if (isWorldCup) return null
+
+  // Competencias cuyo campeón se define por liguilla/playoff (no por tabla) todavía no
+  // tienen soporte para esto — se muestra deshabilitado en vez de ocultarlo.
+  if (!championSupported) {
+    return (
+      <div className="bg-slate-800 rounded-2xl p-4 space-y-2">
+        <h2 className="font-semibold text-slate-300 flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-slate-500" />
+          Predicción de Campeón
+        </h2>
+        <p className="text-xs text-slate-500">Todavía no disponible para esta competencia.</p>
+      </div>
+    )
+  }
 
   async function handleToggle(checked: boolean) {
     setEnabled(checked)

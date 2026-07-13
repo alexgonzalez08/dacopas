@@ -13,7 +13,7 @@ import LeagueHeaderMenu from './league-header-menu'
 import CopyCodeButton from './copy-code-button'
 import { getFinalMatch } from '@/lib/champion-teams'
 import { computeChampionResult, computePoints } from '@/lib/champion-scoring'
-import { getCompetitionFormat } from '@/lib/competitions'
+import { getCompetitionFormat, isChampionSupported } from '@/lib/competitions'
 import { calcStandings } from '@/lib/standings'
 import { isChampionLockPassed } from '@/lib/champion-lock'
 
@@ -519,6 +519,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         competitionFormat={format}
         championPredictionEnabled={league.champion_prediction_enabled ?? true}
         isWorldCup={league.competition_id === 1}
+        championSupported={isChampionSupported(league.competition_id)}
         championLockPassed={championLockPassed}
       />
     </div>

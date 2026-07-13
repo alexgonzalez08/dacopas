@@ -15,6 +15,7 @@ const COMPETITIONS = {
   39: { id: 39, name: 'Premier League', apiLeagueId: 39, season: 2026, format: 'round_robin' },
   140: { id: 140, name: 'La Liga', apiLeagueId: 140, season: 2026, format: 'round_robin' },
   135: { id: 135, name: 'Serie A', apiLeagueId: 135, season: 2026, format: 'round_robin' },
+  162: { id: 162, name: 'Primera División de Costa Rica', apiLeagueId: 162, season: 2026, format: 'round_robin' },
 }
 
 const competitionId = Number(process.argv[2])

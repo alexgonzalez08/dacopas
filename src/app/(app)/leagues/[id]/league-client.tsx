@@ -214,6 +214,7 @@ export default function LeagueClient({
   competitionFormat = 'knockout',
   championPredictionEnabled = true,
   isWorldCup = false,
+  championSupported = true,
   championLockPassed = false,
 }: {
   leagueId: string
@@ -234,6 +235,7 @@ export default function LeagueClient({
   competitionFormat?: CompetitionFormat
   championPredictionEnabled?: boolean
   isWorldCup?: boolean
+  championSupported?: boolean
   championLockPassed?: boolean
 }) {
   const router = useRouter()
@@ -713,6 +715,7 @@ export default function LeagueClient({
             <ChampionPredictionSettings
               leagueId={leagueId}
               isWorldCup={isWorldCup}
+              championSupported={championSupported}
               initialEnabled={championPredictionEnabled}
               lockPassed={championLockPassed}
             />

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { isChampionSupported } from '@/lib/competitions'
 
 function generateCode(length = 6): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -28,6 +29,7 @@ export async function createLeague(name: string, userId: string, imageUrl?: stri
       created_by: userId,
       competition_name: competitionName,
       competition_id: competitionId,
+      ...(isChampionSupported(competitionId) ? {} : { champion_prediction_enabled: false }),
       ...(imageUrl ? { image_url: imageUrl } : {}),
       ...(description ? { description } : {}),
     })
