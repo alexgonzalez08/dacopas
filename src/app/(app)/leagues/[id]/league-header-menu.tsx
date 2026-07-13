@@ -14,6 +14,7 @@ export default function LeagueHeaderMenu({
   initialName,
   initialDescription,
   initialImageUrl,
+  ended = false,
 }: {
   leagueId: string
   leagueName: string
@@ -22,6 +23,7 @@ export default function LeagueHeaderMenu({
   initialName: string
   initialDescription: string | null
   initialImageUrl: string | null
+  ended?: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -88,12 +90,14 @@ export default function LeagueHeaderMenu({
                   >
                     <Pencil className="w-3.5 h-3.5 text-yellow-400" /> Editar torneo
                   </button>
-                  <button
-                    onClick={() => { setShowEnd(true); setOpen(false) }}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-orange-400 hover:bg-slate-600 w-full transition"
-                  >
-                    <StopCircle className="w-3.5 h-3.5" /> Terminar torneo
-                  </button>
+                  {!ended && (
+                    <button
+                      onClick={() => { setShowEnd(true); setOpen(false) }}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-orange-400 hover:bg-slate-600 w-full transition"
+                    >
+                      <StopCircle className="w-3.5 h-3.5" /> Terminar torneo
+                    </button>
+                  )}
                 </>
               )}
               <button
@@ -102,7 +106,7 @@ export default function LeagueHeaderMenu({
               >
                 <Flag className="w-3.5 h-3.5 text-red-400" /> Reportar torneo
               </button>
-              {userRole !== 'admin' && (
+              {userRole !== 'admin' && !ended && (
                 <button
                   onClick={() => { setShowLeave(true); setOpen(false) }}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-slate-600 w-full transition"
