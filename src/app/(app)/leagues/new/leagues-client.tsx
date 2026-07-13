@@ -9,7 +9,7 @@ import { sendPushNotification } from '@/lib/push'
 import LeaguesInfoModal from '@/components/leagues-info-modal'
 import { COMPETITIONS } from '@/lib/competitions'
 
-type League = { id: string; name: string; code: string; role: string; image_url?: string | null; competition_name?: string | null }
+type League = { id: string; name: string; code: string; role: string; image_url?: string | null; competition_name?: string | null; ended_at?: string | null }
 
 export default function LeaguesClient({
   leagues: initial,
@@ -44,13 +44,16 @@ export default function LeaguesClient({
     })
   }
 
-  // Agrupar ligas por competición
+  // Agrupar ligas por competición — activas primero, terminadas al final de cada grupo
   const leaguesByCompetition = leagues.reduce<Record<string, League[]>>((acc, league) => {
     const key = league.competition_name ?? 'FIFA World Cup'
     if (!acc[key]) acc[key] = []
     acc[key].push(league)
     return acc
   }, {})
+  for (const key of Object.keys(leaguesByCompetition)) {
+    leaguesByCompetition[key].sort((a, b) => Number(!!a.ended_at) - Number(!!b.ended_at))
+  }
 
   const leagueIds = leagues.map(l => l.id)
 
@@ -313,9 +316,10 @@ export default function LeaguesClient({
                   <div className="border-t border-slate-700/50">
                     {competitionLeagues.map((league, idx) => {
                       const totalNotifs = (chatUnread[league.id] ?? 0) + (leagueNotifsState[league.id] ?? 0)
+                      const ended = !!league.ended_at
                       return (
                         <div key={league.id} className={idx > 0 ? 'border-t border-slate-700/50' : ''}>
-                          <div className="flex items-center hover:bg-slate-700 transition">
+                          <div className={`flex items-center hover:bg-slate-700 transition ${ended ? 'opacity-60' : ''}`}>
                             {league.image_url && (
                               <img src={league.image_url} alt={league.name} className="w-11 h-11 object-cover shrink-0" />
                             )}
@@ -325,12 +329,18 @@ export default function LeaguesClient({
                             >
                               <span className="text-sm font-medium truncate">{league.name}</span>
                               <div className="flex items-center gap-2 shrink-0">
-                                {totalNotifs > 0 && (
+                                {!ended && totalNotifs > 0 && (
                                   <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                                     {totalNotifs > 9 ? '9+' : totalNotifs}
                                   </span>
                                 )}
-                                <span className="text-xs font-mono text-slate-400">{league.code}</span>
+                                {ended ? (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">
+                                    Finalizado
+                                  </span>
+                                ) : (
+                                  <span className="text-xs font-mono text-slate-400">{league.code}</span>
+                                )}
                                 <ChevronRight className="w-4 h-4 text-slate-500" />
                               </div>
                             </Link>

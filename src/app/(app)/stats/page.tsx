@@ -42,12 +42,11 @@ export default async function StatsPage() {
     (myMemberships ?? []).map(m => (m.leagues as any)?.competition_name ?? 'FIFA World Cup')
   )
 
-  // Competencias = las que tienen al menos un torneo activo (no terminado), no las que
-  // tienen partidos finalizados — así aparecen aunque la temporada recién empiece.
+  // Competencias = todas las que tienen al menos un torneo (activo o terminado) — así aparecen
+  // aunque la temporada recién empiece, y no desaparecen cuando el torneo termina.
   const { data: allLeagues } = await adminSupabase
     .from('leagues')
     .select('id, competition_name')
-    .is('ended_at', null)
 
   const leagueIdsByCompetition = new Map<string, string[]>()
   for (const l of allLeagues ?? []) {
