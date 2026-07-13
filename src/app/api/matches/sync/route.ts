@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToAllUsers, sendPushToUsers } from '@/lib/push-server'
-import { COMPETITIONS, getCompetitionFormat } from '@/lib/competitions'
+import { COMPETITIONS, getCompetition, getCompetitionFormat } from '@/lib/competitions'
 
 export const maxDuration = 60
 
@@ -174,7 +174,7 @@ async function runSync(request: Request) {
         penalty_away: penaltyAway,
         tournament: f.league.name ?? null,
         competition_id: f.league.id ?? null,
-        competition_name: f.league.name ?? 'FIFA World Cup 2026',
+        competition_name: getCompetition(f.league.id)?.name ?? 'FIFA World Cup',
       })
     }
   }
