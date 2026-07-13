@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Trophy, Users, Medal, Loader2, X, ShieldCheck } from 'lucide-react'
+import { Trophy, Users, Medal, Loader2, X, ShieldCheck, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 type League = { id: string; name: string; description: string | null; image_url: string | null; code: string; competition_name: string | null }
@@ -46,6 +46,7 @@ export default function JoinClient({
   userId,
   isNewUser,
   hasPendingRequest,
+  ended,
 }: {
   league: League
   members: Member[]
@@ -54,6 +55,7 @@ export default function JoinClient({
   userId: string | null
   isNewUser?: boolean
   hasPendingRequest?: boolean
+  ended?: boolean
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -62,13 +64,14 @@ export default function JoinClient({
 
   // Si el usuario está logueado y no tiene solicitud pendiente, enviar automáticamente
   useEffect(() => {
-    if (isLoggedIn && !hasPendingRequest) {
+    if (isLoggedIn && !hasPendingRequest && !ended) {
       handleJoin()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleJoin() {
+    if (ended) return
     if (!isLoggedIn) {
       router.push(`/register?next=/leagues/${league.id}/join`)
       return
@@ -174,7 +177,12 @@ export default function JoinClient({
           {/* CTA */}
           <div className="space-y-3">
             {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-            {hasPendingRequest ? (
+            {ended ? (
+              <div className="w-full py-3.5 bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold rounded-2xl flex items-center justify-center gap-2 text-center px-3">
+                <AlertTriangle className="w-5 h-5 shrink-0" />
+                Este torneo ya finalizó y no admite nuevos participantes
+              </div>
+            ) : hasPendingRequest ? (
               <div className="w-full py-3.5 bg-slate-700 text-slate-300 font-bold rounded-2xl flex items-center justify-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-yellow-400" />
                 Solicitud pendiente de aprobación

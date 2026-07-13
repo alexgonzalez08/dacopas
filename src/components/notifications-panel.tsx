@@ -76,7 +76,7 @@ function NotificationIcon({ type }: { type: string }) {
 
 function NotificationItem({
   notif, userId, onAccept, onDecline, accepting, declining,
-  onJoin, joining, joinError, onApproveModInvite, onDeclineModInvite,
+  onJoin, joining, joinError, approveError, onApproveModInvite, onDeclineModInvite,
   onRequestJoin, onApproveJoinRequest, onDeclineJoinRequest,
   onDelete, deleting,
 }: {
@@ -89,6 +89,7 @@ function NotificationItem({
   onJoin: (n: Notification) => void
   joining: string | null
   joinError: string | null
+  approveError: string | null
   onApproveModInvite: (n: Notification) => void
   onDeclineModInvite: (n: Notification) => void
   onRequestJoin: (n: Notification) => void
@@ -199,6 +200,7 @@ function NotificationItem({
                   <button onClick={() => onDeclineModInvite(notif)} disabled={accepting === notif.id || declining === notif.id} className={btnGray}>
                     {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Declinar
                   </button>
+                  {approveError && accepting !== notif.id && <p className="text-xs text-red-400">{approveError}</p>}
                 </div>}
           </div>
         )}
@@ -234,9 +236,12 @@ function NotificationItem({
             </p>
             {isAccepted
               ? <span className="inline-flex items-center gap-1.5 text-xs text-blue-400"><Check className="w-3.5 h-3.5" /> Solicitud enviada</span>
-              : <button onClick={() => onRequestJoin(notif)} disabled={accepting === notif.id} className={btnYellow}>
-                  {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />} Solicitar unirse
-                </button>}
+              : <div className="flex flex-col items-start gap-1.5">
+                  <button onClick={() => onRequestJoin(notif)} disabled={accepting === notif.id} className={btnYellow}>
+                    {accepting === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />} Solicitar unirse
+                  </button>
+                  {approveError && accepting !== notif.id && <p className="text-xs text-red-400">{approveError}</p>}
+                </div>}
           </div>
         )}
 
@@ -272,6 +277,7 @@ function NotificationItem({
                   <button onClick={() => onDeclineJoinRequest(notif)} disabled={accepting === notif.id || declining === notif.id} className={btnGray}>
                     {declining === notif.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />} Declinar
                   </button>
+                  {approveError && accepting !== notif.id && <p className="text-xs text-red-400">{approveError}</p>}
                 </div>}
           </div>
         )}
@@ -509,6 +515,7 @@ export default function NotificationsPanel({
   const [declining, setDeclining] = useState<string | null>(null)
   const [joining, setJoining] = useState<string | null>(null)
   const [joinError, setJoinError] = useState<string | null>(null)
+  const [approveError, setApproveError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [clearingAll, setClearingAll] = useState(false)
   const router = useRouter()
@@ -635,11 +642,17 @@ export default function NotificationsPanel({
   }
 
   async function handleApproveModInvite(notif: Notification) {
-    setAccepting(notif.id)
+    setAccepting(notif.id); setApproveError(null)
     const supabase = createClient()
     const { league_id, league_name, target_user_id, target_username } = notif.metadata ?? {}
     const res = await fetch('/api/leagues/approve-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leagueId: league_id, targetUserId: target_user_id }) })
-    const { alreadyMember } = await res.json()
+    const data = await res.json()
+    if (!res.ok) {
+      setApproveError(data.error ?? 'Error al aprobar la solicitud')
+      setAccepting(null)
+      return
+    }
+    const { alreadyMember } = data
     if (!alreadyMember) {
       if (notif.from_user_id) {
         await supabase.from('notifications').insert({ user_id: notif.from_user_id, from_user_id: userId, type: 'mod_invite_approved', metadata: { league_id, league_name, target_username } })
@@ -668,17 +681,29 @@ export default function NotificationsPanel({
   }
 
   async function handleRequestJoin(notif: Notification) {
-    setAccepting(notif.id)
-    await fetch('/api/leagues/join-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leagueId: notif.metadata?.league_id, leagueName: notif.metadata?.league_name }) })
+    setAccepting(notif.id); setApproveError(null)
+    const res = await fetch('/api/leagues/join-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leagueId: notif.metadata?.league_id, leagueName: notif.metadata?.league_name }) })
+    if (!res.ok) {
+      const data = await res.json()
+      setApproveError(data.error ?? 'Error al enviar la solicitud')
+      setAccepting(null)
+      return
+    }
     setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, accepted: true, alreadyAccepted: true } : n))
     setAccepting(null)
   }
 
   async function handleApproveJoinRequest(notif: Notification) {
-    setAccepting(notif.id)
+    setAccepting(notif.id); setApproveError(null)
     const supabase = createClient()
     const { league_id, league_name } = notif.metadata ?? {}
-    await fetch('/api/leagues/approve-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leagueId: league_id, targetUserId: notif.from_user_id }) })
+    const res = await fetch('/api/leagues/approve-member', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leagueId: league_id, targetUserId: notif.from_user_id }) })
+    const data = await res.json()
+    if (!res.ok) {
+      setApproveError(data.error ?? 'Error al aprobar la solicitud')
+      setAccepting(null)
+      return
+    }
     await supabase.from('notifications').insert({ user_id: notif.from_user_id!, from_user_id: userId, type: 'league_added', metadata: { league_id, league_name } })
     sendPushNotification({ toUserId: notif.from_user_id!, title: '¡Solicitud aprobada!', body: `Tu solicitud para unirte a "${league_name}" fue aprobada`, data: { url: '/notifications' } })
     const { data: allReqs } = await supabase.from('notifications').select('id').eq('type', 'join_request').eq('metadata->>league_id', league_id).eq('from_user_id', notif.from_user_id!)
@@ -730,6 +755,7 @@ export default function NotificationsPanel({
     onJoin: handleJoinLeague,
     joining,
     joinError,
+    approveError,
     onApproveModInvite: handleApproveModInvite,
     onDeclineModInvite: handleDeclineModInvite,
     onRequestJoin: handleRequestJoin,

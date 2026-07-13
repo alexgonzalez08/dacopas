@@ -54,6 +54,7 @@ export async function joinLeague(code: string, userId: string) {
     .single()
 
   if (error || !league) throw new Error('Torneo no encontrado')
+  if (league.ended_at) throw new Error('Este torneo ya finalizó y no admite nuevos participantes')
 
   // Verificar si ya existe una fila (miembro activo o que abandonó)
   const { data: existing } = await supabase
