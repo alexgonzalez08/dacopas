@@ -126,7 +126,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           )}
           <div className="space-y-1">
             <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/20">
-              🏆 Mundial 2026
+              🏆 {league.competition_name ?? 'FIFA World Cup'}
             </span>
             <h1 className="text-2xl font-bold">{league.name}</h1>
             {league.description && (
@@ -478,7 +478,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               </p>
               <CopyCodeButton code={league.code} />
             </div>
-            <ShareButton leagueId={id} leagueName={league.name} />
+            <ShareButton leagueId={id} leagueName={league.name} competitionName={league.competition_name ?? 'FIFA World Cup'} />
           </div>
           <Link href="/support" className="text-xs text-slate-500 hover:text-yellow-400 transition">
             ¿Tenés un problema? Reportalo aquí

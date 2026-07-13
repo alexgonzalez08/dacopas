@@ -116,7 +116,7 @@ export default function AppHeader({ username, avatarUrl, userId }: { username: s
       .channel('chat-unread-badge')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'league_chat_messages' }, fetchChatUnread)
       .subscribe()
-    const interval = setInterval(doFetchChatUnread, 300_000) // 5min fallback
+    const interval = setInterval(doFetchChatUnread, 900_000) // 15min fallback — realtime cubre el resto
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer)

@@ -14,14 +14,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
   const { data: league } = await adminSupabase
     .from('leagues')
-    .select('name, description, image_url')
+    .select('name, description, image_url, competition_name')
     .eq('id', id)
     .single()
 
   if (!league) return {}
 
   const title = `${league.name} — Dacopas`
-  const description = league.description ?? '¡Entrá y predecí los resultados del Mundial 2026!'
+  const competitionName = league.competition_name ?? 'FIFA World Cup'
+  const description = league.description ?? `¡Entrá y predecí los resultados de ${competitionName}!`
   const image = league.image_url ?? 'https://dacopas.com/og-default.png'
 
   return {
@@ -53,7 +54,7 @@ export default async function JoinPage({ params }: Props) {
 
   const { data: league } = await adminSupabase
     .from('leagues')
-    .select('id, name, description, image_url, code, ended_at')
+    .select('id, name, description, image_url, code, ended_at, competition_name')
     .eq('id', id)
     .single()
 
