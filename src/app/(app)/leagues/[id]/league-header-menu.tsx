@@ -14,6 +14,7 @@ export default function LeagueHeaderMenu({
   initialName,
   initialDescription,
   initialImageUrl,
+  initialIsPublic,
   ended = false,
 }: {
   leagueId: string
@@ -23,6 +24,7 @@ export default function LeagueHeaderMenu({
   initialName: string
   initialDescription: string | null
   initialImageUrl: string | null
+  initialIsPublic: boolean
   ended?: boolean
 }) {
   const router = useRouter()
@@ -125,6 +127,7 @@ export default function LeagueHeaderMenu({
         initialName={initialName}
         initialDescription={initialDescription}
         initialImageUrl={initialImageUrl}
+        initialIsPublic={initialIsPublic}
         externalOpen={showEdit}
         onExternalClose={() => setShowEdit(false)}
       />

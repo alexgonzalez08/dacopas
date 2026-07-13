@@ -3,13 +3,14 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
 import { notFound, redirect } from 'next/navigation'
-import { Medal } from 'lucide-react'
+import { Medal, Globe, Lock } from 'lucide-react'
 import Link from 'next/link'
 import ShareButton from './share-button'
 import InviteFriends from './invite-friends'
 import LeagueClient from './league-client'
 import LeagueInviteBanner from './league-invite-banner'
 import LeagueHeaderMenu from './league-header-menu'
+import JoinPublicButton from './join-public-button'
 import CopyCodeButton from './copy-code-button'
 import { getFinalMatch } from '@/lib/champion-teams'
 import { computeChampionResult, computePoints } from '@/lib/champion-scoring'
@@ -29,7 +30,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   // Usar adminClient para leer el torneo — el usuario puede ser invitado (no miembro aún)
   const { data: league } = await adminSupabase
     .from('leagues')
-    .select('id, name, code, image_url, description, created_by, created_at, ended_at, competition_id, competition_name, champion_prediction_enabled')
+    .select('id, name, code, image_url, description, created_by, created_at, ended_at, competition_id, competition_name, champion_prediction_enabled, is_public')
     .eq('id', id)
     .single()
 
@@ -79,14 +80,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       .in('type', ['league_invite', 'league_created'])
 
     const invite = invites?.find(n => n.metadata?.league_id === id) ?? null
-    if (!invite) redirect(`/leagues/${id}/join`)
+    if (!invite && !league.is_public) redirect(`/leagues/${id}/join`)
 
-    // Para league_created no hay código de invitación — usamos el código del torneo
-    const inviteCode = invite.type === 'league_invite'
-      ? invite.metadata?.league_code
-      : league.code
-
-    // Vista de invitado — usar adminSupabase para bypassear RLS en queries de solo lectura
+    // Vista de invitado/no-miembro — usar adminSupabase para bypassear RLS en queries de solo lectura
     const { data: guestMembers } = await adminSupabase
       .from('league_members')
       .select('user_id, role, profiles(username, full_name, avatar_url)')
@@ -115,6 +111,52 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       .sort((a, b) => b.points - a.points || b.exact_results - a.exact_results || b.correct_winner - a.correct_winner)
 
     const medalColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600']
+
+    // Torneo público sin invitación — vista de solo lectura, solo tabla de posiciones
+    if (!invite) {
+      return (
+        <div className="space-y-6">
+          <div className="space-y-1">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/20">
+              🏆 {league.competition_name ?? 'FIFA World Cup'}
+            </span>
+            <span className="ml-1 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-400 font-medium border border-slate-600/40">
+              <Globe className="w-3 h-3" /> Público
+            </span>
+            <h1 className="text-2xl font-bold">{league.name}</h1>
+            <p className="text-xs text-slate-500 mt-1">Estás viendo la tabla de posiciones de este torneo público</p>
+          </div>
+
+          <JoinPublicButton leagueId={id} leagueName={league.name} />
+
+          <div>
+            <h2 className="font-semibold mb-3 text-slate-300">Tabla de posiciones</h2>
+            <div className="space-y-2">
+              {leaderboard.map((entry, i) => (
+                <div key={entry.user_id} className="flex items-center gap-4 rounded-xl px-4 py-3 bg-slate-800">
+                  <span className={`w-6 text-center font-bold ${medalColors[i] ?? 'text-slate-400'}`}>
+                    {i < 3 ? <Medal className="w-5 h-5 inline" /> : i + 1}
+                  </span>
+                  <Link href={`/profile/${entry.username}`} className="flex-1 font-medium hover:text-yellow-400 transition">{entry.username}</Link>
+                  <div className="text-right">
+                    <span className="text-lg font-bold text-yellow-400">{entry.points}</span>
+                    <span className="text-slate-500 text-sm"> pts</span>
+                  </div>
+                  <div className="text-xs text-slate-500 hidden sm:block">
+                    {entry.exact_results} exactos · {entry.correct_winner} ganador
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // Para league_created no hay código de invitación — usamos el código del torneo
+    const inviteCode = invite.type === 'league_invite'
+      ? invite.metadata?.league_code
+      : league.code
 
     return (
       <div className="space-y-6">
@@ -413,6 +455,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   Torneo Finalizado
                 </span>
               )}
+              <span
+                className="ml-1 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-700/50 text-slate-400 font-medium border border-slate-600/40"
+                title={league.is_public ? 'Cualquiera con el link se une sin pedir permiso' : 'Quien entre por el link debe solicitar unirse'}
+              >
+                {league.is_public ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                {league.is_public ? 'Público' : 'Privado'}
+              </span>
               <h1 className="text-2xl font-bold leading-tight">{league.name}</h1>
             </div>
             <div className="flex items-center gap-1 shrink-0 mt-1">
@@ -424,6 +473,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                 initialName={league.name}
                 initialDescription={league.description ?? null}
                 initialImageUrl={league.image_url ?? null}
+                initialIsPublic={league.is_public ?? false}
                 ended={ended}
               />
             </div>
@@ -486,6 +536,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         championSupported={isChampionSupported(league.competition_id)}
         championLockPassed={championLockPassed}
         ended={ended}
+        isPublic={league.is_public ?? false}
       />
     </div>
   )

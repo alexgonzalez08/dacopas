@@ -54,7 +54,7 @@ export default async function JoinPage({ params }: Props) {
 
   const { data: league } = await adminSupabase
     .from('leagues')
-    .select('id, name, description, image_url, code, ended_at, competition_name')
+    .select('id, name, description, image_url, code, ended_at, competition_name, is_public')
     .eq('id', id)
     .single()
 

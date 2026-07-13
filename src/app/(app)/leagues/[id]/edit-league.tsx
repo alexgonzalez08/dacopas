@@ -1,13 +1,14 @@
 'use client'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Pencil, X, Loader2, ImageIcon, Check } from 'lucide-react'
+import { Pencil, X, Loader2, ImageIcon, Check, Globe, Lock } from 'lucide-react'
 
 export default function EditLeague({
   leagueId,
   initialName,
   initialDescription,
   initialImageUrl,
+  initialIsPublic,
   externalOpen,
   onExternalClose,
 }: {
@@ -15,6 +16,7 @@ export default function EditLeague({
   initialName: string
   initialDescription: string | null
   initialImageUrl: string | null
+  initialIsPublic: boolean
   externalOpen?: boolean
   onExternalClose?: () => void
 }) {
@@ -23,6 +25,7 @@ export default function EditLeague({
   const closeModal = () => { setOpen(false); onExternalClose?.() }
   const [name, setName] = useState(initialName)
   const [description, setDescription] = useState(initialDescription ?? '')
+  const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(initialImageUrl)
   const [saving, setSaving] = useState(false)
@@ -64,6 +67,7 @@ export default function EditLeague({
           name: name.trim(),
           description: description.trim() || null,
           image_url: imageUrl,
+          is_public: isPublic,
         })
         .eq('id', leagueId)
 
@@ -87,6 +91,7 @@ export default function EditLeague({
     closeModal()
     setName(initialName)
     setDescription(initialDescription ?? '')
+    setIsPublic(initialIsPublic)
     setImageFile(null)
     setImagePreview(initialImageUrl)
     setError(null)
@@ -143,6 +148,30 @@ export default function EditLeague({
                   placeholder="¿De qué trata este torneo?"
                   className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 resize-none text-sm"
                 />
+              </div>
+
+              {/* Público / privado */}
+              <div className="flex items-center justify-between gap-3 px-1">
+                <div className="flex items-start gap-2.5">
+                  {isPublic ? <Globe className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" /> : <Lock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium text-white">{isPublic ? 'Torneo público' : 'Torneo privado'}</p>
+                    <p className="text-xs text-slate-500">
+                      {isPublic
+                        ? 'Cualquiera con el link se une sin pedir permiso'
+                        : 'Quien entre por el link debe solicitar unirse'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isPublic}
+                  onClick={() => setIsPublic(v => !v)}
+                  className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${isPublic ? 'bg-yellow-500' : 'bg-slate-700'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isPublic ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
               </div>
 
               {error && <p className="text-red-400 text-sm">{error}</p>}

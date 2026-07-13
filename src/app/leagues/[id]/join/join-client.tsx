@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Trophy, Users, Medal, Loader2, X, ShieldCheck, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
-type League = { id: string; name: string; description: string | null; image_url: string | null; code: string; competition_name: string | null }
+type League = { id: string; name: string; description: string | null; image_url: string | null; code: string; competition_name: string | null; is_public?: boolean }
 type Member = { user_id: string; username: string; avatar_url: string | null }
 type Top3 = Member & { points: number }
 
@@ -88,6 +88,10 @@ export default function JoinClient({
       if (!res.ok) {
         setError(data.error ?? 'Error al enviar la solicitud')
         setLoading(false)
+        return
+      }
+      if (data.joined) {
+        router.push(`/leagues/${league.id}`)
         return
       }
       setShowModal(true)
@@ -194,7 +198,9 @@ export default function JoinClient({
                 className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold rounded-2xl transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '⚡'}
-                {isLoggedIn ? 'Solicitar unirme al torneo' : 'Crear cuenta y unirme'}
+                {isLoggedIn
+                  ? (league.is_public ? 'Unirme al torneo' : 'Solicitar unirme al torneo')
+                  : 'Crear cuenta y unirme'}
               </button>
             )}
             {isLoggedIn ? (
