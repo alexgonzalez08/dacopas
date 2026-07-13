@@ -7,8 +7,10 @@ import { isPredictionLocked } from '@/lib/predictions'
 import DashboardClient from './dashboard-client'
 import { getSuggestedFriends } from '@/lib/suggested-friends'
 import PenaltyInfoModal from '@/components/penalty-info-modal'
+import ChampionReminderModal from '@/components/champion-reminder-modal'
 import { getActiveCompetition, getTeamsForCompetition, getFinalMatch } from '@/lib/champion-teams'
 import { getCompetitionFormat } from '@/lib/competitions'
+import { isChampionLockPassed } from '@/lib/champion-lock'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -20,7 +22,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, avatar_url, welcome_seen, penalty_info_seen')
+    .select('username, avatar_url, welcome_seen, penalty_info_seen, champion_reminder_seen')
     .eq('id', user!.id)
     .single()
 
@@ -245,11 +247,21 @@ export default async function DashboardPage() {
   const activeCompetition = getActiveCompetition(bracketMatches ?? [])
   const championPredMap = new Map((championPredictions ?? []).map(cp => [cp.competition_name, cp]))
 
+  // Solo tiene sentido recordar mientras el Mundial (knockout) siga abierto para predecir campeón
+  const champLockPassed = isChampionLockPassed(
+    (bracketMatches ?? []).map(m => ({ stage: m.stage, matchday: null, match_date: m.match_date })),
+    'knockout'
+  )
+
   return (
     <>
     <PenaltyInfoModal
       userId={user!.id}
       autoOpen={!(profile?.penalty_info_seen ?? false)}
+    />
+    <ChampionReminderModal
+      userId={user!.id}
+      autoOpen={!(profile?.champion_reminder_seen ?? false) && activeCompetition === 'FIFA World Cup' && !champLockPassed}
     />
     <DashboardClient
       userId={user!.id}
