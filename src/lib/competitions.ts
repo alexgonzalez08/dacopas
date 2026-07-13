@@ -12,6 +12,7 @@ export const COMPETITIONS: Competition[] = [
   { id: 1, name: 'FIFA World Cup', apiLeagueId: 1, season: 2026, format: 'knockout' },
   { id: 39, name: 'Premier League', apiLeagueId: 39, season: 2026, format: 'round_robin' },
   { id: 140, name: 'La Liga', apiLeagueId: 140, season: 2026, format: 'round_robin' },
+  { id: 135, name: 'Serie A', apiLeagueId: 135, season: 2026, format: 'round_robin' },
 ]
 
 export function getCompetition(id: number | null | undefined): Competition | null {
