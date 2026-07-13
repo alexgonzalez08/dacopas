@@ -94,24 +94,22 @@ function TeamColumn({ team, flag, matches }: { team: string; flag: string | null
         <span className="text-xs font-semibold text-slate-300 truncate">{team}</span>
       </div>
 
-      {matches.length > 0 && (
-        <div className="grid grid-cols-2 gap-x-2 gap-y-1 bg-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
-          <div className="text-center">
-            <p className="text-base font-bold text-white">{stats.w}<span className="text-green-400">-</span>{stats.d}<span className="text-yellow-400">-</span>{stats.l}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wide">G-E-P</p>
-          </div>
-          <div className="text-center">
-            <p className="text-base font-bold text-white">{stats.gf}<span className="text-slate-500 text-sm font-normal"> / </span>{stats.ga}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wide">GF / GC</p>
-          </div>
-          <div className="col-span-2 border-t border-slate-700/60 mt-1 pt-1 text-center">
-            <p className="text-sm font-bold text-white">{stats.cs} <span className="text-xs font-normal text-slate-400">{stats.cs === 1 ? 'portería en cero' : 'porterías en cero'}</span></p>
-          </div>
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1 bg-slate-700/40 rounded-xl px-3 py-2.5 mb-3">
+        <div className="text-center">
+          <p className="text-base font-bold text-white">{stats.w}<span className="text-green-400">-</span>{stats.d}<span className="text-yellow-400">-</span>{stats.l}</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide">G-E-P</p>
         </div>
-      )}
+        <div className="text-center">
+          <p className="text-base font-bold text-white">{stats.gf}<span className="text-slate-500 text-sm font-normal"> / </span>{stats.ga}</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide">GF / GC</p>
+        </div>
+        <div className="col-span-2 border-t border-slate-700/60 mt-1 pt-1 text-center">
+          <p className="text-sm font-bold text-white">{stats.cs} <span className="text-xs font-normal text-slate-400">{stats.cs === 1 ? 'portería en cero' : 'porterías en cero'}</span></p>
+        </div>
+      </div>
 
       {matches.length === 0
-        ? <p className="text-xs text-slate-500">Sin partidos previos</p>
+        ? <p className="text-xs text-slate-500">Sin partidos en la temporada actual</p>
         : matches.map(m => <MatchRow key={m.id} match={m} team={team} />)
       }
     </div>
@@ -131,7 +129,7 @@ export default function TeamHistory({
 }) {
   return (
     <div className="bg-slate-800 -mx-4 sm:mx-0 sm:rounded-2xl px-4 py-5 space-y-4">
-      <p className="text-sm font-bold text-white">Últimos partidos</p>
+      <p className="text-sm font-bold text-white">Temporada actual</p>
       <div className="flex gap-4 items-start">
         <TeamColumn team={homeTeam} flag={homeFlag} matches={homePastMatches} />
         <div className="w-px bg-slate-700 self-stretch shrink-0" />

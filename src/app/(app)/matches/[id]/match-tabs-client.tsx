@@ -23,7 +23,7 @@ export default function MatchTabsClient({
     ...(historialSection ? [{ id: 'historial' as TabId, label: 'Estadísticas' }] : []),
     ...(alineacionesSection ? [{ id: 'alineaciones' as TabId, label: 'Alineaciones' }] : []),
     ...(bracketSection ? [{ id: 'bracket' as TabId, label: 'Eliminatoria' }] : []),
-    ...(posicionesSection ? [{ id: 'posiciones' as TabId, label: 'Posiciones' }] : []),
+    ...(posicionesSection ? [{ id: 'posiciones' as TabId, label: 'Clasificación' }] : []),
   ]
 
   const [active, setActive] = useState<TabId>('prediccion')

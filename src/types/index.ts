@@ -12,8 +12,9 @@ export type Match = {
   home_team_flag: string | null
   away_team_flag: string | null
   match_date: string
-  stage: 'group' | 'round_of_32' | 'round_of_16' | 'quarter' | 'semi' | 'third_place' | 'final'
+  stage: 'group' | 'round_of_32' | 'round_of_16' | 'quarter' | 'semi' | 'third_place' | 'final' | null
   group_name: string | null
+  matchday: number | null
   status: 'scheduled' | 'live' | 'finished'
   home_score: number | null
   away_score: number | null

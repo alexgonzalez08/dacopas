@@ -70,7 +70,7 @@ export default function DashboardMatches({
       setErrors(e => ({ ...e, [match.id]: 'Ingresá un resultado válido' }))
       return
     }
-    const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+    const isKnockout = !!match.stage && KNOCKOUT_STAGES.has(match.stage)
     const pw = isKnockout && home === away ? penaltyWinner[match.id] : null
     if (isKnockout && home === away && !pw) {
       setErrors(e => ({ ...e, [match.id]: 'Seleccioná el ganador en penales' }))
@@ -135,7 +135,7 @@ export default function DashboardMatches({
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
               const hasPrediction = match.prediction !== null
-              const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+              const isKnockout = !!match.stage && KNOCKOUT_STAGES.has(match.stage)
               const homeNum = parseInt(s.home)
               const awayNum = parseInt(s.away)
               const showPenalty = isKnockout && !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum
@@ -157,7 +157,9 @@ export default function DashboardMatches({
                       )}
                       {!match.group_name && (
                         <span className="text-xs text-slate-500">
-                          {STAGE_LABELS[match.stage] ?? match.stage}
+                          {match.matchday != null
+                            ? `Fecha ${match.matchday}`
+                            : (match.stage && STAGE_LABELS[match.stage]) ?? match.stage}
                         </span>
                       )}
                     </div>

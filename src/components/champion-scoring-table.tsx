@@ -9,7 +9,38 @@ const SCORING_ROWS: { finalists: boolean; score: boolean; penalty: boolean; pts:
   { finalists: false, score: false, penalty: false, pts: 1 },
 ]
 
-export default function ChampionScoringTable() {
+export default function ChampionScoringTable({ variant = 'knockout' }: { variant?: 'knockout' | 'round_robin' }) {
+  if (variant === 'round_robin') {
+    return (
+      <div>
+        <p className="text-xs text-slate-400 text-center mb-3">
+          En ligas de todos contra todos solo se elige el equipo campeón (no hay final que predecir):
+        </p>
+        <table className="w-full text-center border-collapse">
+          <thead>
+            <tr className="text-[9px] text-slate-500 uppercase tracking-wide">
+              <th className="pb-1.5 font-medium">Campeón</th>
+              <th className="pb-1.5 font-medium">Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-slate-800">
+              <td className="py-1.5 text-sm">✓</td>
+              <td className="py-1.5 text-sm font-bold text-yellow-400">8</td>
+            </tr>
+            <tr className="border-t border-slate-800">
+              <td className="py-1.5 text-sm"><span className="text-slate-600">—</span></td>
+              <td className="py-1.5 text-sm font-bold text-yellow-400">0</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="text-[10px] text-slate-500 text-center mt-2">
+          Se liquida cuando termina la última fecha de la temporada
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div>
       <p className="text-xs text-slate-400 text-center mb-3">Sin el campeón correcto no sumás puntos. Con el campeón acertado:</p>

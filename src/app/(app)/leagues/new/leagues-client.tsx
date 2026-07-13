@@ -7,6 +7,7 @@ import { Trophy, Copy, Check, ChevronRight, ChevronDown, LogOut, X, Loader2, Plu
 import Link from 'next/link'
 import { sendPushNotification } from '@/lib/push'
 import LeaguesInfoModal from '@/components/leagues-info-modal'
+import { COMPETITIONS } from '@/lib/competitions'
 
 type League = { id: string; name: string; code: string; role: string; image_url?: string | null; competition_name?: string | null }
 
@@ -99,17 +100,12 @@ export default function LeaguesClient({
   // Crear torneo
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [competitionName, setCompetitionName] = useState('FIFA World Cup')
+  const [competitionId, setCompetitionId] = useState(COMPETITIONS[0].id)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState('')
   const imageRef = useRef<HTMLInputElement>(null)
-
-  // Competiciones disponibles (hardcodeado por ahora, vendrá de API-Football)
-  const AVAILABLE_COMPETITIONS = [
-    { id: null, name: 'FIFA World Cup' },
-  ]
 
   // Unirse
   const [code, setCode] = useState('')
@@ -124,7 +120,7 @@ export default function LeaguesClient({
 
   function closeModal() {
     setModal(null)
-    setName(''); setDescription(''); setCompetitionName('FIFA World Cup'); setImageFile(null); setImagePreview(null); setCreateError('')
+    setName(''); setDescription(''); setCompetitionId(COMPETITIONS[0].id); setImageFile(null); setImagePreview(null); setCreateError('')
     setCode(''); setJoinError('')
   }
 
@@ -156,7 +152,8 @@ export default function LeaguesClient({
         imageUrl = publicUrl
       }
 
-      const league = await createLeague(name, user!.id, imageUrl, description || undefined, competitionName)
+      const competition = COMPETITIONS.find(c => c.id === competitionId)!
+      const league = await createLeague(name, user!.id, imageUrl, description || undefined, competition.name, competition.id)
 
       // Feed event: anunciar creación del torneo
       await supabase.from('feed_events').insert({
@@ -377,12 +374,12 @@ export default function LeaguesClient({
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Competición</label>
                 <select
-                  value={competitionName}
-                  onChange={e => setCompetitionName(e.target.value)}
+                  value={competitionId}
+                  onChange={e => setCompetitionId(Number(e.target.value))}
                   className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 text-white"
                 >
-                  {AVAILABLE_COMPETITIONS.map(c => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
+                  {COMPETITIONS.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>

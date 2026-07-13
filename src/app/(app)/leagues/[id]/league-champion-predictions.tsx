@@ -30,13 +30,14 @@ export default function LeagueChampionPredictions({
       </h2>
 
       {!revealed ? (
-        <p className="text-xs text-slate-500 text-center py-2">🔒 Las predicciones se revelan cuando termine la final</p>
+        <p className="text-xs text-slate-500 text-center py-2">🔒 Las predicciones se revelan cuando termine la temporada</p>
       ) : (
         <div className="space-y-1.5">
           {entries.map(entry => {
             const isMe = entry.user_id === currentUserId
-            const hasPred = entry.champion_team && entry.finalist_team
-            const predictedTie = hasPred && entry.champion_score === entry.runner_up_score
+            const hasPred = !!entry.champion_team
+            const hasFinalDetails = !!entry.champion_team && !!entry.finalist_team
+            const predictedTie = hasFinalDetails && entry.champion_score === entry.runner_up_score
             const penaltyPickName = entry.penalty_winner === 'champion' ? entry.champion_team
               : entry.penalty_winner === 'runner_up' ? entry.finalist_team
               : null
@@ -55,7 +56,7 @@ export default function LeagueChampionPredictions({
                 <span className={`text-xs font-medium flex-1 truncate ${isMe ? 'text-yellow-400' : 'text-slate-300'}`}>
                   @{entry.username}
                 </span>
-                {hasPred ? (
+                {hasFinalDetails ? (
                   <div className="shrink-0 text-right">
                     <div className="flex items-center gap-1.5">
                       <TeamFlag name={entry.champion_team!} size="sm" showName={false} />
@@ -65,6 +66,11 @@ export default function LeagueChampionPredictions({
                     {predictedTie && penaltyPickName && (
                       <p className="text-[10px] text-slate-400 mt-0.5">🥅 {penaltyPickName}</p>
                     )}
+                  </div>
+                ) : hasPred ? (
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    <TeamFlag name={entry.champion_team!} size="sm" showName={false} />
+                    <span className="text-sm font-bold text-white">{entry.champion_team}</span>
                   </div>
                 ) : (
                   <span className="text-xs text-slate-500 shrink-0">Sin pronóstico</span>

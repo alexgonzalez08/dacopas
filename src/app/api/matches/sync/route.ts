@@ -1,12 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { sendPushToAllUsers, sendPushToUsers } from '@/lib/push-server'
+import { COMPETITIONS, getCompetitionFormat } from '@/lib/competitions'
 
 export const maxDuration = 60
 
 const API_FOOTBALL = 'https://v3.football.api-sports.io'
-const LEAGUE_ID = 1      // FIFA World Cup
-const SEASON = 2026
 
 const BROADCAST_TYPES = new Set(['goal_scored', 'goal_cancelled', 'match_finished', 'match_starting_soon', 'match_started'])
 
@@ -80,7 +79,9 @@ async function runSync(request: Request) {
     const awayScore = f.goals.away ?? null
     const penaltyHome = f.score?.penalty?.home ?? null
     const penaltyAway = f.score?.penalty?.away ?? null
-    const stage = mapStage(f.league.round ?? '')
+    const isRoundRobin = getCompetitionFormat(f.league.id) === 'round_robin'
+    const stage = isRoundRobin ? null : mapStage(f.league.round ?? '')
+    const matchday = isRoundRobin ? parseMatchday(f.league.round ?? '') : null
 
     const existing = existingMap.get(externalId)
 
@@ -164,20 +165,22 @@ async function runSync(request: Request) {
         away_team_flag: f.teams.away.logo ?? null,
         match_date: matchDate,
         stage,
-        group_name: parseGroup(f.league.round ?? ''),
+        matchday,
+        group_name: isRoundRobin ? null : parseGroup(f.league.round ?? ''),
         status,
         home_score: homeScore,
         away_score: awayScore,
         penalty_home: penaltyHome,
         penalty_away: penaltyAway,
         tournament: f.league.name ?? null,
-        competition_id: LEAGUE_ID,
+        competition_id: f.league.id ?? null,
         competition_name: f.league.name ?? 'FIFA World Cup 2026',
       })
     }
   }
 
-  // Descubrir e insertar fixtures nuevos de rounds knockout que aún no están en la DB
+  // Descubrir e insertar fixtures nuevos de rounds knockout que aún no están en la DB (solo formato knockout —
+  // en round_robin toda la temporada ya se conoce de entrada, se carga con scripts/import-competition.mjs)
   const KNOCKOUT_ROUNDS = ['Round of 16', 'Quarter-finals', 'Semi-finals', '3rd Place Final', 'Final']
   const PREV_STAGE: Record<string, string> = {
     'round_of_16': 'round_of_32',
@@ -194,16 +197,10 @@ async function runSync(request: Request) {
     .not('external_id', 'is', null)
   const existingExternalSet = new Set((existingExternalIds ?? []).map(m => String(m.external_id)))
 
-  // Cargar todas las posiciones del bracket actuales para calcular la posición de nuevos fixtures
-  const { data: allKnockoutMatches } = await supabase
-    .from('matches')
-    .select('stage, home_team, away_team, bracket_position, home_score, away_score, penalty_home, penalty_away, status')
-    .in('stage', ['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
-
-  // Mapa: stage → team_name → bracket_position (solo partidos finalizados)
-  function buildWinnerPositionMap(stage: string): Map<string, number> {
+  // Mapa: stage → team_name → bracket_position (solo partidos finalizados) — por competencia
+  function buildWinnerPositionMap(knockoutMatches: any[], stage: string): Map<string, number> {
     const map = new Map<string, number>()
-    for (const m of allKnockoutMatches ?? []) {
+    for (const m of knockoutMatches) {
       if (m.stage !== stage || m.bracket_position == null) continue
       const homeScore = m.home_score ?? 0
       const awayScore = m.away_score ?? 0
@@ -219,14 +216,14 @@ async function runSync(request: Request) {
   }
 
   // Calcula bracket_position para un fixture nuevo buscando las posiciones previas de sus equipos
-  function calcBracketPosition(homeTeam: string, awayTeam: string, stage: string): number | null {
+  function calcBracketPosition(knockoutMatches: any[], homeTeam: string, awayTeam: string, stage: string): number | null {
     if (stage === 'third_place' || stage === 'final') {
       // Solo hay 1 partido en el centro — posición fija
       return 1
     }
     const prevStage = PREV_STAGE[stage]
     if (!prevStage) return null
-    const winnerMap = buildWinnerPositionMap(prevStage)
+    const winnerMap = buildWinnerPositionMap(knockoutMatches, prevStage)
     const homePos = winnerMap.get(homeTeam.toLowerCase())
     const awayPos = winnerMap.get(awayTeam.toLowerCase())
     const pos = homePos ?? awayPos
@@ -234,43 +231,52 @@ async function runSync(request: Request) {
     return Math.ceil(pos / 2)
   }
 
-  for (const round of KNOCKOUT_ROUNDS) {
-    try {
-      const res = await fetch(`${API_FOOTBALL}/fixtures?league=${LEAGUE_ID}&season=${SEASON}&round=${encodeURIComponent(round)}`, {
-        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
-      })
-      if (!res.ok) continue
-      const json = await res.json()
-      const roundFixtures: any[] = json.response ?? []
-      for (const f of roundFixtures) {
-        const externalId = String(f.fixture.id)
-        if (existingExternalSet.has(externalId)) continue
-        const stage = mapStage(f.league.round ?? '')
-        const bracketPosition = calcBracketPosition(f.teams.home.name, f.teams.away.name, stage)
-        await supabase.from('matches').insert({
-          external_id: externalId,
-          home_team: f.teams.home.name,
-          away_team: f.teams.away.name,
-          home_team_flag: f.teams.home.logo ?? null,
-          away_team_flag: f.teams.away.logo ?? null,
-          match_date: f.fixture.date,
-          stage,
-          bracket_position: bracketPosition,
-          group_name: parseGroup(f.league.round ?? ''),
-          status: mapStatus(f.fixture.status.short),
-          home_score: f.goals.home ?? null,
-          away_score: f.goals.away ?? null,
-          penalty_home: f.score?.penalty?.home ?? null,
-          penalty_away: f.score?.penalty?.away ?? null,
-          tournament: f.league.name ?? null,
-          competition_id: LEAGUE_ID,
-          competition_name: 'FIFA World Cup 2026',
+  for (const competition of COMPETITIONS.filter(c => c.format === 'knockout')) {
+    // Posiciones del bracket actuales de esta competencia, para calcular la posición de nuevos fixtures
+    const { data: allKnockoutMatches } = await supabase
+      .from('matches')
+      .select('stage, home_team, away_team, bracket_position, home_score, away_score, penalty_home, penalty_away, status')
+      .eq('competition_id', competition.id)
+      .in('stage', ['round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final'])
+
+    for (const round of KNOCKOUT_ROUNDS) {
+      try {
+        const res = await fetch(`${API_FOOTBALL}/fixtures?league=${competition.apiLeagueId}&season=${competition.season}&round=${encodeURIComponent(round)}`, {
+          headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
         })
-        newFixturesInserted++
-        existingExternalSet.add(externalId)
+        if (!res.ok) continue
+        const json = await res.json()
+        const roundFixtures: any[] = json.response ?? []
+        for (const f of roundFixtures) {
+          const externalId = String(f.fixture.id)
+          if (existingExternalSet.has(externalId)) continue
+          const stage = mapStage(f.league.round ?? '')
+          const bracketPosition = calcBracketPosition(allKnockoutMatches ?? [], f.teams.home.name, f.teams.away.name, stage)
+          await supabase.from('matches').insert({
+            external_id: externalId,
+            home_team: f.teams.home.name,
+            away_team: f.teams.away.name,
+            home_team_flag: f.teams.home.logo ?? null,
+            away_team_flag: f.teams.away.logo ?? null,
+            match_date: f.fixture.date,
+            stage,
+            bracket_position: bracketPosition,
+            group_name: parseGroup(f.league.round ?? ''),
+            status: mapStatus(f.fixture.status.short),
+            home_score: f.goals.home ?? null,
+            away_score: f.goals.away ?? null,
+            penalty_home: f.score?.penalty?.home ?? null,
+            penalty_away: f.score?.penalty?.away ?? null,
+            tournament: f.league.name ?? null,
+            competition_id: competition.id,
+            competition_name: competition.name,
+          })
+          newFixturesInserted++
+          existingExternalSet.add(externalId)
+        }
+      } catch (err) {
+        console.warn(`Error fetching round ${round} for ${competition.name}:`, err)
       }
-    } catch (err) {
-      console.warn(`Error fetching round ${round}:`, err)
     }
   }
 
@@ -455,4 +461,10 @@ function mapStatus(short: string): string {
 function parseGroup(round: string): string | null {
   const match = round.match(/Group\s+([A-Z])\b(?!.*[a-z])/i)
   return match ? match[1].toUpperCase() : null
+}
+
+// "Regular Season - 15" → 15 (formato round_robin, sin fases/grupos)
+function parseMatchday(round: string): number | null {
+  const match = round.match(/(\d+)\s*$/)
+  return match ? Number(match[1]) : null
 }

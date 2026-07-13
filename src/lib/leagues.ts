@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { isChampionSupported } from '@/lib/competitions'
 
 function generateCode(length = 6): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -15,7 +16,7 @@ async function ensureProfile(userId: string) {
   }, { onConflict: 'id', ignoreDuplicates: true })
 }
 
-export async function createLeague(name: string, userId: string, imageUrl?: string, description?: string, competitionName = 'FIFA World Cup') {
+export async function createLeague(name: string, userId: string, imageUrl?: string, description?: string, competitionName = 'FIFA World Cup', competitionId: number | null = null) {
   const supabase = createClient()
   await ensureProfile(userId)
   const code = generateCode()
@@ -27,6 +28,8 @@ export async function createLeague(name: string, userId: string, imageUrl?: stri
       code,
       created_by: userId,
       competition_name: competitionName,
+      competition_id: competitionId,
+      ...(isChampionSupported(competitionId) ? {} : { champion_prediction_enabled: false }),
       ...(imageUrl ? { image_url: imageUrl } : {}),
       ...(description ? { description } : {}),
     })

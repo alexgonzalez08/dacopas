@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import { Match, Prediction, ChampionPrediction } from '@/types'
@@ -10,6 +11,8 @@ import PredictionsInfoModal from '@/components/predictions-info-modal'
 import ChampionPredictionCard from '@/components/champion-prediction-card'
 import UnsavedChangesGuard from '@/components/unsaved-changes-guard'
 import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
+import { getCompetitionFormat } from '@/lib/competitions'
+import { calcStandings } from '@/lib/standings'
 
 type MatchWithPrediction = Match & { prediction: Prediction | null }
 
@@ -28,13 +31,21 @@ export default function PredictionsClient({
   matches,
   predictionsInfoSeen,
   championPredictions,
+  hasCompetitions = true,
+  championEnabledCompetitionIds = [],
 }: {
   userId: string
   matches: MatchWithPrediction[]
   predictionsInfoSeen: boolean
   championPredictions: ChampionPrediction[]
+  hasCompetitions?: boolean
+  championEnabledCompetitionIds?: number[]
 }) {
   const { navigate } = useUnsavedChanges()
+  const searchParams = useSearchParams()
+  // Al venir desde el Feed (tarjeta de "hay partidos de X"), abrir directo esa competencia y fecha
+  const targetCompetition = searchParams.get('competition')
+  const targetMatchday = searchParams.get('matchday')
   const [, setTick] = useState(0)
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 60_000)
@@ -91,7 +102,7 @@ export default function PredictionsClient({
       setErrors(e => ({ ...e, [match.id]: 'Ingresá un resultado válido' }))
       return
     }
-    const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+    const isKnockout = !!match.stage && KNOCKOUT_STAGES.has(match.stage)
     const isDraw = home === away
     const pw = isKnockout && isDraw ? penaltyWinner[match.id] : null
     if (isKnockout && isDraw && !pw) {
@@ -116,7 +127,8 @@ export default function PredictionsClient({
 
   function getGroupLabel(match: MatchWithPrediction) {
     if (match.group_name) return `Grupo ${match.group_name}`
-    return STAGE_LABELS[match.stage] ?? match.stage
+    if (match.matchday != null) return `Fecha ${match.matchday}`
+    return (match.stage && STAGE_LABELS[match.stage]) ?? match.stage ?? ''
   }
 
   const STAGE_ORDER = ['group', 'round_of_32', 'round_of_16', 'quarter', 'semi', 'third_place', 'final']
@@ -153,26 +165,61 @@ export default function PredictionsClient({
     return []
   }
 
+  // Round_robin: todos los equipos que ya tengan al menos un partido cargado (no hay fases)
+  function getAllTeamsForCompetition(compMatches: MatchWithPrediction[]) {
+    const teamMap = new Map<string, string | null>()
+    compMatches.forEach(m => {
+      teamMap.set(m.home_team, m.home_team_flag)
+      teamMap.set(m.away_team, m.away_team_flag)
+    })
+    return [...teamMap.entries()].map(([name, flag]) => ({ name, flag }))
+  }
+
   // Competición activa: la que tiene partidos hoy o futuros
   const activeCompetition = competitionList.find(c =>
     byCompetition[c].some(m => matchDay(m.match_date) >= todayStr)
   ) ?? competitionList[competitionList.length - 1]
 
-  const [openCompetitions, setOpenCompetitions] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(competitionList.map(c => [c, c === activeCompetition]))
-  )
+  const [openCompetitions, setOpenCompetitions] = useState<Record<string, boolean>>(() => {
+    if (targetCompetition && competitionList.includes(targetCompetition)) {
+      return Object.fromEntries(competitionList.map(c => [c, c === targetCompetition]))
+    }
+    return Object.fromEntries(competitionList.map(c => [c, c === activeCompetition]))
+  })
   function toggleCompetition(competition: string) {
     setOpenCompetitions(v => ({ ...v, [competition]: !v[competition] }))
   }
 
-  // Helpers de fases por competición
+  // Helpers de fases por competición (round_robin agrupa por fecha/matchday, no por stage)
   function getStagesForCompetition(compMatches: MatchWithPrediction[]) {
+    const isRoundRobin = getCompetitionFormat(compMatches[0]?.competition_id ?? null) === 'round_robin'
+    if (isRoundRobin) {
+      const byStage = compMatches.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
+        const key = m.matchday != null ? `md-${m.matchday}` : 'sin-fecha'
+        if (!acc[key]) acc[key] = []
+        acc[key].push(m)
+        return acc
+      }, {})
+      const stages = Object.keys(byStage).sort((a, b) => {
+        const na = a === 'sin-fecha' ? Infinity : Number(a.replace('md-', ''))
+        const nb = b === 'sin-fecha' ? Infinity : Number(b.replace('md-', ''))
+        return na - nb
+      })
+      return { byStage, stages }
+    }
     const byStage = compMatches.reduce<Record<string, MatchWithPrediction[]>>((acc, m) => {
-      if (!acc[m.stage]) acc[m.stage] = []
-      acc[m.stage].push(m)
+      const key = m.stage ?? 'group'
+      if (!acc[key]) acc[key] = []
+      acc[key].push(m)
       return acc
     }, {})
     return { byStage, stages: STAGE_ORDER.filter(s => byStage[s]) }
+  }
+
+  function getStageLabel(stage: string) {
+    if (stage.startsWith('md-')) return `Fecha ${stage.replace('md-', '')}`
+    if (stage === 'sin-fecha') return 'Sin fecha asignada'
+    return STAGE_LABELS[stage] ?? stage
   }
 
   function getActiveStage(stages: string[], byStage: Record<string, MatchWithPrediction[]>) {
@@ -185,6 +232,11 @@ export default function PredictionsClient({
     const init: Record<string, boolean> = {}
     competitionList.forEach(c => {
       const { byStage, stages } = getStagesForCompetition(byCompetition[c])
+      if (c === targetCompetition && targetMatchday) {
+        const targetStage = `md-${targetMatchday}`
+        stages.forEach(s => { init[`${c}:${s}`] = s === targetStage })
+        return
+      }
       const active = getActiveStage(stages, byStage)
       stages.forEach(s => { init[`${c}:${s}`] = s === active })
     })
@@ -246,11 +298,28 @@ export default function PredictionsClient({
         </Link>
       </div>
 
-      {competitionList.map(competition => {
+      {!hasCompetitions && (
+        <div className="bg-slate-800 rounded-2xl p-8 text-center space-y-3">
+          <p className="text-slate-300 font-medium">Todavía no estás en ningún torneo.</p>
+          <p className="text-sm text-slate-500">Creá o unite a un torneo para empezar a predecir partidos.</p>
+          <Link href="/leagues/new" className="inline-block mt-2 px-4 py-2 rounded-lg bg-yellow-500 text-slate-900 font-semibold text-sm hover:bg-yellow-400 transition">
+            Ir a Torneos
+          </Link>
+        </div>
+      )}
+
+      {hasCompetitions && competitionList.map(competition => {
         const { byStage, stages } = getStagesForCompetition(byCompetition[competition])
         const isCompOpen = openCompetitions[competition]
         const totalComp = byCompetition[competition].length
         const predComp = byCompetition[competition].filter(m => hasPrediction[m.id]).length
+        const compCompetitionId = byCompetition[competition][0]?.competition_id ?? null
+        const compFormat = getCompetitionFormat(compCompetitionId)
+        const compStandings = compFormat === 'round_robin' ? calcStandings(byCompetition[competition]) : null
+        const seasonFinished = compFormat === 'round_robin' && totalComp > 0 && byCompetition[competition].every(m => m.status === 'finished')
+        const standingsChampion = compStandings && compStandings.length > 0 ? compStandings[0].team : null
+        // La tarjeta solo aparece si al menos uno de mis torneos de esta competencia tiene la predicción de campeón habilitada
+        const championEnabledForComp = compCompetitionId != null && championEnabledCompetitionIds.includes(compCompetitionId)
         return (
         <div key={competition} className="bg-slate-800/50 rounded-2xl overflow-hidden">
           <button
@@ -265,13 +334,18 @@ export default function PredictionsClient({
           </button>
 
           {isCompOpen && <div className="border-t border-slate-700/50 px-0 pt-3 pb-3 space-y-3">
+          {championEnabledForComp && (
           <ChampionPredictionCard
             userId={userId}
             competitionName={competition}
-            teams={getTeamsForCompetition(byCompetition[competition])}
+            format={compFormat}
+            teams={compFormat === 'round_robin' ? getAllTeamsForCompetition(byCompetition[competition]) : getTeamsForCompetition(byCompetition[competition])}
             finalMatch={byStage['final']?.[0] ?? null}
+            seasonFinished={seasonFinished}
+            standingsChampion={standingsChampion}
             prediction={championPredMap.get(competition) ?? null}
           />
+          )}
           {stages.map(stage => {
             const stageMatches = byStage[stage]
             const stageKey = `${competition}:${stage}`
@@ -287,7 +361,7 @@ export default function PredictionsClient({
               >
                 <div className="flex items-center gap-3">
                   <h2 className="text-sm font-semibold text-slate-200 group-hover:text-white transition">
-                    {STAGE_LABELS[stage] ?? stage}
+                    {getStageLabel(stage)}
                   </h2>
                   <span className="text-xs text-slate-500">{hasPred}/{total}</span>
                   {done === total && <span className="text-xs text-green-500 font-medium">✓ Finalizada</span>}
@@ -325,7 +399,7 @@ export default function PredictionsClient({
               const locked = isPredictionLocked(match)
               const s = scores[match.id] ?? { home: '', away: '' }
               const c = committed[match.id] ?? { home: '', away: '' }
-              const isKnockout = KNOCKOUT_STAGES.has(match.stage)
+              const isKnockout = !!match.stage && KNOCKOUT_STAGES.has(match.stage)
               const homeNum = parseInt(s.home)
               const awayNum = parseInt(s.away)
               const showPenalty = isKnockout && !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum

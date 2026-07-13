@@ -1,21 +1,11 @@
-import { calcStandings, StandingMatch } from '@/lib/standings'
+import { Standing } from '@/lib/standings'
 
-type Match = StandingMatch
-
-export default function GroupStandings({
-  groupName,
-  matches,
-  highlightTeams,
-}: {
-  groupName: string
-  matches: Match[]
-  highlightTeams: string[]
-}) {
-  const standings = calcStandings(matches)
+export default function LeagueStandings({ standings, highlightTeams = [] }: { standings: Standing[]; highlightTeams?: string[] }) {
+  if (standings.length === 0) return null
 
   return (
     <div className="bg-slate-800 rounded-2xl p-5">
-      <h2 className="font-semibold mb-4 text-slate-300">{groupName ? `Tabla — Grupo ${groupName}` : 'Fase de Grupos'}</h2>
+      <h2 className="font-semibold mb-4 text-slate-300">Tabla de posiciones</h2>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -37,10 +27,7 @@ export default function GroupStandings({
                 className={`border-t border-slate-700 ${highlightTeams.includes(s.team) ? 'text-white' : 'text-slate-400'}`}
               >
                 <td className="py-2 text-slate-500 text-xs">{i + 1}</td>
-                <td className="py-2 font-medium">
-                  {i < 2 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-2 mb-0.5" />}
-                  {s.team}
-                </td>
+                <td className="py-2 font-medium">{s.team}</td>
                 <td className="py-2 text-center">{s.played}</td>
                 <td className="py-2 text-center">{s.won}</td>
                 <td className="py-2 text-center">{s.drawn}</td>
@@ -51,10 +38,6 @@ export default function GroupStandings({
             ))}
           </tbody>
         </table>
-        <p className="text-xs text-slate-500 mt-2">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 mr-1" />
-          Clasifican a octavos
-        </p>
       </div>
     </div>
   )

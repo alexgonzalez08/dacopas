@@ -58,3 +58,41 @@ export async function upsertChampionPrediction(
     await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
   }
 }
+
+// Variante simplificada para competencias round_robin: solo se elige el equipo campeón
+// (no hay finalista, marcador ni penales — no hay "final" en una liga de todos contra todos)
+export async function upsertChampionOnly(
+  userId: string,
+  competitionName: string,
+  championTeam: string,
+  retries = 3
+) {
+  const supabase = createClient()
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const { data, error } = await supabase
+      .from('champion_predictions')
+      .upsert(
+        {
+          user_id: userId,
+          competition_name: competitionName,
+          champion_team: championTeam,
+          finalist_team: null,
+          champion_score: null,
+          runner_up_score: null,
+          penalty_winner: null,
+          status: 'draft',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,competition_name' }
+      )
+      .select()
+      .single()
+
+    if (!error) return data
+
+    const isLast = attempt === retries - 1
+    if (isLast) throw error
+    await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
+  }
+}

@@ -31,6 +31,16 @@ type MatchPost = {
   sortDate: Date
 }
 
+type CompetitionMatchdayPost = {
+  kind: 'competition_matchday'
+  id: string
+  competitionName: string
+  matchCount: number
+  matchday: number | null
+  nextMatchDate: string
+  sortDate: Date
+}
+
 type ActivityPost = {
   kind: 'activity'
   id: string
@@ -71,7 +81,7 @@ type UserPostItem = {
   sortDate: Date
 }
 
-export type FeedItem = MatchPost | ActivityPost | UserPostItem
+export type FeedItem = MatchPost | CompetitionMatchdayPost | ActivityPost | UserPostItem
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -464,6 +474,40 @@ function LeagueCreatePost({ item, userId, now }: { item: ActivityPost; userId: s
   )
 }
 
+// ─── Resumen de fecha (competencias todos-contra-todos: muchos partidos a la vez) ────
+
+function CompetitionMatchdayPost({ item, now }: { item: CompetitionMatchdayPost; now: string }) {
+  const matchDate = new Date(item.nextMatchDate)
+  const { label, accent } = getUrgencyLabel(matchDate, now)
+  const href = `/predictions?competition=${encodeURIComponent(item.competitionName)}${item.matchday != null ? `&matchday=${item.matchday}` : ''}`
+
+  return (
+    <Link href={href} className="block bg-slate-800 rounded-2xl overflow-hidden hover:bg-slate-750 transition">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+        <div className="w-9 h-9 rounded-full bg-yellow-500/20 flex items-center justify-center shrink-0">
+          <span className="text-lg">⚽</span>
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-white">Dacopas</p>
+          <p className={`text-xs ${accent}`}>{label}</p>
+        </div>
+      </div>
+      <div className="px-4 pb-4">
+        <div className="bg-slate-700/50 rounded-xl p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-white">
+              Hay {item.matchCount} partido{item.matchCount === 1 ? '' : 's'} de {item.competitionName}
+              {item.matchday != null && <span className="text-slate-400 font-normal"> · Fecha {item.matchday}</span>}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">¡No olvides registrar tus pronósticos!</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-500 shrink-0" />
+        </div>
+      </div>
+    </Link>
+  )
+}
+
 // ─── Feed principal ───────────────────────────────────────────────────────────
 
 export default function Feed({
@@ -508,6 +552,7 @@ export default function Feed({
     <div className="space-y-3">
       {items.map(item => {
         if (item.kind === 'match') return <MatchPost key={`match-${item.id}`} item={item} userId={userId} now={serverNow} onDirtyChange={handleDirtyChange} onNavigate={handleNavigate} />
+        if (item.kind === 'competition_matchday') return <CompetitionMatchdayPost key={`matchday-${item.id}`} item={item} now={serverNow} />
         if (item.kind === 'user_post') {
           if ((item as any).post_type === 'stats') return (
             <StatsPostCard
