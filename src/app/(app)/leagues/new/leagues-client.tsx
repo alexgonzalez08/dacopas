@@ -3,13 +3,13 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { createLeague, joinLeague, leaveLeague } from '@/lib/leagues'
-import { Trophy, Copy, Check, ChevronRight, ChevronDown, LogOut, X, Loader2, Plus, Hash, ImageIcon } from 'lucide-react'
+import { Trophy, Copy, Check, ChevronRight, ChevronDown, LogOut, X, Loader2, Plus, Hash, ImageIcon, Globe, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { sendPushNotification } from '@/lib/push'
 import LeaguesInfoModal from '@/components/leagues-info-modal'
 import { COMPETITIONS } from '@/lib/competitions'
 
-type League = { id: string; name: string; code: string; role: string; image_url?: string | null; competition_name?: string | null; ended_at?: string | null }
+type League = { id: string; name: string; code: string; role: string; image_url?: string | null; competition_name?: string | null; ended_at?: string | null; is_public?: boolean }
 
 export default function LeaguesClient({
   leagues: initial,
@@ -104,6 +104,7 @@ export default function LeaguesClient({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [competitionId, setCompetitionId] = useState(COMPETITIONS[0].id)
+  const [isPublic, setIsPublic] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -123,7 +124,7 @@ export default function LeaguesClient({
 
   function closeModal() {
     setModal(null)
-    setName(''); setDescription(''); setCompetitionId(COMPETITIONS[0].id); setImageFile(null); setImagePreview(null); setCreateError('')
+    setName(''); setDescription(''); setCompetitionId(COMPETITIONS[0].id); setIsPublic(false); setImageFile(null); setImagePreview(null); setCreateError('')
     setCode(''); setJoinError('')
   }
 
@@ -156,7 +157,7 @@ export default function LeaguesClient({
       }
 
       const competition = COMPETITIONS.find(c => c.id === competitionId)!
-      const league = await createLeague(name, user!.id, imageUrl, description || undefined, competition.name, competition.id)
+      const league = await createLeague(name, user!.id, imageUrl, description || undefined, competition.name, competition.id, isPublic)
 
       // Feed event: anunciar creación del torneo
       await supabase.from('feed_events').insert({
@@ -327,7 +328,12 @@ export default function LeaguesClient({
                               href={`/leagues/${league.id}`}
                               className="flex-1 flex items-center justify-between px-4 py-3 min-w-0"
                             >
-                              <span className="text-sm font-medium truncate">{league.name}</span>
+                              <span className="flex items-center gap-1.5 min-w-0">
+                                {league.is_public
+                                  ? <Globe className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                  : <Lock className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
+                                <span className="text-sm font-medium truncate">{league.name}</span>
+                              </span>
                               <div className="flex items-center gap-2 shrink-0">
                                 {!ended && totalNotifs > 0 && (
                                   <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
@@ -413,6 +419,29 @@ export default function LeaguesClient({
                   rows={3} maxLength={300}
                   className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 resize-none text-sm"
                 />
+              </div>
+
+              <div className="flex items-center justify-between gap-3 px-1">
+                <div className="flex items-start gap-2.5">
+                  {isPublic ? <Globe className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" /> : <Lock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium text-white">{isPublic ? 'Torneo público' : 'Torneo privado'}</p>
+                    <p className="text-xs text-slate-500">
+                      {isPublic
+                        ? 'Cualquiera con el link se une sin pedir permiso'
+                        : 'Quien entre por el link debe solicitar unirse'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isPublic}
+                  onClick={() => setIsPublic(v => !v)}
+                  className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${isPublic ? 'bg-yellow-500' : 'bg-slate-700'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isPublic ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
               </div>
 
               {createError && <p className="text-red-400 text-sm">{createError}</p>}

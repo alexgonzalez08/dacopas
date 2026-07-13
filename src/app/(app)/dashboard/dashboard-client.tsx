@@ -5,6 +5,7 @@ import Feed, { FeedItem } from '@/components/feed'
 import CreatePost from '@/components/create-post'
 import WelcomeCard from '@/components/welcome-card'
 import SuggestedFriendsCarousel from '@/components/suggested-friends-carousel'
+import PublicLeaguesCarousel from '@/components/public-leagues-carousel'
 import ChampionPredictionCard from '@/components/champion-prediction-card'
 import { initPushNotifications } from '@/lib/push'
 import { Bell, X } from 'lucide-react'
@@ -12,6 +13,7 @@ import { ChampionPrediction } from '@/types'
 import { ChampionMatchLike } from '@/lib/champion-teams'
 
 type League = { id: string; name: string }
+type PublicLeague = { id: string; name: string; image_url: string | null; competition_name: string | null }
 type SuggestedUser = { id: string; username: string; full_name: string | null; avatar_url: string | null; shared_leagues: string[] }
 type ChampionPredictionProps = {
   competitionName: string
@@ -31,6 +33,7 @@ export default function DashboardClient({
   showWelcome,
   suggestedFriends,
   championPredictionProps,
+  publicLeagues,
 }: {
   userId: string
   username: string
@@ -42,6 +45,7 @@ export default function DashboardClient({
   showWelcome: boolean
   suggestedFriends: SuggestedUser[]
   championPredictionProps: ChampionPredictionProps | null
+  publicLeagues: PublicLeague[]
 }) {
   const [feed, setFeed] = useState<FeedItem[]>(() => {
     try {
@@ -142,6 +146,7 @@ export default function DashboardClient({
 
       <CreatePost userId={userId} username={username} avatarUrl={avatarUrl} leagues={leagues} onPost={handleNewPost} />
       <SuggestedFriendsCarousel userId={userId} suggestions={suggestedFriends} />
+      <PublicLeaguesCarousel leagues={publicLeagues} />
       {championPredictionProps && (
         <ChampionPredictionCard
           userId={userId}

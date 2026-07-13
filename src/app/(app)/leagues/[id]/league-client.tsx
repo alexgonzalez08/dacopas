@@ -15,6 +15,7 @@ import { es } from 'date-fns/locale'
 import MatchTime from '@/components/match-time'
 import { CompetitionFormat } from '@/lib/competitions'
 import ChampionPredictionSettings from './champion-prediction-settings'
+import LeagueVisibilitySettings from './league-visibility-settings'
 
 type MatchPrediction = {
   user_id: string
@@ -217,6 +218,7 @@ export default function LeagueClient({
   championSupported = true,
   championLockPassed = false,
   ended = false,
+  isPublic = false,
 }: {
   leagueId: string
   leagueName: string
@@ -239,6 +241,7 @@ export default function LeagueClient({
   championSupported?: boolean
   championLockPassed?: boolean
   ended?: boolean
+  isPublic?: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -714,6 +717,8 @@ export default function LeagueClient({
             )}
 
             {/* Configuración del torneo — solo admin */}
+            <LeagueVisibilitySettings leagueId={leagueId} initialIsPublic={isPublic} />
+
             <ChampionPredictionSettings
               leagueId={leagueId}
               isWorldCup={isWorldCup}

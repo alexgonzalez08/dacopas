@@ -31,6 +31,17 @@ export default async function DashboardPage() {
     .is('left_at', null)
 
   const leagueIds = (memberships ?? []).map(m => m.league_id)
+
+  // Torneos públicos para descubrir en el feed — requiere admin client porque RLS
+  // solo permite leer torneos de los que ya sos miembro
+  const { data: publicLeagues } = await supabaseAdmin
+    .from('leagues')
+    .select('id, name, image_url, competition_name')
+    .eq('is_public', true)
+    .is('ended_at', null)
+    .not('id', 'in', `(${leagueIds.length > 0 ? leagueIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
+    .order('created_at', { ascending: false })
+    .limit(15)
   const activeLeagueIds = (memberships ?? [])
     .filter(m => !(m.leagues as any)?.ended_at)
     .map(m => m.league_id)
@@ -250,6 +261,7 @@ export default async function DashboardPage() {
       hasLeagues={leagueIds.length > 0}
       showWelcome={!profile?.welcome_seen}
       suggestedFriends={suggestedFriends}
+      publicLeagues={publicLeagues ?? []}
       championPredictionProps={activeCompetition ? {
         competitionName: activeCompetition,
         teams: getTeamsForCompetition(bracketMatches ?? [], activeCompetition),

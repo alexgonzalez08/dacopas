@@ -7,12 +7,17 @@ const STEPS = [
   {
     emoji: '🏆',
     title: '¿Qué son los Torneos?',
-    text: 'Los Torneos son grupos privados donde competís con tus amigos, familia o compañeros de trabajo prediciendo los resultados del Mundial 2026.',
+    text: 'Los Torneos son grupos donde competís con tus amigos, familia o compañeros de trabajo prediciendo resultados deportivos. Podés armarlos privados o públicos, como prefieras.',
   },
   {
     emoji: '➕',
     title: 'Crear o unirse',
     text: 'Podés crear tu propio torneo y compartir el link o código de invitación, o unirte a uno existente con el código que te dieron.',
+  },
+  {
+    emoji: '⚙️',
+    title: 'Configurá tu torneo',
+    text: 'Al crear un torneo elegís la competencia (Mundial, Premier League, La Liga, Serie A y más), si querés activar la predicción de campeón, y si el torneo es público (cualquiera con el link se une) o privado (requiere que un admin apruebe la solicitud).',
   },
   {
     emoji: '📊',
@@ -22,12 +27,12 @@ const STEPS = [
   {
     emoji: '🥅',
     title: 'Penales en eliminatorias',
-    text: 'En partidos de Ronda de 32 en adelante, si predecís empate debés elegir quién gana en penales.\n\nMarcador exacto + penales correctos → 5 pts\nSolo penales correctos → 3 pts\nMarcador exacto + penales incorrectos → 3 pts',
+    text: 'En partidos de ronda eliminatoria, si predecís empate debés elegir quién gana en penales.\n\nMarcador exacto + penales correctos → 5 pts\nSolo penales correctos → 3 pts\nMarcador exacto + penales incorrectos → 3 pts',
   },
   {
     emoji: '🛡️',
     title: 'Solicitudes de ingreso',
-    text: 'Por seguridad, para unirte a un torneo vía link el administrador debe aprobar tu solicitud. Si te unís con código, el ingreso es inmediato.',
+    text: 'En torneos privados, para unirte vía link el administrador debe aprobar tu solicitud. En torneos públicos o uniéndote con código, el ingreso es inmediato.',
   },
   {
     emoji: '📄',

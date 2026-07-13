@@ -10,7 +10,7 @@ export default async function LeaguesPage() {
   const [{ data: memberships }, { data: profile }] = await Promise.all([
     supabase
       .from('league_members')
-      .select('role, leagues(id, name, code, image_url, ended_at, competition_name)')
+      .select('role, leagues(id, name, code, image_url, ended_at, competition_name, is_public)')
       .eq('user_id', user!.id)
       .is('left_at', null),
     supabase

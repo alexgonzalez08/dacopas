@@ -15,13 +15,59 @@ export async function POST(req: NextRequest) {
   if (!leagueId || !leagueName) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
   const { data: league } = await adminClient
-    .from('leagues').select('ended_at').eq('id', leagueId).single()
+    .from('leagues').select('ended_at, is_public').eq('id', leagueId).single()
   if (league?.ended_at) {
     return NextResponse.json({ error: 'Este torneo ya finalizó y no admite nuevos participantes' }, { status: 400 })
   }
 
   const { data: profile } = await adminClient
     .from('profiles').select('username').eq('id', user.id).single()
+
+  if (league?.is_public) {
+    // Torneo público: unión directa, sin solicitud de aprobación
+    const { data: existing } = await adminClient
+      .from('league_members')
+      .select('user_id, left_at')
+      .eq('league_id', leagueId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (existing) {
+      if (existing.left_at) {
+        await adminClient
+          .from('league_members')
+          .update({ left_at: null, role: 'participant' })
+          .eq('league_id', leagueId)
+          .eq('user_id', user.id)
+      }
+    } else {
+      await adminClient
+        .from('league_members')
+        .insert({ league_id: leagueId, user_id: user.id, role: 'participant' })
+    }
+
+    const { data: admins } = await adminClient
+      .from('league_members')
+      .select('user_id')
+      .eq('league_id', leagueId)
+      .eq('role', 'admin')
+      .is('left_at', null)
+
+    await Promise.all((admins ?? []).map(a =>
+      adminClient.from('notifications').insert({
+        user_id: a.user_id,
+        from_user_id: user.id,
+        type: 'member_joined',
+        metadata: {
+          league_id: leagueId,
+          league_name: leagueName,
+          username: profile?.username ?? '',
+        },
+      })
+    ))
+
+    return NextResponse.json({ joined: true })
+  }
 
   // Obtener admins con service role (bypass RLS)
   const { data: admins } = await adminClient

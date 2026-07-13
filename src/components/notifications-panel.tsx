@@ -53,6 +53,7 @@ function NotificationIcon({ type }: { type: string }) {
   if (type === 'mod_invite_approved') return wrap('bg-green-500/20', <Check className="w-4 h-4 text-green-400" />)
   if (type === 'mod_invite_declined') return wrap('bg-red-500/20', <X className="w-4 h-4 text-red-400" />)
   if (type === 'member_left') return wrap('bg-slate-700', <LogOut className="w-4 h-4 text-slate-400" />)
+  if (type === 'member_joined') return wrap('bg-green-500/20', <UserCheck className="w-4 h-4 text-green-400" />)
   if (type === 'league_created') return wrap('bg-yellow-500/20', <Trophy className="w-4 h-4 text-yellow-400" />)
   if (type === 'league_ended') return wrap('bg-yellow-500/30', <Trophy className="w-4 h-4 text-yellow-300" />)
   if (type === 'join_request') return wrap('bg-purple-500/20', <Users className="w-4 h-4 text-purple-400" />)
@@ -484,6 +485,14 @@ function NotificationItem({
           <p className="text-sm text-slate-200">
             <span className="font-semibold text-white">@{notif.metadata?.username}</span>
             <span className="text-slate-400"> abandonó el torneo </span>
+            <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
+          </p>
+        )}
+
+        {notif.type === 'member_joined' && (
+          <p className="text-sm text-slate-200">
+            <span className="font-semibold text-white">@{notif.metadata?.username}</span>
+            <span className="text-slate-400"> se unió a tu torneo público </span>
             <span className="font-semibold text-white">"{notif.metadata?.league_name}"</span>
           </p>
         )}
