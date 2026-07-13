@@ -216,6 +216,7 @@ export default function LeagueClient({
   isWorldCup = false,
   championSupported = true,
   championLockPassed = false,
+  ended = false,
 }: {
   leagueId: string
   leagueName: string
@@ -237,6 +238,7 @@ export default function LeagueClient({
   isWorldCup?: boolean
   championSupported?: boolean
   championLockPassed?: boolean
+  ended?: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -740,7 +742,7 @@ export default function LeagueClient({
                         linkable
                       />
                     </div>
-                    {m.user_id === userId ? (
+                    {m.user_id === userId || ended ? (
                       <RoleBadge role={m.role} />
                     ) : (
                       <div className="flex items-center gap-2 shrink-0">
@@ -797,6 +799,7 @@ export default function LeagueClient({
             members={memberList}
             leagueName={leagueName}
             leaguesInfoSeen={leaguesInfoSeen}
+            ended={ended}
           />
         )}
 
@@ -897,6 +900,7 @@ export default function LeagueClient({
           members={memberList}
           leagueName={leagueName}
           leaguesInfoSeen={leaguesInfoSeen}
+          ended={ended}
         />
       )}
 

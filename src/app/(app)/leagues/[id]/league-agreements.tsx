@@ -73,6 +73,7 @@ export default function LeagueAgreements({
   members,
   leagueName,
   leaguesInfoSeen = false,
+  ended = false,
 }: {
   leagueId: string
   userId: string
@@ -80,6 +81,7 @@ export default function LeagueAgreements({
   members: Member[]
   leagueName: string
   leaguesInfoSeen?: boolean
+  ended?: boolean
 }) {
   const [agreements, setAgreements] = useState<Agreement[]>([])
   const [myVoteMap, setMyVoteMap] = useState<Map<string, Vote>>(new Map())
@@ -421,7 +423,7 @@ export default function LeagueAgreements({
         </div>
       )}
 
-      {isAdmin && (
+      {isAdmin && !ended && (
         <button
           onClick={openCreate}
           className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-slate-600 rounded-xl text-sm text-slate-400 hover:text-white hover:border-slate-400 transition"
@@ -434,7 +436,7 @@ export default function LeagueAgreements({
         <div className="text-center py-10 text-slate-500">
           <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
           <p className="text-sm">Sin acuerdos todavía.</p>
-          {isAdmin && <p className="text-xs mt-1">Creá el primero para que los miembros lo firmen.</p>}
+          {isAdmin && !ended && <p className="text-xs mt-1">Creá el primero para que los miembros lo firmen.</p>}
         </div>
       ) : (
         <div className="space-y-2">

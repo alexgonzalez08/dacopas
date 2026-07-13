@@ -483,6 +483,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         isWorldCup={league.competition_id === 1}
         championSupported={isChampionSupported(league.competition_id)}
         championLockPassed={championLockPassed}
+        ended={ended}
       />
     </div>
   )
