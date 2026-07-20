@@ -95,20 +95,13 @@ export default async function StatsPage() {
     )
   }
 
-  const { data: allMatchesRaw } = await supabase
+  const { data: matches } = await supabase
     .from('matches')
-    .select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, home_score, away_score, penalty_home, penalty_away, status, stage, competition_name')
+    .select('id, home_score, away_score, penalty_home, penalty_away, competition_name')
+    .eq('status', 'finished')
 
-  const matches = (allMatchesRaw ?? []).filter(m => m.status === 'finished')
-  const matchMap = new Map(matches.map(m => [m.id, m]))
+  const matchMap = new Map((matches ?? []).map(m => [m.id, m]))
   const finishedIds = [...matchMap.keys()]
-
-  const allMatchesByCompetition = new Map<string, ChampionMatchLike[]>()
-  for (const m of allMatchesRaw ?? []) {
-    const key = m.competition_name ?? 'FIFA World Cup'
-    if (!allMatchesByCompetition.has(key)) allMatchesByCompetition.set(key, [])
-    allMatchesByCompetition.get(key)!.push(m)
-  }
 
   // Predicciones paginadas
   const PAGE = 1000
@@ -191,9 +184,17 @@ export default async function StatsPage() {
     const competition = COMPETITIONS.find(c => c.name === compName)
     if (competition?.championSupported === false) continue
 
-    const compAllMatches = allMatchesByCompetition.get(compName) ?? []
     const compChampPreds = new Map((champPredsByCompetition.get(compName) ?? []).map(cp => [cp.user_id, cp]))
     if (compChampPreds.size === 0) continue
+
+    // Traído por competencia (no todos los partidos a la vez) para no pisar el límite
+    // de 1000 filas de PostgREST — la tabla completa tiene ~1300+ partidos entre todas
+    // las competencias, pero cada una individual entra sin problema.
+    const { data: compAllMatchesRaw } = await adminSupabase
+      .from('matches')
+      .select('home_team, away_team, home_team_flag, away_team_flag, match_date, home_score, away_score, penalty_home, penalty_away, status, stage, competition_name')
+      .eq('competition_name', compName)
+    const compAllMatches: ChampionMatchLike[] = compAllMatchesRaw ?? []
 
     const format = competition?.format ?? 'knockout'
     let championResult: ReturnType<typeof computeChampionResult> = null
