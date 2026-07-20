@@ -136,7 +136,7 @@ export async function getLeagueLeaderboard(leagueId: string) {
       .eq('league_id', leagueId),
     supabase
       .from('league_points')
-      .select('user_id, points, exact_results, correct_winner')
+      .select('user_id, points, champion_points, exact_results, correct_winner')
       .eq('league_id', leagueId),
   ])
 
@@ -146,7 +146,7 @@ export async function getLeagueLeaderboard(leagueId: string) {
     user_id: m.user_id,
     profiles: m.profiles,
     league_id: leagueId,
-    points: pointsMap.get(m.user_id)?.points ?? 0,
+    points: (pointsMap.get(m.user_id)?.points ?? 0) + (pointsMap.get(m.user_id)?.champion_points ?? 0),
     exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
     correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
   }))

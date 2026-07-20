@@ -24,20 +24,22 @@ export async function endLeague(admin: SupabaseClient, leagueId: string, exclude
 
   const { data: points } = await admin
     .from('league_points')
-    .select('user_id, points, exact_results, correct_winner, profiles(username, avatar_url)')
+    .select('user_id, points, champion_points, exact_results, correct_winner, profiles(username, avatar_url)')
     .eq('league_id', leagueId)
-    .order('points', { ascending: false })
-    .limit(3)
 
-  const top3 = (points ?? []).map((p, i) => ({
-    rank: i + 1,
-    user_id: p.user_id,
-    username: (p.profiles as any)?.username ?? 'Usuario',
-    avatar_url: (p.profiles as any)?.avatar_url ?? null,
-    points: p.points,
-    exact_results: p.exact_results,
-    correct_winner: p.correct_winner,
-  }))
+  const top3 = (points ?? [])
+    .map(p => ({ ...p, total: p.points + (p.champion_points ?? 0) }))
+    .sort((a, b) => b.total - a.total || b.exact_results - a.exact_results || b.correct_winner - a.correct_winner)
+    .slice(0, 3)
+    .map((p, i) => ({
+      rank: i + 1,
+      user_id: p.user_id,
+      username: (p.profiles as any)?.username ?? 'Usuario',
+      avatar_url: (p.profiles as any)?.avatar_url ?? null,
+      points: p.total,
+      exact_results: p.exact_results,
+      correct_winner: p.correct_winner,
+    }))
 
   const memberIds = (members ?? []).map(m => m.user_id).filter(id => id !== excludeUserId)
 

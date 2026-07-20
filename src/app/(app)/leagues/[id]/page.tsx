@@ -96,7 +96,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
     const { data: points } = await adminSupabase
       .from('league_points')
-      .select('user_id, points, exact_results, correct_winner')
+      .select('user_id, points, champion_points, exact_results, correct_winner')
       .eq('league_id', id)
 
     const pointsMap = new Map((points ?? []).map(p => [p.user_id, p]))
@@ -104,7 +104,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       .map(m => ({
         user_id: m.user_id,
         username: m.profiles?.username ?? 'Usuario',
-        points: pointsMap.get(m.user_id)?.points ?? 0,
+        points: (pointsMap.get(m.user_id)?.points ?? 0) + (pointsMap.get(m.user_id)?.champion_points ?? 0),
         exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
         correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
       }))
@@ -295,7 +295,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   // Puntos para el leaderboard
   const { data: points } = await supabase
     .from('league_points')
-    .select('user_id, points, exact_results, correct_winner')
+    .select('user_id, points, champion_points, exact_results, correct_winner')
     .eq('league_id', id)
 
   const pointsMap = new Map((points ?? []).map(p => [p.user_id, p]))
@@ -305,7 +305,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       user_id: m.user_id,
       username: m.profiles?.username ?? 'Usuario',
       role: m.role,
-      points: pointsMap.get(m.user_id)?.points ?? 0,
+      points: (pointsMap.get(m.user_id)?.points ?? 0) + (pointsMap.get(m.user_id)?.champion_points ?? 0),
       exact_results: pointsMap.get(m.user_id)?.exact_results ?? 0,
       correct_winner: pointsMap.get(m.user_id)?.correct_winner ?? 0,
     }))
