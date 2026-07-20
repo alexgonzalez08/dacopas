@@ -3,6 +3,10 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import StatsClient from './stats-client'
+import { COMPETITIONS } from '@/lib/competitions'
+import { getFinalMatch, ChampionMatchLike } from '@/lib/champion-teams'
+import { computeChampionResult, computePoints, ChampionPredictionLike } from '@/lib/champion-scoring'
+import { calcStandings } from '@/lib/standings'
 
 function calcPoints(
   pred: { home_score: number; away_score: number; penalty_winner: string | null },
@@ -91,13 +95,20 @@ export default async function StatsPage() {
     )
   }
 
-  const { data: matches } = await supabase
+  const { data: allMatchesRaw } = await supabase
     .from('matches')
-    .select('id, home_score, away_score, penalty_home, penalty_away, competition_name')
-    .eq('status', 'finished')
+    .select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, home_score, away_score, penalty_home, penalty_away, status, stage, competition_name')
 
-  const matchMap = new Map((matches ?? []).map(m => [m.id, m]))
+  const matches = (allMatchesRaw ?? []).filter(m => m.status === 'finished')
+  const matchMap = new Map(matches.map(m => [m.id, m]))
   const finishedIds = [...matchMap.keys()]
+
+  const allMatchesByCompetition = new Map<string, ChampionMatchLike[]>()
+  for (const m of allMatchesRaw ?? []) {
+    const key = m.competition_name ?? 'FIFA World Cup'
+    if (!allMatchesByCompetition.has(key)) allMatchesByCompetition.set(key, [])
+    allMatchesByCompetition.get(key)!.push(m)
+  }
 
   // Predicciones paginadas
   const PAGE = 1000
@@ -158,6 +169,69 @@ export default async function StatsPage() {
   const allUserIds = new Set<string>()
   for (const users of userIdsByCompetition.values()) {
     for (const uid of users) allUserIds.add(uid)
+  }
+
+  // Bonus de predicción de campeón — mismo criterio que en el torneo (champion-scoring.ts),
+  // sumado al puntaje base para que el número global no quede desalineado con lo que ve
+  // el usuario en sus torneos.
+  const { data: champPreds } = await adminSupabase
+    .from('champion_predictions')
+    .select('user_id, competition_name, champion_team, finalist_team, champion_score, runner_up_score, penalty_winner')
+    .in('user_id', [...allUserIds])
+
+  const champPredsByCompetition = new Map<string, typeof champPreds>()
+  for (const cp of champPreds ?? []) {
+    const key = cp.competition_name ?? 'FIFA World Cup'
+    if (!champPredsByCompetition.has(key)) champPredsByCompetition.set(key, [])
+    champPredsByCompetition.get(key)!.push(cp)
+  }
+
+  for (const [compName, userIds] of userIdsByCompetition) {
+    if (!myCompetitionNames.has(compName)) continue
+    const competition = COMPETITIONS.find(c => c.name === compName)
+    if (competition?.championSupported === false) continue
+
+    const compAllMatches = allMatchesByCompetition.get(compName) ?? []
+    const compChampPreds = new Map((champPredsByCompetition.get(compName) ?? []).map(cp => [cp.user_id, cp]))
+    if (compChampPreds.size === 0) continue
+
+    const format = competition?.format ?? 'knockout'
+    let championResult: ReturnType<typeof computeChampionResult> = null
+    let standingsChampion: string | null = null
+
+    if (format === 'knockout') {
+      const finalMatch = getFinalMatch(compAllMatches, compName)
+      if (finalMatch && finalMatch.status === 'finished') {
+        championResult = computeChampionResult(finalMatch)
+      }
+    } else {
+      const seasonFinished = compAllMatches.length > 0 && compAllMatches.every(m => m.status === 'finished')
+      if (seasonFinished) {
+        standingsChampion = calcStandings(compAllMatches)[0]?.team ?? null
+      }
+    }
+
+    if (!championResult && !standingsChampion) continue
+
+    const userStats = statsByCompetition.get(compName) ?? new Map()
+    for (const uid of userIds) {
+      const cp = compChampPreds.get(uid)
+      if (!cp) continue
+      const predLike: ChampionPredictionLike = {
+        champion_team: cp.champion_team,
+        finalist_team: cp.finalist_team,
+        champion_score: cp.champion_score,
+        runner_up_score: cp.runner_up_score,
+        penalty_winner: cp.penalty_winner as 'champion' | 'runner_up' | null,
+      }
+      const bonus = championResult
+        ? computePoints(predLike, championResult).points
+        : (cp.champion_team === standingsChampion ? 8 : 0)
+      if (bonus === 0) continue
+      const prev = userStats.get(uid) ?? { points: 0, exact: 0, winner: 0, played: 0 }
+      userStats.set(uid, { ...prev, points: prev.points + bonus })
+    }
+    statsByCompetition.set(compName, userStats)
   }
 
   const { data: profiles } = await adminSupabase
