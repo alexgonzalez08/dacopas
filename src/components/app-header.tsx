@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { Star, Share2, Check, Rss, BarChart2, GitBranch } from 'lucide-react'
+import { Star, Share2, Check, Rss, BarChart2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter, usePathname } from 'next/navigation'
 import { useUnsavedChanges } from '@/lib/unsaved-changes-context'
@@ -29,7 +29,6 @@ const DESKTOP_NAV = [
 const BOTTOM_NAV = [
   { href: '/dashboard', label: 'Feed', icon: Rss },
   { href: '/predictions', label: 'Predicciones', icon: Star },
-  { href: '/bracket', label: 'Llaves', icon: GitBranch },
   { href: '/leagues', label: 'Torneos', icon: TorneosIcon },
   { href: '/stats', label: 'Estadísticas', icon: BarChart2 },
 ]
