@@ -132,10 +132,13 @@ export default async function DashboardPage() {
       .select('post_id')
       .eq('user_id', user!.id),
     getSuggestedFriends(supabase, user!.id),
-    supabase
-      .from('matches')
-      .select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, stage, status, home_score, away_score, penalty_home, penalty_away, competition_name')
-      .in('stage', ['group', 'round_of_32', 'round_of_16', 'quarter', 'semi', 'final']),
+    competitionIds.length > 0
+      ? supabase
+          .from('matches')
+          .select('id, home_team, away_team, home_team_flag, away_team_flag, match_date, stage, status, home_score, away_score, penalty_home, penalty_away, competition_name')
+          .in('stage', ['group', 'round_of_32', 'round_of_16', 'quarter', 'semi', 'final'])
+          .in('competition_id', competitionIds)
+      : Promise.resolve({ data: [] }),
     supabase.from('champion_predictions').select('*').eq('user_id', user!.id),
   ])
 

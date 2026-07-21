@@ -22,7 +22,6 @@ const AMISTADES_TYPES = new Set([
 
 const DESKTOP_NAV = [
   { href: '/predictions', label: 'Mis Predicciones', icon: Star },
-  { href: '/bracket', label: 'Llaves', icon: GitBranch },
   { href: '/leagues/new', label: 'Torneos', icon: TorneosIcon },
   { href: '/stats', label: 'Estadísticas', icon: BarChart2 },
 ]
