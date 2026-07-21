@@ -36,9 +36,8 @@ export default function LeaguesClient({
   const [modal, setModal] = useState<'create' | 'join' | null>(null)
   const [visibleCount, setVisibleCount] = useState(10)
 
-  // Competiciones expandidas — todas abiertas por defecto
-  const competitionNames = [...new Set(leagues.map(l => l.competition_name ?? 'FIFA World Cup'))]
-  const [expandedCompetitions, setExpandedCompetitions] = useState<Set<string>>(() => new Set(competitionNames))
+  // Competiciones expandidas — todas cerradas por defecto
+  const [expandedCompetitions, setExpandedCompetitions] = useState<Set<string>>(() => new Set())
 
   function toggleCompetition(name: string) {
     setExpandedCompetitions(prev => {
