@@ -26,6 +26,10 @@ export default function LeaguesClient({
 }) {
   const router = useRouter()
 
+  // FIFA World Cup ya no se ofrece para torneos nuevos (a pedido) — los torneos existentes con
+  // ese competition_id no se tocan, siguen funcionando igual
+  const creatableCompetitions = COMPETITIONS.filter(c => c.id !== 1)
+
   const [leagues, setLeagues] = useState<League[]>(initial)
   const [chatUnread, setChatUnread] = useState<Record<string, number>>(initialChatUnread)
   const [leagueNotifsState, setLeagueNotifsState] = useState<Record<string, number>>(leagueNotifs)
@@ -103,7 +107,7 @@ export default function LeaguesClient({
   // Crear torneo
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [competitionId, setCompetitionId] = useState(COMPETITIONS[0].id)
+  const [competitionId, setCompetitionId] = useState(creatableCompetitions[0].id)
   const [isPublic, setIsPublic] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -124,7 +128,7 @@ export default function LeaguesClient({
 
   function closeModal() {
     setModal(null)
-    setName(''); setDescription(''); setCompetitionId(COMPETITIONS[0].id); setIsPublic(false); setImageFile(null); setImagePreview(null); setCreateError('')
+    setName(''); setDescription(''); setCompetitionId(creatableCompetitions[0].id); setIsPublic(false); setImageFile(null); setImagePreview(null); setCreateError('')
     setCode(''); setJoinError('')
   }
 
@@ -394,7 +398,7 @@ export default function LeaguesClient({
                   onChange={e => setCompetitionId(Number(e.target.value))}
                   className="w-full px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:border-yellow-500 text-white"
                 >
-                  {COMPETITIONS.map(c => (
+                  {creatableCompetitions.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>

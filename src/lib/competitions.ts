@@ -19,6 +19,7 @@ export const COMPETITIONS: Competition[] = [
   { id: 140, name: 'La Liga', apiLeagueId: 140, season: 2026, format: 'round_robin' },
   { id: 135, name: 'Serie A', apiLeagueId: 135, season: 2026, format: 'round_robin' },
   { id: 162, name: 'Primera División de Costa Rica', apiLeagueId: 162, season: 2026, format: 'round_robin', championSupported: false },
+  { id: 1028, name: 'CONCACAF Central American Cup', apiLeagueId: 1028, season: 2026, format: 'knockout' },
 ]
 
 export function getCompetition(id: number | null | undefined): Competition | null {
