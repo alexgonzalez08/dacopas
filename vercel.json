@@ -7,6 +7,10 @@
     {
       "path": "/api/matches/schedule-diff",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/matches/sync",
+      "schedule": "0 15 * * *"
     }
   ]
 }
