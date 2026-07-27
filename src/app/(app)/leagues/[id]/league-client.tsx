@@ -16,6 +16,7 @@ import MatchTime from '@/components/match-time'
 import { CompetitionFormat } from '@/lib/competitions'
 import ChampionPredictionSettings from './champion-prediction-settings'
 import LeagueVisibilitySettings from './league-visibility-settings'
+import ShareImageButton from '@/components/share-image-button'
 
 type MatchPrediction = {
   user_id: string
@@ -52,13 +53,14 @@ function TeamFlag({ flag, name }: { flag: string | null; name: string }) {
 
 function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredictions; currentUserId: string }) {
   const [open, setOpen] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
   const isFinished = match.status === 'finished'
   const isLive = match.status === 'live'
   const isPending = !isFinished && !isLive
   const date = new Date(match.match_date)
 
   return (
-    <div className="bg-slate-800 rounded-2xl overflow-hidden">
+    <div ref={cardRef} className="bg-slate-800 rounded-2xl overflow-hidden">
       <button onClick={() => setOpen(v => !v)} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-700/50 transition text-left">
         <div className="shrink-0 w-14">
           <p className="text-xs text-slate-500">{formatDate(date, 'd MMM', { locale: es })}</p>
@@ -92,6 +94,14 @@ function MatchPredictionCard({ match, currentUserId }: { match: MatchWithPredict
             <p className="text-xs text-slate-500 text-center py-2">Sin pronósticos registrados</p>
           ) : (
             <div className="space-y-1.5">
+              <div className="flex justify-end -mt-1 mb-1" data-share-ignore="true">
+                <ShareImageButton
+                  targetRef={cardRef}
+                  fileName={`pronosticos-${match.home_team}-vs-${match.away_team}`}
+                  shareTitle={`${match.home_team} vs ${match.away_team}`}
+                  shareText={`Pronósticos del partido ${match.home_team} vs ${match.away_team}`}
+                />
+              </div>
               {match.predictions.map(pred => {
                 const isMe = pred.user_id === currentUserId
                 const hasPred = pred.home_score !== null && pred.away_score !== null
@@ -250,6 +260,7 @@ export default function LeagueClient({
     initialTab === 'acuerdos' ? 'acuerdos' : 'posiciones'
   )
   const lastMatchRef = useRef<HTMLDivElement>(null)
+  const standingsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (tab === 'pronosticos') {
@@ -583,7 +594,17 @@ export default function LeagueClient({
 
         {/* Tab: Posiciones */}
         {tab === 'posiciones' && (
-          <div className="space-y-2 pb-32 md:pb-6">
+          <div ref={standingsRef} className="space-y-2 pb-32 md:pb-6">
+            {leaderboard.length > 0 && (
+              <div className="flex justify-end" data-share-ignore="true">
+                <ShareImageButton
+                  targetRef={standingsRef}
+                  fileName={`posiciones-${leagueName}`}
+                  shareTitle={`Tabla de posiciones — ${leagueName}`}
+                  shareText={`Tabla de posiciones de ${leagueName}`}
+                />
+              </div>
+            )}
             {leaderboard.map((entry, i) => (
               <div
                 key={entry.user_id}
@@ -843,7 +864,17 @@ export default function LeagueClient({
       </div>
 
       {tab === 'posiciones' && (
-        <div className="space-y-2 pb-32 md:pb-6">
+        <div ref={standingsRef} className="space-y-2 pb-32 md:pb-6">
+          {leaderboard.length > 0 && (
+            <div className="flex justify-end" data-share-ignore="true">
+              <ShareImageButton
+                targetRef={standingsRef}
+                fileName={`posiciones-${leagueName}`}
+                shareTitle={`Tabla de posiciones — ${leagueName}`}
+                shareText={`Tabla de posiciones de ${leagueName}`}
+              />
+            </div>
+          )}
           {leaderboard.map((entry, i) => (
             <div key={entry.user_id} className={`flex items-center gap-4 rounded-xl px-4 py-3 ${entry.user_id === userId ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-slate-800'}`}>
               <span className={`w-6 text-center font-bold ${MEDAL_COLORS[i] ?? 'text-slate-400'}`}>
