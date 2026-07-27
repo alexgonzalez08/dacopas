@@ -31,15 +31,17 @@ async function runSync(request: Request) {
 
   const updatedIds: string[] = []
 
-  // Consultar Supabase primero (gratis) para saber qué partidos necesitan update
+  // Consultar Supabase primero (gratis) para saber qué partidos necesitan update.
+  // Sin límite inferior de fecha: un partido "scheduled" cuya hora ya pasó (por ejemplo
+  // porque el cron no corrió a tiempo) debe seguir revisándose hasta quedar resuelto,
+  // no solo dentro de una ventana angosta alrededor de "ahora".
   const syncNow = new Date()
-  const windowStart = new Date(syncNow.getTime() - 3 * 60 * 60 * 1000)  // hace 3h (por si sigue en juego)
-  const windowEnd   = new Date(syncNow.getTime() + 2 * 60 * 60 * 1000)  // próximas 2h
+  const windowEnd = new Date(syncNow.getTime() + 2 * 60 * 60 * 1000)  // próximas 2h
 
   const { data: relevantMatches } = await supabase
     .from('matches')
     .select('id, external_id, home_score, away_score, notified_finished, status')
-    .or(`status.eq.live,and(status.eq.scheduled,match_date.gte.${windowStart.toISOString()},match_date.lte.${windowEnd.toISOString()})`)
+    .or(`status.eq.live,and(status.eq.scheduled,match_date.lte.${windowEnd.toISOString()})`)
     .not('external_id', 'is', null)
 
   // Si no hay partidos live ni próximos, saltamos la llamada a API-Football
