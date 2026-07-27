@@ -1,11 +1,26 @@
+'use client'
+import { useRef } from 'react'
 import { Standing } from '@/lib/standings'
+import ShareImageButton from '@/components/share-image-button'
 
-export default function LeagueStandings({ standings, highlightTeams = [] }: { standings: Standing[]; highlightTeams?: string[] }) {
+export default function LeagueStandings({ standings, highlightTeams = [], title = 'Tabla de posiciones' }: { standings: Standing[]; highlightTeams?: string[]; title?: string }) {
+  const cardRef = useRef<HTMLDivElement>(null)
+
   if (standings.length === 0) return null
 
   return (
-    <div className="bg-slate-800 rounded-2xl p-5">
-      <h2 className="font-semibold mb-4 text-slate-300">Tabla de posiciones</h2>
+    <div ref={cardRef} className="bg-slate-800 rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-slate-300">{title}</h2>
+        <div data-share-ignore="true">
+          <ShareImageButton
+            targetRef={cardRef}
+            fileName={title.toLowerCase().replace(/\s+/g, '-')}
+            shareTitle={title}
+            shareText={title}
+          />
+        </div>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

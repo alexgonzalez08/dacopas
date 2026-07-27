@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import UserAvatar from '@/components/user-avatar'
+import ShareImageButton from '@/components/share-image-button'
 
 type Entry = {
   uid: string
@@ -78,6 +79,17 @@ function CompetitionLeaderboard({ competition, currentUserId }: { competition: C
 
       {/* Tabla */}
       <div ref={listRef} className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{competition.name}</p>
+          <div data-share-ignore="true">
+            <ShareImageButton
+              targetRef={listRef}
+              fileName={`estadisticas-${competition.name}`}
+              shareTitle={competition.name}
+              shareText={`Tabla de estadísticas de ${competition.name}`}
+            />
+          </div>
+        </div>
         {pageEntries.length === 0 ? (
           <p className="text-center text-slate-500 text-sm py-8">No se encontraron resultados.</p>
         ) : pageEntries.map((entry) => {

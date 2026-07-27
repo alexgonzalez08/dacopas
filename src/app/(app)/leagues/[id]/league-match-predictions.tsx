@@ -1,8 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import MatchTime from '@/components/match-time'
+import ShareImageButton from '@/components/share-image-button'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 type MatchPrediction = {
@@ -37,6 +38,7 @@ function TeamFlag({ flag, name }: { flag: string | null; name: string }) {
 
 function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; currentUserId: string }) {
   const [open, setOpen] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
   const isFinished = match.status === 'finished'
   const isLive = match.status === 'live'
   const isPending = !isFinished && !isLive
@@ -44,7 +46,7 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
   const date = new Date(match.match_date)
 
   return (
-    <div className="bg-slate-800 rounded-2xl overflow-hidden">
+    <div ref={cardRef} className="bg-slate-800 rounded-2xl overflow-hidden">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-700/50 transition"
@@ -89,6 +91,16 @@ function MatchCard({ match, currentUserId }: { match: MatchWithPredictions; curr
             <p className="text-sm text-slate-500 text-center py-2">⏳ Partido por jugarse</p>
           ) : (
             <div className="space-y-2">
+              {match.predictions.length > 0 && (
+                <div className="flex justify-end -mt-1 mb-1" data-share-ignore="true">
+                  <ShareImageButton
+                    targetRef={cardRef}
+                    fileName={`pronosticos-${match.home_team}-vs-${match.away_team}`}
+                    shareTitle={`${match.home_team} vs ${match.away_team}`}
+                    shareText={`Pronósticos del partido ${match.home_team} vs ${match.away_team}`}
+                  />
+                </div>
+              )}
               {match.predictions.length === 0 ? (
                 <p className="text-sm text-slate-500 text-center py-2">Sin pronósticos registrados</p>
               ) : (

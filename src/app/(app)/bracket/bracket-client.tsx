@@ -6,6 +6,7 @@ import TeamFlag from '@/components/team-flag'
 import { upsertPrediction, isPredictionLocked } from '@/lib/predictions'
 import ChampionPredictionCard from '@/components/champion-prediction-card'
 import { ChampionMatchLike } from '@/lib/champion-teams'
+import ShareImageButton from '@/components/share-image-button'
 import { CheckCircle2, Lock, Loader2 } from 'lucide-react'
 
 const SLOT_H = 160
@@ -347,6 +348,7 @@ type ChampionPredictionProps = {
 
 export default function BracketClient({ matches, userId, highlightMatchId, championPredictionProps = null }: { matches: MatchWithPred[]; userId: string; highlightMatchId?: number; championPredictionProps?: ChampionPredictionProps | null }) {
   const highlightRef = useRef<HTMLDivElement | null>(null)
+  const bracketRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     if (highlightMatchId && highlightRef.current) {
       setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 150)
@@ -487,8 +489,16 @@ export default function BracketClient({ matches, userId, highlightMatchId, champ
         />
       </div>
     )}
+    <div className="flex justify-end px-3 mb-2" data-share-ignore="true">
+      <ShareImageButton
+        targetRef={bracketRef}
+        fileName="llaves-torneo"
+        shareTitle="Llaves del torneo"
+        shareText="Llaves del torneo en Dacopas"
+      />
+    </div>
     <div className="w-full overflow-x-auto">
-      <div className="flex items-start" style={{ minWidth: has32 ? 2000 : 1560 }}>
+      <div ref={bracketRef} className="flex items-start" style={{ minWidth: has32 ? 2000 : 1560 }}>
 
         {has32 && (
           <>
