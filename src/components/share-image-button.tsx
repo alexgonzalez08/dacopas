@@ -5,6 +5,10 @@ import { Share2, Check, Loader2 } from 'lucide-react'
 
 type Status = 'idle' | 'loading' | 'done' | 'error'
 
+// PNG transparente de 1x1 — evita que una imagen externa (ej. escudo de equipo)
+// que falla al descargarse tumbe toda la captura.
+const TRANSPARENT_PIXEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+
 export default function ShareImageButton({
   targetRef,
   fileName,
@@ -35,6 +39,7 @@ export default function ShareImageButton({
         backgroundColor,
         pixelRatio: 2,
         cacheBust: true,
+        imagePlaceholder: TRANSPARENT_PIXEL,
         filter: n => !(n instanceof HTMLElement && n.dataset.shareIgnore === 'true'),
       })
       const blob = await (await fetch(dataUrl)).blob()
