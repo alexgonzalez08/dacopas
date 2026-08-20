@@ -16,14 +16,6 @@ async function runSync(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Solo correr entre 8:00 AM y 12:00 AM hora Costa Rica (UTC-6)
-  // Último partido empieza 7PM, con atrasos/tiempo extra/penales termina ~11:30PM máximo
-  const nowCR = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Costa_Rica' }))
-  const hour = nowCR.getHours()
-  if (hour < 8) {
-    return NextResponse.json({ skipped: true, reason: 'outside active hours (8AM-12AM CR)' })
-  }
-
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
