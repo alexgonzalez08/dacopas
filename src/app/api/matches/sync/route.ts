@@ -37,21 +37,29 @@ async function runSync(request: Request) {
     .not('external_id', 'is', null)
 
   // Si no hay partidos live ni próximos, saltamos la llamada a API-Football
+  // El parámetro "ids" de api-sports acepta máximo 20 ids por llamada — se trocea en bloques.
   let fixtures: any[] = []
   if (relevantMatches && relevantMatches.length > 0) {
-    const ids = relevantMatches.map(m => m.external_id).join('-')
-    try {
-      const res = await fetch(`${API_FOOTBALL}/fixtures?ids=${ids}`, {
-        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
-      })
-      if (res.ok) {
-        const json = await res.json()
-        fixtures = json.response ?? []
-      } else {
-        console.warn(`API-Football error ${res.status}`)
+    const allIds = relevantMatches.map(m => m.external_id)
+    for (let i = 0; i < allIds.length; i += 20) {
+      const idsChunk = allIds.slice(i, i + 20).join('-')
+      try {
+        const res = await fetch(`${API_FOOTBALL}/fixtures?ids=${idsChunk}`, {
+          headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY! },
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.errors && Object.keys(json.errors).length > 0) {
+            console.warn('API-Football validation error', json.errors)
+          } else {
+            fixtures.push(...(json.response ?? []))
+          }
+        } else {
+          console.warn(`API-Football error ${res.status}`)
+        }
+      } catch (err) {
+        console.warn('API-Football fetch failed (network error)', err)
       }
-    } catch (err) {
-      console.warn('API-Football fetch failed (network error)', err)
     }
   }
 
